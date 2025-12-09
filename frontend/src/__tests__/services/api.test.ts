@@ -54,7 +54,7 @@ vi.mock('axios', () => {
 });
 
 describe('api service', () => {
-  let originalLocation: Location;
+  let originalLocation: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -72,7 +72,7 @@ describe('api service', () => {
   });
 
   afterEach(() => {
-    window.location = originalLocation;
+    (window as any).location = originalLocation;
   });
 
   it('deve criar instância do axios com baseURL correta', async () => {
@@ -93,7 +93,7 @@ describe('api service', () => {
 });
 
 describe('api request interceptor', () => {
-  let originalLocation: Location;
+  let originalLocation: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -109,7 +109,7 @@ describe('api request interceptor', () => {
   });
 
   afterEach(() => {
-    window.location = originalLocation;
+    (window as any).location = originalLocation;
   });
 
   it('não deve adicionar header Authorization quando não há usuário logado', async () => {
@@ -160,7 +160,7 @@ describe('api request interceptor', () => {
 });
 
 describe('api response interceptor', () => {
-  let originalLocation: Location;
+  let originalLocation: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -185,7 +185,7 @@ describe('api response interceptor', () => {
   });
 
   afterEach(() => {
-    window.location = originalLocation;
+    (window as any).location = originalLocation;
   });
 
   it('deve retornar response diretamente no caso de sucesso', () => {

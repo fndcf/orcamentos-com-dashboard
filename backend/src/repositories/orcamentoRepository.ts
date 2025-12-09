@@ -1,6 +1,6 @@
 import { db } from '../config/firebase';
 import { Orcamento, OrcamentoStatus } from '../models';
-import { COLLECTIONS } from '../utils/constants';
+import { COLLECTIONS, CONTADORES } from '../utils/constants';
 import { NotFoundError } from '../utils/errors';
 
 const collection = db.collection(COLLECTIONS.ORCAMENTOS);
@@ -117,31 +117,32 @@ export const orcamentoRepository = {
   },
 
   async getNextNumero(): Promise<number> {
-    try {
-      const snapshot = await collection.orderBy('numero', 'desc').limit(1).get();
+    const contadorRef = db.collection(COLLECTIONS.CONTADORES).doc(CONTADORES.ORCAMENTOS);
 
-      if (snapshot.empty) {
-        return 1;
+    return db.runTransaction(async (transaction) => {
+      const contadorDoc = await transaction.get(contadorRef);
+
+      let proximoNumero: number;
+
+      if (!contadorDoc.exists) {
+        // Primeira execução: buscar o maior número existente nos orçamentos
+        // para inicializar o contador corretamente
+        const snapshot = await collection.orderBy('numero', 'desc').limit(1).get();
+        const maiorNumeroExistente = snapshot.empty ? 0 : (snapshot.docs[0].data().numero || 0);
+        proximoNumero = maiorNumeroExistente + 1;
+
+        // Criar o documento contador
+        transaction.set(contadorRef, { ultimoNumero: proximoNumero });
+      } else {
+        // Incrementar atomicamente
+        const ultimoNumero = contadorDoc.data()?.ultimoNumero || 0;
+        proximoNumero = ultimoNumero + 1;
+
+        transaction.update(contadorRef, { ultimoNumero: proximoNumero });
       }
 
-      return (snapshot.docs[0].data().numero || 0) + 1;
-    } catch {
-      // Se der erro na query (ex: índice não existe), buscar todos e calcular
-      const allDocs = await collection.get();
-      if (allDocs.empty) {
-        return 1;
-      }
-
-      let maxNumero = 0;
-      allDocs.docs.forEach(doc => {
-        const numero = doc.data().numero || 0;
-        if (numero > maxNumero) {
-          maxNumero = numero;
-        }
-      });
-
-      return maxNumero + 1;
-    }
+      return proximoNumero;
+    });
   },
 
   async create(data: Omit<Orcamento, 'id' | 'createdAt'>): Promise<Orcamento> {

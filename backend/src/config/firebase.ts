@@ -3,16 +3,22 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const firebaseConfig = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-};
-
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(firebaseConfig as admin.ServiceAccount),
-  });
+  // Em produção (Cloud Functions), as credenciais são injetadas automaticamente
+  // Em desenvolvimento local, usar variáveis de ambiente
+  if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+    const firebaseConfig = {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    };
+    admin.initializeApp({
+      credential: admin.credential.cert(firebaseConfig as admin.ServiceAccount),
+    });
+  } else {
+    // Em Cloud Functions, inicializa sem credenciais explícitas
+    admin.initializeApp();
+  }
 }
 
 export const db = admin.firestore();

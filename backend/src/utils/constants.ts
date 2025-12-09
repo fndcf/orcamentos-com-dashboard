@@ -21,4 +21,10 @@ export const COLLECTIONS = {
   NOTIFICACOES: 'notificacoes',
   CONFIGURACOES: 'configuracoes',
   PALAVRAS_CHAVE: 'palavrasChave',
+  CONTADORES: 'contadores',
+};
+
+// Documentos de contadores
+export const CONTADORES = {
+  ORCAMENTOS: 'orcamentos',
 };

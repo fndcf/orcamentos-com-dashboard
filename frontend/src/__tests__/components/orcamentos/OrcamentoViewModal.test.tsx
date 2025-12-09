@@ -373,7 +373,8 @@ describe('OrcamentoViewModal', () => {
       parcelamentoTexto: '3x sem juros',
       itensCompleto: [
         {
-          etapa: 'comercial',
+          etapa: 'comercial' as const,
+          categoriaId: 'cat1',
           categoriaNome: 'Extintores',
           descricao: 'Extintor ABC 6kg',
           quantidade: 2,
@@ -382,6 +383,7 @@ describe('OrcamentoViewModal', () => {
           valorUnitarioMaterial: 150,
           valorTotalMaoDeObra: 200,
           valorTotalMaterial: 300,
+          valorTotal: 500,
         },
       ],
     };

@@ -278,6 +278,7 @@ describe('OrcamentoPDF', () => {
       dataValidade: '2024-02-15T00:00:00.000Z',
       servicoId: 's1',
       servicoDescricao: 'Instalação de sistema de combate a incêndio\ncom hidrantes e extintores',
+      itens: [],
       itensCompleto: [
         {
           etapa: 'residencial' as const,
@@ -502,6 +503,8 @@ describe('OrcamentoPDF', () => {
         nomeEmpresa: 'FLAMA Sistemas',
         cnpjEmpresa: '12.345.678/0001-90',
         enderecoEmpresa: 'Rua da Empresa, 100 - São Paulo/SP',
+        telefoneEmpresa: '(11) 99999-9999',
+        diasValidadeOrcamento: 30,
       };
       expect(() => {
         OrcamentoCompletoPDFDocument({

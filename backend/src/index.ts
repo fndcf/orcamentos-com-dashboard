@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import * as functions from "firebase-functions";
 import routes from "./routes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { logger } from "./utils/logger";
@@ -12,7 +13,6 @@ dotenv.config();
 inicializarEventHandlers();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Middlewares
 app.use(
@@ -29,10 +29,7 @@ app.use("/api", routes);
 // Error Handler
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  logger.info(`FLAMA API rodando na porta ${PORT}`);
-  logger.info(`Ambiente: ${process.env.NODE_ENV || "development"}`);
-});
+// Export para Firebase Cloud Functions
+export const api = functions.https.onRequest(app);
 
 export default app;

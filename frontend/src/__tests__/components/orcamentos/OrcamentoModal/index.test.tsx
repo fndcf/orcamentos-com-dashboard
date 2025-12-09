@@ -211,16 +211,21 @@ describe('OrcamentoModal', () => {
       const orcamentoExistente = {
         id: 'orc1',
         numero: 123,
+        versao: 1,
         tipo: 'simples' as const,
         clienteId: 'cliente1',
+        clienteNome: 'Cliente Teste LTDA',
+        clienteCnpj: '12345678000190',
         itens: [
           { descricao: 'Item teste', quantidade: 2, unidade: 'UN', valorUnitario: 100, valorTotal: 200 },
         ],
         observacoes: 'Obs teste',
         consultor: 'João',
         contato: '11999999999',
-        status: 'pendente' as const,
-        dataCriacao: new Date(),
+        status: 'aberto' as const,
+        dataEmissao: new Date(),
+        dataValidade: new Date(),
+        createdAt: new Date(),
         valorTotal: 200,
       };
 
@@ -229,7 +234,7 @@ describe('OrcamentoModal', () => {
           isOpen={true}
           onClose={mockOnClose}
           onSave={mockOnSave}
-          orcamento={orcamentoExistente}
+          orcamento={orcamentoExistente as any}
         />,
         { wrapper: createWrapper() }
       );
@@ -243,8 +248,11 @@ describe('OrcamentoModal', () => {
       const orcamentoCompleto = {
         id: 'orc2',
         numero: 456,
+        versao: 1,
         tipo: 'completo' as const,
         clienteId: 'cliente1',
+        clienteNome: 'Cliente Teste LTDA',
+        clienteCnpj: '12345678000190',
         servicoId: 'serv1',
         itens: [],
         itensCompleto: [
@@ -267,8 +275,10 @@ describe('OrcamentoModal', () => {
         prazoVistoriaBombeiros: 35,
         condicaoPagamento: 'parcelado' as const,
         parcelamentoTexto: '3x sem juros',
-        status: 'pendente' as const,
-        dataCriacao: new Date(),
+        status: 'aberto' as const,
+        dataEmissao: new Date(),
+        dataValidade: new Date(),
+        createdAt: new Date(),
         valorTotal: 150,
       };
 
@@ -277,7 +287,7 @@ describe('OrcamentoModal', () => {
           isOpen={true}
           onClose={mockOnClose}
           onSave={mockOnSave}
-          orcamento={orcamentoCompleto}
+          orcamento={orcamentoCompleto as any}
         />,
         { wrapper: createWrapper() }
       );
@@ -291,13 +301,18 @@ describe('OrcamentoModal', () => {
       const orcamentoOriginal = {
         id: 'orc1',
         numero: 789,
+        versao: 1,
         tipo: 'simples' as const,
         clienteId: 'cliente1',
+        clienteNome: 'Cliente Teste LTDA',
+        clienteCnpj: '12345678000190',
         itens: [
           { descricao: 'Item para duplicar', quantidade: 3, unidade: 'UN', valorUnitario: 50, valorTotal: 150 },
         ],
-        status: 'pendente' as const,
-        dataCriacao: new Date(),
+        status: 'aberto' as const,
+        dataEmissao: new Date(),
+        dataValidade: new Date(),
+        createdAt: new Date(),
         valorTotal: 150,
       };
 
@@ -306,7 +321,7 @@ describe('OrcamentoModal', () => {
           isOpen={true}
           onClose={mockOnClose}
           onSave={mockOnSave}
-          duplicarDe={orcamentoOriginal}
+          duplicarDe={orcamentoOriginal as any}
         />,
         { wrapper: createWrapper() }
       );
@@ -318,8 +333,11 @@ describe('OrcamentoModal', () => {
       const orcamentoCompleto = {
         id: 'orc2',
         numero: 999,
+        versao: 1,
         tipo: 'completo' as const,
         clienteId: 'cliente1',
+        clienteNome: 'Cliente Teste LTDA',
+        clienteCnpj: '12345678000190',
         servicoId: 'serv1',
         itens: [],
         itensCompleto: [
@@ -341,8 +359,10 @@ describe('OrcamentoModal', () => {
         prazoExecucaoServicos: 30,
         prazoVistoriaBombeiros: 40,
         condicaoPagamento: 'a_combinar' as const,
-        status: 'pendente' as const,
-        dataCriacao: new Date(),
+        status: 'aberto' as const,
+        dataEmissao: new Date(),
+        dataValidade: new Date(),
+        createdAt: new Date(),
         valorTotal: 3000,
       };
 
@@ -351,7 +371,7 @@ describe('OrcamentoModal', () => {
           isOpen={true}
           onClose={mockOnClose}
           onSave={mockOnSave}
-          duplicarDe={orcamentoCompleto}
+          duplicarDe={orcamentoCompleto as any}
         />,
         { wrapper: createWrapper() }
       );
