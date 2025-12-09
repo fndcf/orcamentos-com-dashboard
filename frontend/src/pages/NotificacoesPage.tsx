@@ -12,6 +12,7 @@ import {
   useNotificacaoResumo,
 } from "../hooks/useNotificacoes";
 import { Notificacao } from "../types";
+import Footer from "@/components/layout/Footer";
 
 const Container = styled.div`
   padding: 24px;
@@ -439,6 +440,8 @@ export function NotificacoesPage() {
           })}
         </NotificacaoList>
       )}
+      {/* Footer */}
+      <Footer />
     </Container>
   );
 }

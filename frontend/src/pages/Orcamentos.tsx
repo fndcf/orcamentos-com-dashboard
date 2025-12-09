@@ -1,14 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import styled from 'styled-components';
-import { Orcamento, OrcamentoStatus, OrcamentoSaveData } from '../types';
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import styled from "styled-components";
+import { Orcamento, OrcamentoStatus, OrcamentoSaveData } from "../types";
 import {
   useOrcamentos,
   useCriarOrcamento,
   useAtualizarOrcamento,
   useAtualizarStatusOrcamento,
   useExcluirOrcamento,
-} from '../hooks/useOrcamentos';
+} from "../hooks/useOrcamentos";
 import {
   Button,
   Input,
@@ -33,11 +33,12 @@ import {
   MobileCardField,
   MobileCardActions,
   Pagination,
-} from '../components/ui';
-import { OrcamentoModal } from '../components/orcamentos/OrcamentoModal';
-import { OrcamentoViewModal } from '../components/orcamentos/OrcamentoViewModal';
-import { gerarPDFOrcamento } from '../components/orcamentos/OrcamentoPDF';
-import { formatCurrency, formatDate } from '../utils/constants';
+} from "../components/ui";
+import { OrcamentoModal } from "../components/orcamentos/OrcamentoModal";
+import { OrcamentoViewModal } from "../components/orcamentos/OrcamentoViewModal";
+import { gerarPDFOrcamento } from "../components/orcamentos/OrcamentoPDF";
+import { formatCurrency, formatDate } from "../utils/constants";
+import Footer from "@/components/layout/Footer";
 
 const Container = styled.div`
   padding: 24px;
@@ -61,22 +62,22 @@ const StatusBadge = styled.span<{ $status: OrcamentoStatus }>`
 
   ${({ $status }) => {
     switch ($status) {
-      case 'aberto':
+      case "aberto":
         return `
           background: rgba(33, 150, 243, 0.1);
           color: #1976d2;
         `;
-      case 'aceito':
+      case "aceito":
         return `
           background: rgba(76, 175, 80, 0.1);
           color: #388e3c;
         `;
-      case 'recusado':
+      case "recusado":
         return `
           background: rgba(244, 67, 54, 0.1);
           color: #d32f2f;
         `;
-      case 'expirado':
+      case "expirado":
         return `
           background: rgba(158, 158, 158, 0.1);
           color: #616161;
@@ -187,10 +188,10 @@ const StatusDialog = styled.div`
 `;
 
 const statusLabels: Record<OrcamentoStatus, string> = {
-  aberto: 'Aberto',
-  aceito: 'Aceito',
-  recusado: 'Recusado',
-  expirado: 'Expirado',
+  aberto: "Aberto",
+  aceito: "Aceito",
+  recusado: "Recusado",
+  expirado: "Expirado",
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -199,12 +200,18 @@ export function Orcamentos() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [modalOpen, setModalOpen] = useState(false);
   const [orcamentoEdit, setOrcamentoEdit] = useState<Orcamento | null>(null);
-  const [orcamentoDuplicar, setOrcamentoDuplicar] = useState<Orcamento | null>(null);
-  const [orcamentoDelete, setOrcamentoDelete] = useState<Orcamento | null>(null);
-  const [orcamentoStatus, setOrcamentoStatus] = useState<Orcamento | null>(null);
+  const [orcamentoDuplicar, setOrcamentoDuplicar] = useState<Orcamento | null>(
+    null
+  );
+  const [orcamentoDelete, setOrcamentoDelete] = useState<Orcamento | null>(
+    null
+  );
+  const [orcamentoStatus, setOrcamentoStatus] = useState<Orcamento | null>(
+    null
+  );
   const [orcamentoView, setOrcamentoView] = useState<Orcamento | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<OrcamentoStatus | ''>('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<OrcamentoStatus | "">("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data: orcamentos, isLoading } = useOrcamentos();
@@ -215,21 +222,21 @@ export function Orcamentos() {
 
   // Efeito para processar parâmetros da URL (vindo do Dashboard)
   useEffect(() => {
-    const action = searchParams.get('action');
-    const id = searchParams.get('id');
+    const action = searchParams.get("action");
+    const id = searchParams.get("id");
 
     if (action && id && orcamentos) {
-      const orcamento = orcamentos.find(o => o.id === id);
+      const orcamento = orcamentos.find((o) => o.id === id);
       if (orcamento) {
-        if (action === 'edit') {
-          if (orcamento.status === 'aberto') {
+        if (action === "edit") {
+          if (orcamento.status === "aberto") {
             setOrcamentoEdit(orcamento);
             setOrcamentoDuplicar(null);
             setModalOpen(true);
           } else {
             alert('Só é possível editar orçamentos com status "Aberto"');
           }
-        } else if (action === 'duplicate') {
+        } else if (action === "duplicate") {
           setOrcamentoEdit(null);
           setOrcamentoDuplicar(orcamento);
           setModalOpen(true);
@@ -253,7 +260,7 @@ export function Orcamentos() {
   };
 
   const handleEditOrcamento = (orcamento: Orcamento) => {
-    if (orcamento.status !== 'aberto') {
+    if (orcamento.status !== "aberto") {
       alert('Só é possível editar orçamentos com status "Aberto"');
       return;
     }
@@ -338,7 +345,8 @@ export function Orcamentos() {
       if (!searchTerm) return true;
       const termo = searchTerm.toLowerCase();
       const numeroMatch = orcamento.numero.toString().includes(termo);
-      const clienteMatch = orcamento.clienteNome?.toLowerCase().includes(termo) || false;
+      const clienteMatch =
+        orcamento.clienteNome?.toLowerCase().includes(termo) || false;
 
       return numeroMatch || clienteMatch;
     });
@@ -359,13 +367,13 @@ export function Orcamentos() {
 
   const getStatusActions = (orcamento: Orcamento): OrcamentoStatus[] => {
     switch (orcamento.status) {
-      case 'aberto':
-        return ['aceito', 'recusado'];
-      case 'aceito':
-        return ['aberto'];
-      case 'recusado':
-      case 'expirado':
-        return ['aberto'];
+      case "aberto":
+        return ["aceito", "recusado"];
+      case "aceito":
+        return ["aberto"];
+      case "recusado":
+      case "expirado":
+        return ["aberto"];
       default:
         return [];
     }
@@ -387,7 +395,9 @@ export function Orcamentos() {
         <FilterGroup>
           <Select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as OrcamentoStatus | '')}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as OrcamentoStatus | "")
+            }
           >
             <option value="">Todos os status</option>
             <option value="aberto">Abertos</option>
@@ -425,7 +435,9 @@ export function Orcamentos() {
                           title="Clique para ver detalhes"
                         >
                           <span className="numero">#{orcamento.numero}</span>
-                          <span className="cliente">{orcamento.clienteNome}</span>
+                          <span className="cliente">
+                            {orcamento.clienteNome}
+                          </span>
                         </OrcamentoInfo>
                       </td>
                       <td>{formatDate(orcamento.dataEmissao)}</td>
@@ -445,7 +457,7 @@ export function Orcamentos() {
                           >
                             PDF
                           </ActionButton>
-                          {orcamento.status === 'aberto' && (
+                          {orcamento.status === "aberto" && (
                             <ActionButton
                               $variant="edit"
                               onClick={() => handleEditOrcamento(orcamento)}
@@ -470,7 +482,7 @@ export function Orcamentos() {
                           >
                             Duplicar
                           </ActionButton>
-                          {orcamento.status !== 'aceito' && (
+                          {orcamento.status !== "aceito" && (
                             <ActionButton
                               $variant="delete"
                               onClick={() => setOrcamentoDelete(orcamento)}
@@ -496,7 +508,7 @@ export function Orcamentos() {
                   <MobileCardHeader>
                     <MobileCardTitle
                       onClick={() => setOrcamentoView(orcamento)}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: "pointer" }}
                     >
                       <span className="primary">#{orcamento.numero}</span>
                       <span className="secondary">{orcamento.clienteNome}</span>
@@ -508,15 +520,22 @@ export function Orcamentos() {
                   <MobileCardBody>
                     <MobileCardField>
                       <span className="label">Data</span>
-                      <span className="value">{formatDate(orcamento.dataEmissao)}</span>
+                      <span className="value">
+                        {formatDate(orcamento.dataEmissao)}
+                      </span>
                     </MobileCardField>
                     <MobileCardField>
                       <span className="label">Validade</span>
-                      <span className="value">{formatDate(orcamento.dataValidade)}</span>
+                      <span className="value">
+                        {formatDate(orcamento.dataValidade)}
+                      </span>
                     </MobileCardField>
                     <MobileCardField className="full-width">
                       <span className="label">Valor Total</span>
-                      <span className="value" style={{ fontSize: '1.1rem', color: 'var(--primary)' }}>
+                      <span
+                        className="value"
+                        style={{ fontSize: "1.1rem", color: "var(--primary)" }}
+                      >
                         {formatCurrency(orcamento.valorTotal)}
                       </span>
                     </MobileCardField>
@@ -528,7 +547,7 @@ export function Orcamentos() {
                     >
                       PDF
                     </ActionButton>
-                    {orcamento.status === 'aberto' && (
+                    {orcamento.status === "aberto" && (
                       <ActionButton
                         $variant="edit"
                         onClick={() => handleEditOrcamento(orcamento)}
@@ -550,7 +569,7 @@ export function Orcamentos() {
                     >
                       Duplicar
                     </ActionButton>
-                    {orcamento.status !== 'aceito' && (
+                    {orcamento.status !== "aceito" && (
                       <ActionButton
                         $variant="delete"
                         onClick={() => setOrcamentoDelete(orcamento)}
@@ -577,8 +596,8 @@ export function Orcamentos() {
           <h3>Nenhum orçamento encontrado</h3>
           <p>
             {searchTerm || statusFilter
-              ? 'Tente buscar por outro termo ou altere o filtro'
-              : 'Crie seu primeiro orçamento clicando no botão acima'}
+              ? "Tente buscar por outro termo ou altere o filtro"
+              : "Crie seu primeiro orçamento clicando no botão acima"}
           </p>
         </EmptyState>
       )}
@@ -596,37 +615,40 @@ export function Orcamentos() {
       {orcamentoDelete && (
         <div
           style={{
-            position: 'fixed',
+            position: "fixed",
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             zIndex: 1000,
           }}
           onClick={() => setOrcamentoDelete(null)}
         >
           <div
             style={{
-              background: 'white',
-              padding: '24px',
-              borderRadius: '12px',
-              maxWidth: '400px',
-              width: '100%',
+              background: "white",
+              padding: "24px",
+              borderRadius: "12px",
+              maxWidth: "400px",
+              width: "100%",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <ConfirmDialog>
-              <h3 style={{ marginBottom: '16px' }}>Confirmar Exclusão</h3>
+              <h3 style={{ marginBottom: "16px" }}>Confirmar Exclusão</h3>
               <p>
-                Tem certeza que deseja excluir o orçamento{' '}
+                Tem certeza que deseja excluir o orçamento{" "}
                 <strong>#{orcamentoDelete.numero}</strong>?
               </p>
               <DialogButtons>
-                <Button $variant="ghost" onClick={() => setOrcamentoDelete(null)}>
+                <Button
+                  $variant="ghost"
+                  onClick={() => setOrcamentoDelete(null)}
+                >
                   Cancelar
                 </Button>
                 <Button
@@ -634,7 +656,7 @@ export function Orcamentos() {
                   onClick={handleDeleteOrcamento}
                   disabled={excluirOrcamento.isLoading}
                 >
-                  {excluirOrcamento.isLoading ? 'Excluindo...' : 'Excluir'}
+                  {excluirOrcamento.isLoading ? "Excluindo..." : "Excluir"}
                 </Button>
               </DialogButtons>
             </ConfirmDialog>
@@ -646,40 +668,52 @@ export function Orcamentos() {
       {orcamentoStatus && (
         <div
           style={{
-            position: 'fixed',
+            position: "fixed",
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             zIndex: 1000,
           }}
           onClick={() => setOrcamentoStatus(null)}
         >
           <div
             style={{
-              background: 'white',
-              padding: '24px',
-              borderRadius: '12px',
-              maxWidth: '400px',
-              width: '100%',
+              background: "white",
+              padding: "24px",
+              borderRadius: "12px",
+              maxWidth: "400px",
+              width: "100%",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <StatusDialog>
-              <h3 style={{ marginBottom: '16px' }}>Alterar Status</h3>
+              <h3 style={{ marginBottom: "16px" }}>Alterar Status</h3>
               <p>
-                Orçamento <strong>#{orcamentoStatus.numero}</strong> - {orcamentoStatus.clienteNome}
+                Orçamento <strong>#{orcamentoStatus.numero}</strong> -{" "}
+                {orcamentoStatus.clienteNome}
               </p>
-              <p>Status atual: <StatusBadge $status={orcamentoStatus.status}>{statusLabels[orcamentoStatus.status]}</StatusBadge></p>
+              <p>
+                Status atual:{" "}
+                <StatusBadge $status={orcamentoStatus.status}>
+                  {statusLabels[orcamentoStatus.status]}
+                </StatusBadge>
+              </p>
               <div className="status-buttons">
                 {getStatusActions(orcamentoStatus).map((status) => (
                   <Button
                     key={status}
-                    $variant={status === 'aceito' ? 'primary' : status === 'recusado' ? 'danger' : 'ghost'}
+                    $variant={
+                      status === "aceito"
+                        ? "primary"
+                        : status === "recusado"
+                        ? "danger"
+                        : "ghost"
+                    }
                     onClick={() => handleChangeStatus(status)}
                     disabled={atualizarStatus.isLoading}
                     $fullWidth
@@ -688,8 +722,11 @@ export function Orcamentos() {
                   </Button>
                 ))}
               </div>
-              <div style={{ marginTop: '16px', textAlign: 'center' }}>
-                <Button $variant="ghost" onClick={() => setOrcamentoStatus(null)}>
+              <div style={{ marginTop: "16px", textAlign: "center" }}>
+                <Button
+                  $variant="ghost"
+                  onClick={() => setOrcamentoStatus(null)}
+                >
                   Cancelar
                 </Button>
               </div>
@@ -706,6 +743,8 @@ export function Orcamentos() {
         onEdit={handleViewEdit}
         onDuplicate={handleViewDuplicate}
       />
+      {/* Footer */}
+      <Footer />
     </Container>
   );
 }

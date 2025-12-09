@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import styled from 'styled-components';
+import { useMemo, useState } from "react";
+import styled from "styled-components";
 import {
   BarChart,
   Bar,
@@ -14,13 +14,14 @@ import {
   LineChart,
   Line,
   Legend,
-} from 'recharts';
-import { useOrcamentos } from '../hooks/useOrcamentos';
-import { useClientes } from '../hooks/useClientes';
-import { Loading } from '../components/ui';
-import { formatCurrency } from '../utils/constants';
-import { Orcamento, OrcamentoStatus } from '../types';
-import { OrcamentoViewModal } from '../components/orcamentos/OrcamentoViewModal';
+} from "recharts";
+import { useOrcamentos } from "../hooks/useOrcamentos";
+import { useClientes } from "../hooks/useClientes";
+import { Loading } from "../components/ui";
+import { formatCurrency } from "../utils/constants";
+import { Orcamento, OrcamentoStatus } from "../types";
+import { OrcamentoViewModal } from "../components/orcamentos/OrcamentoViewModal";
+import Footer from "@/components/layout/Footer";
 
 const Container = styled.div`
   padding: 24px;
@@ -62,7 +63,7 @@ const StatCard = styled.div<{ $color?: string }>`
   padding: 20px;
   border-radius: 12px;
   box-shadow: var(--shadow);
-  border-left: 4px solid ${({ $color }) => $color || 'var(--primary)'};
+  border-left: 4px solid ${({ $color }) => $color || "var(--primary)"};
 
   .label {
     font-size: 0.85rem;
@@ -160,10 +161,12 @@ const RecentItem = styled.div<{ $clickable?: boolean }>`
   padding: 12px;
   background: var(--background);
   border-radius: 8px;
-  cursor: ${({ $clickable }) => $clickable ? 'pointer' : 'default'};
+  cursor: ${({ $clickable }) => ($clickable ? "pointer" : "default")};
   transition: all 0.2s;
 
-  ${({ $clickable }) => $clickable && `
+  ${({ $clickable }) =>
+    $clickable &&
+    `
     &:hover {
       background: rgba(204, 0, 0, 0.05);
       transform: translateX(4px);
@@ -218,22 +221,22 @@ const StatusBadge = styled.span<{ $status: OrcamentoStatus }>`
 
   ${({ $status }) => {
     switch ($status) {
-      case 'aberto':
+      case "aberto":
         return `
           background: rgba(33, 150, 243, 0.1);
           color: #1976d2;
         `;
-      case 'aceito':
+      case "aceito":
         return `
           background: rgba(76, 175, 80, 0.1);
           color: #388e3c;
         `;
-      case 'recusado':
+      case "recusado":
         return `
           background: rgba(244, 67, 54, 0.1);
           color: #d32f2f;
         `;
-      case 'expirado':
+      case "expirado":
         return `
           background: rgba(158, 158, 158, 0.1);
           color: #616161;
@@ -243,43 +246,59 @@ const StatusBadge = styled.span<{ $status: OrcamentoStatus }>`
 `;
 
 const COLORS = {
-  aberto: '#2196f3',
-  aceito: '#4caf50',
-  recusado: '#f44336',
-  expirado: '#9e9e9e',
+  aberto: "#2196f3",
+  aceito: "#4caf50",
+  recusado: "#f44336",
+  expirado: "#9e9e9e",
 };
 
 const STATUS_LABELS: Record<OrcamentoStatus, string> = {
-  aberto: 'Abertos',
-  aceito: 'Aceitos',
-  recusado: 'Recusados',
-  expirado: 'Expirados',
+  aberto: "Abertos",
+  aceito: "Aceitos",
+  recusado: "Recusados",
+  expirado: "Expirados",
 };
 
 const MONTH_NAMES = [
-  'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-  'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+  "Jan",
+  "Fev",
+  "Mar",
+  "Abr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Set",
+  "Out",
+  "Nov",
+  "Dez",
 ];
 
 export function Dashboard() {
   const { data: orcamentos, isLoading: loadingOrcamentos } = useOrcamentos();
   const { data: clientes, isLoading: loadingClientes } = useClientes();
-  const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(null);
+  const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(
+    null
+  );
 
   const stats = useMemo(() => {
     if (!orcamentos) return null;
 
     const total = orcamentos.length;
-    const abertos = orcamentos.filter(o => o.status === 'aberto').length;
-    const aceitos = orcamentos.filter(o => o.status === 'aceito').length;
-    const recusados = orcamentos.filter(o => o.status === 'recusado').length;
+    const abertos = orcamentos.filter((o) => o.status === "aberto").length;
+    const aceitos = orcamentos.filter((o) => o.status === "aceito").length;
+    const recusados = orcamentos.filter((o) => o.status === "recusado").length;
 
-    const valorTotal = orcamentos.reduce((acc, o) => acc + (o.valorTotal || 0), 0);
+    const valorTotal = orcamentos.reduce(
+      (acc, o) => acc + (o.valorTotal || 0),
+      0
+    );
     const valorAceitos = orcamentos
-      .filter(o => o.status === 'aceito')
+      .filter((o) => o.status === "aceito")
       .reduce((acc, o) => acc + (o.valorTotal || 0), 0);
 
-    const taxaConversao = total > 0 ? ((aceitos / total) * 100).toFixed(1) : '0';
+    const taxaConversao =
+      total > 0 ? ((aceitos / total) * 100).toFixed(1) : "0";
 
     return {
       total,
@@ -303,7 +322,7 @@ export function Dashboard() {
       expirado: 0,
     };
 
-    orcamentos.forEach(o => {
+    orcamentos.forEach((o) => {
       counts[o.status]++;
     });
 
@@ -320,7 +339,8 @@ export function Dashboard() {
     if (!orcamentos) return [];
 
     const now = new Date();
-    const last6Months: { month: string; year: number; monthIndex: number }[] = [];
+    const last6Months: { month: string; year: number; monthIndex: number }[] =
+      [];
 
     for (let i = 5; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -332,14 +352,19 @@ export function Dashboard() {
     }
 
     return last6Months.map(({ month, year, monthIndex }) => {
-      const monthOrcamentos = orcamentos.filter(o => {
+      const monthOrcamentos = orcamentos.filter((o) => {
         const date = new Date(o.dataEmissao);
         return date.getMonth() === monthIndex && date.getFullYear() === year;
       });
 
       const total = monthOrcamentos.length;
-      const aceitos = monthOrcamentos.filter(o => o.status === 'aceito').length;
-      const valor = monthOrcamentos.reduce((acc, o) => acc + (o.valorTotal || 0), 0);
+      const aceitos = monthOrcamentos.filter(
+        (o) => o.status === "aceito"
+      ).length;
+      const valor = monthOrcamentos.reduce(
+        (acc, o) => acc + (o.valorTotal || 0),
+        0
+      );
 
       return {
         name: `${month}/${year.toString().slice(-2)}`,
@@ -354,7 +379,10 @@ export function Dashboard() {
     if (!orcamentos) return [];
 
     return [...orcamentos]
-      .sort((a, b) => new Date(b.dataEmissao).getTime() - new Date(a.dataEmissao).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.dataEmissao).getTime() - new Date(a.dataEmissao).getTime()
+      )
       .slice(0, 5);
   }, [orcamentos]);
 
@@ -414,22 +442,39 @@ export function Dashboard() {
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="name" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
-              <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+              <XAxis
+                dataKey="name"
+                tick={{ fill: "var(--text-secondary)", fontSize: 12 }}
+              />
+              <YAxis tick={{ fill: "var(--text-secondary)", fontSize: 12 }} />
               <Tooltip
                 contentStyle={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
                 }}
                 formatter={(value: number, name: string) => {
-                  if (name === 'valor') return [`R$ ${(value * 1000).toLocaleString('pt-BR')}`, 'Valor'];
-                  return [value, name === 'total' ? 'Total' : 'Aceitos'];
+                  if (name === "valor")
+                    return [
+                      `R$ ${(value * 1000).toLocaleString("pt-BR")}`,
+                      "Valor",
+                    ];
+                  return [value, name === "total" ? "Total" : "Aceitos"];
                 }}
               />
               <Legend />
-              <Bar dataKey="total" name="Total" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="aceitos" name="Aceitos" fill="#4caf50" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey="total"
+                name="Total"
+                fill="var(--primary)"
+                radius={[4, 4, 0, 0]}
+              />
+              <Bar
+                dataKey="aceitos"
+                name="Aceitos"
+                fill="#4caf50"
+                radius={[4, 4, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -447,7 +492,9 @@ export function Dashboard() {
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) =>
+                    `${name} ${(percent * 100).toFixed(0)}%`
+                  }
                   labelLine={false}
                 >
                   {statusData.map((entry, index) => (
@@ -456,15 +503,21 @@ export function Dashboard() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px',
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "8px",
                   }}
                 />
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px' }}>
+            <p
+              style={{
+                textAlign: "center",
+                color: "var(--text-secondary)",
+                padding: "40px",
+              }}
+            >
               Nenhum orçamento cadastrado
             </p>
           )}
@@ -477,22 +530,28 @@ export function Dashboard() {
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="name" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
-              <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+              <XAxis
+                dataKey="name"
+                tick={{ fill: "var(--text-secondary)", fontSize: 12 }}
+              />
+              <YAxis tick={{ fill: "var(--text-secondary)", fontSize: 12 }} />
               <Tooltip
                 contentStyle={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
                 }}
-                formatter={(value: number) => [`R$ ${(value * 1000).toLocaleString('pt-BR')}`, 'Valor']}
+                formatter={(value: number) => [
+                  `R$ ${(value * 1000).toLocaleString("pt-BR")}`,
+                  "Valor",
+                ]}
               />
               <Line
                 type="monotone"
                 dataKey="valor"
                 stroke="var(--primary)"
                 strokeWidth={3}
-                dot={{ fill: 'var(--primary)', strokeWidth: 2, r: 5 }}
+                dot={{ fill: "var(--primary)", strokeWidth: 2, r: 5 }}
                 activeDot={{ r: 7 }}
               />
             </LineChart>
@@ -520,12 +579,20 @@ export function Dashboard() {
                   </span>
                   <span className="cliente">{orcamento.clienteNome}</span>
                 </div>
-                <span className="valor">{formatCurrency(orcamento.valorTotal)}</span>
+                <span className="valor">
+                  {formatCurrency(orcamento.valorTotal)}
+                </span>
               </RecentItem>
             ))}
           </RecentList>
         ) : (
-          <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>
+          <p
+            style={{
+              textAlign: "center",
+              color: "var(--text-secondary)",
+              padding: "20px",
+            }}
+          >
             Nenhum orçamento cadastrado
           </p>
         )}
@@ -536,6 +603,8 @@ export function Dashboard() {
         onClose={() => setSelectedOrcamento(null)}
         orcamento={selectedOrcamento}
       />
+      {/* Footer */}
+      <Footer />
     </Container>
   );
 }

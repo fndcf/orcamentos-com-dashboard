@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import styled from 'styled-components';
+import { useMemo, useState } from "react";
+import styled from "styled-components";
 import {
   BarChart,
   Bar,
@@ -14,11 +14,12 @@ import {
   LineChart,
   Line,
   Legend,
-} from 'recharts';
-import { useOrcamentos } from '../hooks/useOrcamentos';
-import { Loading, Button } from '../components/ui';
-import { formatCurrency } from '../utils/constants';
-import { OrcamentoStatus } from '../types';
+} from "recharts";
+import { useOrcamentos } from "../hooks/useOrcamentos";
+import { Loading, Button } from "../components/ui";
+import { formatCurrency } from "../utils/constants";
+import { OrcamentoStatus } from "../types";
+import Footer from "@/components/layout/Footer";
 
 const Container = styled.div`
   padding: 24px;
@@ -124,7 +125,7 @@ const StatCard = styled.div<{ $color?: string }>`
   padding: 20px;
   border-radius: 12px;
   box-shadow: var(--shadow);
-  border-left: 4px solid ${({ $color }) => $color || 'var(--primary)'};
+  border-left: 4px solid ${({ $color }) => $color || "var(--primary)"};
 
   .label {
     font-size: 0.8rem;
@@ -264,17 +265,17 @@ const NoDataMessage = styled.p`
 `;
 
 const COLORS = {
-  aberto: '#3498db',
-  aceito: '#27ae60',
-  recusado: '#e74c3c',
-  expirado: '#95a5a6',
+  aberto: "#3498db",
+  aceito: "#27ae60",
+  recusado: "#e74c3c",
+  expirado: "#95a5a6",
 };
 
 const STATUS_LABELS: Record<OrcamentoStatus, string> = {
-  aberto: 'Abertos',
-  aceito: 'Aceitos',
-  recusado: 'Recusados',
-  expirado: 'Expirados',
+  aberto: "Abertos",
+  aceito: "Aceitos",
+  recusado: "Recusados",
+  expirado: "Expirados",
 };
 
 export function Relatorios() {
@@ -285,21 +286,21 @@ export function Relatorios() {
   const primeiroDiaAnoAnterior = new Date(hoje.getFullYear() - 1, 0, 1); // Início do ano anterior
 
   const [dataInicio, setDataInicio] = useState(
-    primeiroDiaAnoAnterior.toISOString().split('T')[0]
+    primeiroDiaAnoAnterior.toISOString().split("T")[0]
   );
-  const [dataFim, setDataFim] = useState(
-    hoje.toISOString().split('T')[0]
-  );
+  const [dataFim, setDataFim] = useState(hoje.toISOString().split("T")[0]);
 
   // Filtrar orçamentos por período
   const orcamentosFiltrados = useMemo(() => {
     if (!orcamentos) return [];
 
     // Usar UTC para evitar problemas de timezone
-    const [anoInicio, mesInicio, diaInicio] = dataInicio.split('-').map(Number);
-    const [anoFim, mesFim, diaFim] = dataFim.split('-').map(Number);
+    const [anoInicio, mesInicio, diaInicio] = dataInicio.split("-").map(Number);
+    const [anoFim, mesFim, diaFim] = dataFim.split("-").map(Number);
 
-    const inicio = new Date(Date.UTC(anoInicio, mesInicio - 1, diaInicio, 0, 0, 0, 0));
+    const inicio = new Date(
+      Date.UTC(anoInicio, mesInicio - 1, diaInicio, 0, 0, 0, 0)
+    );
     const fim = new Date(Date.UTC(anoFim, mesFim - 1, diaFim, 23, 59, 59, 999));
 
     return orcamentos.filter((orc) => {
@@ -311,11 +312,16 @@ export function Relatorios() {
   // KPIs
   const kpis = useMemo(() => {
     const total = orcamentosFiltrados.length;
-    const aceitos = orcamentosFiltrados.filter((o) => o.status === 'aceito');
-    const abertos = orcamentosFiltrados.filter((o) => o.status === 'aberto');
-    const recusados = orcamentosFiltrados.filter((o) => o.status === 'recusado');
+    const aceitos = orcamentosFiltrados.filter((o) => o.status === "aceito");
+    const abertos = orcamentosFiltrados.filter((o) => o.status === "aberto");
+    const recusados = orcamentosFiltrados.filter(
+      (o) => o.status === "recusado"
+    );
 
-    const valorTotal = orcamentosFiltrados.reduce((sum, o) => sum + o.valorTotal, 0);
+    const valorTotal = orcamentosFiltrados.reduce(
+      (sum, o) => sum + o.valorTotal,
+      0
+    );
     const valorAceitos = aceitos.reduce((sum, o) => sum + o.valorTotal, 0);
 
     const taxaConversao = total > 0 ? (aceitos.length / total) * 100 : 0;
@@ -382,12 +388,12 @@ export function Relatorios() {
     const dailyData: Record<string, { total: number; aceitos: number }> = {};
 
     orcamentosFiltrados.forEach((orc) => {
-      const data = new Date(orc.dataEmissao).toISOString().split('T')[0];
+      const data = new Date(orc.dataEmissao).toISOString().split("T")[0];
       if (!dailyData[data]) {
         dailyData[data] = { total: 0, aceitos: 0 };
       }
       dailyData[data].total += orc.valorTotal;
-      if (orc.status === 'aceito') {
+      if (orc.status === "aceito") {
         dailyData[data].aceitos += orc.valorTotal;
       }
     });
@@ -395,7 +401,10 @@ export function Relatorios() {
     return Object.entries(dailyData)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([data, valores]) => ({
-        data: new Date(data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        data: new Date(data).toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+        }),
         total: valores.total / 1000,
         aceitos: valores.aceitos / 1000,
       }));
@@ -403,10 +412,13 @@ export function Relatorios() {
 
   // Ranking de clientes
   const rankingClientes = useMemo(() => {
-    const clienteStats: Record<string, { nome: string; valor: number; quantidade: number }> = {};
+    const clienteStats: Record<
+      string,
+      { nome: string; valor: number; quantidade: number }
+    > = {};
 
     orcamentosFiltrados
-      .filter((o) => o.status === 'aceito')
+      .filter((o) => o.status === "aceito")
       .forEach((orc) => {
         if (!clienteStats[orc.clienteId]) {
           clienteStats[orc.clienteId] = {
@@ -426,9 +438,14 @@ export function Relatorios() {
 
   // Produtos mais vendidos
   const produtosMaisVendidos = useMemo(() => {
-    const produtoStats: Record<string, { descricao: string; quantidade: number; valor: number }> = {};
+    const produtoStats: Record<
+      string,
+      { descricao: string; quantidade: number; valor: number }
+    > = {};
 
-    const orcamentosAceitos = orcamentosFiltrados.filter((o) => o.status === 'aceito');
+    const orcamentosAceitos = orcamentosFiltrados.filter(
+      (o) => o.status === "aceito"
+    );
 
     orcamentosAceitos.forEach((orc) => {
       // Itens do orçamento simples
@@ -471,23 +488,32 @@ export function Relatorios() {
 
   // Exportar para CSV
   const exportarCSV = () => {
-    const headers = ['Número', 'Cliente', 'Status', 'Data Emissão', 'Data Validade', 'Valor Total'];
+    const headers = [
+      "Número",
+      "Cliente",
+      "Status",
+      "Data Emissão",
+      "Data Validade",
+      "Valor Total",
+    ];
     const rows = orcamentosFiltrados.map((orc) => [
       orc.numero,
       orc.clienteNome,
       STATUS_LABELS[orc.status],
-      new Date(orc.dataEmissao).toLocaleDateString('pt-BR'),
-      new Date(orc.dataValidade).toLocaleDateString('pt-BR'),
-      orc.valorTotal.toFixed(2).replace('.', ','),
+      new Date(orc.dataEmissao).toLocaleDateString("pt-BR"),
+      new Date(orc.dataValidade).toLocaleDateString("pt-BR"),
+      orc.valorTotal.toFixed(2).replace(".", ","),
     ]);
 
     const csvContent = [
-      headers.join(';'),
-      ...rows.map((row) => row.join(';')),
-    ].join('\n');
+      headers.join(";"),
+      ...rows.map((row) => row.join(";")),
+    ].join("\n");
 
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const blob = new Blob(["\ufeff" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `relatorio_orcamentos_${dataInicio}_${dataFim}.csv`;
     link.click();
@@ -593,17 +619,24 @@ export function Relatorios() {
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={valorPorStatusData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="name" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
-                <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fill: "var(--text-secondary)", fontSize: 12 }}
+                />
+                <YAxis tick={{ fill: "var(--text-secondary)", fontSize: 12 }} />
                 <Tooltip
                   formatter={(value: number) => formatCurrency(value * 1000)}
                   contentStyle={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px',
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "8px",
                   }}
                 />
-                <Bar dataKey="valor" fill="var(--primary)" radius={[4, 4, 0, 0]}>
+                <Bar
+                  dataKey="valor"
+                  fill="var(--primary)"
+                  radius={[4, 4, 0, 0]}
+                >
                   {valorPorStatusData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
@@ -624,14 +657,17 @@ export function Relatorios() {
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={evolucaoDiariaData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="data" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
-                <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+                <XAxis
+                  dataKey="data"
+                  tick={{ fill: "var(--text-secondary)", fontSize: 12 }}
+                />
+                <YAxis tick={{ fill: "var(--text-secondary)", fontSize: 12 }} />
                 <Tooltip
                   formatter={(value: number) => formatCurrency(value * 1000)}
                   contentStyle={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px',
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "8px",
                   }}
                 />
                 <Legend />
@@ -641,7 +677,7 @@ export function Relatorios() {
                   name="Total Emitido"
                   stroke="var(--primary)"
                   strokeWidth={2}
-                  dot={{ fill: 'var(--primary)' }}
+                  dot={{ fill: "var(--primary)" }}
                 />
                 <Line
                   type="monotone"
@@ -649,7 +685,7 @@ export function Relatorios() {
                   name="Aceitos"
                   stroke="#27ae60"
                   strokeWidth={2}
-                  dot={{ fill: '#27ae60' }}
+                  dot={{ fill: "#27ae60" }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -717,6 +753,8 @@ export function Relatorios() {
           )}
         </TableCard>
       </ChartsRow>
+      {/* Footer */}
+      <Footer />
     </Container>
   );
 }

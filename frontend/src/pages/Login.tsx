@@ -1,14 +1,18 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
-import { useAuth } from '../contexts/AuthContext';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import styled from "styled-components";
+import { useAuth } from "../contexts/AuthContext";
 
 const Container = styled.div`
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--secondary) 0%,
+    var(--secondary-light) 100%
+  );
   padding: 16px;
 
   @media (max-width: 768px) {
@@ -116,9 +120,9 @@ const ErrorMessage = styled.p`
 `;
 
 export function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const { signIn } = useAuth();
@@ -126,14 +130,14 @@ export function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       await signIn(email, password);
-      navigate('/');
+      navigate("/");
     } catch (err) {
-      setError('Email ou senha incorretos');
+      setError("Email ou senha incorretos");
     } finally {
       setLoading(false);
     }
@@ -175,7 +179,7 @@ export function Login() {
           </InputGroup>
 
           <Button type="submit" disabled={loading}>
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? "Entrando..." : "Entrar"}
           </Button>
         </Form>
       </LoginCard>

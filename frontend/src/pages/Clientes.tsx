@@ -1,13 +1,13 @@
-import { useState, useMemo, useEffect } from 'react';
-import styled from 'styled-components';
-import { Cliente } from '../types';
+import { useState, useMemo, useEffect } from "react";
+import styled from "styled-components";
+import { Cliente } from "../types";
 import {
   useClientes,
   useCriarCliente,
   useAtualizarCliente,
   useExcluirCliente,
-} from '../hooks/useClientes';
-import { useOrcamentos } from '../hooks/useOrcamentos';
+} from "../hooks/useClientes";
+import { useOrcamentos } from "../hooks/useOrcamentos";
 import {
   Button,
   Input,
@@ -31,10 +31,11 @@ import {
   MobileCardField,
   MobileCardActions,
   Pagination,
-} from '../components/ui';
-import { ClienteModal } from '../components/clientes/ClienteModal';
-import { HistoricoOrcamentosModal } from '../components/clientes/HistoricoOrcamentosModal';
-import { formatDocument, formatPhone } from '../utils/constants';
+} from "../components/ui";
+import { ClienteModal } from "../components/clientes/ClienteModal";
+import { HistoricoOrcamentosModal } from "../components/clientes/HistoricoOrcamentosModal";
+import { formatDocument, formatPhone } from "../utils/constants";
+import Footer from "@/components/layout/Footer";
 
 const Container = styled.div`
   padding: 24px;
@@ -108,8 +109,10 @@ export function Clientes() {
   const [modalOpen, setModalOpen] = useState(false);
   const [clienteEdit, setClienteEdit] = useState<Cliente | null>(null);
   const [clienteDelete, setClienteDelete] = useState<Cliente | null>(null);
-  const [clienteHistorico, setClienteHistorico] = useState<Cliente | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [clienteHistorico, setClienteHistorico] = useState<Cliente | null>(
+    null
+  );
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data: clientes, isLoading } = useClientes();
@@ -120,12 +123,12 @@ export function Clientes() {
 
   // Função para verificar se cliente tem orçamentos
   const clienteTemOrcamentos = (clienteId: string) => {
-    return orcamentos?.some(o => o.clienteId === clienteId) || false;
+    return orcamentos?.some((o) => o.clienteId === clienteId) || false;
   };
 
   // Função para contar orçamentos do cliente
   const contarOrcamentosCliente = (clienteId: string) => {
-    return orcamentos?.filter(o => o.clienteId === clienteId).length || 0;
+    return orcamentos?.filter((o) => o.clienteId === clienteId).length || 0;
   };
 
   const handleNovoCliente = () => {
@@ -138,7 +141,7 @@ export function Clientes() {
     setModalOpen(true);
   };
 
-  const handleSaveCliente = async (data: Omit<Cliente, 'id' | 'createdAt'>) => {
+  const handleSaveCliente = async (data: Omit<Cliente, "id" | "createdAt">) => {
     if (clienteEdit?.id) {
       await atualizarCliente.mutateAsync({ id: clienteEdit.id, data });
     } else {
@@ -157,11 +160,15 @@ export function Clientes() {
     return clientes?.filter((cliente) => {
       if (!searchTerm) return true;
       const termo = searchTerm.toLowerCase();
-      const termoNumeros = searchTerm.replace(/\D/g, '');
+      const termoNumeros = searchTerm.replace(/\D/g, "");
 
-      const razaoMatch = cliente.razaoSocial?.toLowerCase().includes(termo) || false;
-      const cnpjMatch = termoNumeros ? cliente.cnpj?.includes(termoNumeros) || false : false;
-      const fantasiaMatch = cliente.nomeFantasia?.toLowerCase().includes(termo) || false;
+      const razaoMatch =
+        cliente.razaoSocial?.toLowerCase().includes(termo) || false;
+      const cnpjMatch = termoNumeros
+        ? cliente.cnpj?.includes(termoNumeros) || false
+        : false;
+      const fantasiaMatch =
+        cliente.nomeFantasia?.toLowerCase().includes(termo) || false;
 
       return razaoMatch || cnpjMatch || fantasiaMatch;
     });
@@ -222,7 +229,9 @@ export function Clientes() {
                         >
                           <span className="nome">{cliente.razaoSocial}</span>
                           {cliente.nomeFantasia && (
-                            <span className="fantasia">{cliente.nomeFantasia}</span>
+                            <span className="fantasia">
+                              {cliente.nomeFantasia}
+                            </span>
                           )}
                         </ClienteInfo>
                       </td>
@@ -231,7 +240,9 @@ export function Clientes() {
                         {cliente.cidade}
                         {cliente.estado && `/${cliente.estado}`}
                       </td>
-                      <td>{cliente.telefone ? formatPhone(cliente.telefone) : '-'}</td>
+                      <td>
+                        {cliente.telefone ? formatPhone(cliente.telefone) : "-"}
+                      </td>
                       <td>
                         <ActionButtons>
                           <ActionButton
@@ -251,9 +262,19 @@ export function Clientes() {
                           <ActionButton
                             $variant="delete"
                             onClick={() => setClienteDelete(cliente)}
-                            title={clienteTemOrcamentos(cliente.id!) ? `Não é possível excluir - ${contarOrcamentosCliente(cliente.id!)} orçamento(s) vinculado(s)` : 'Excluir'}
+                            title={
+                              clienteTemOrcamentos(cliente.id!)
+                                ? `Não é possível excluir - ${contarOrcamentosCliente(
+                                    cliente.id!
+                                  )} orçamento(s) vinculado(s)`
+                                : "Excluir"
+                            }
                             disabled={clienteTemOrcamentos(cliente.id!)}
-                            style={clienteTemOrcamentos(cliente.id!) ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+                            style={
+                              clienteTemOrcamentos(cliente.id!)
+                                ? { opacity: 0.4, cursor: "not-allowed" }
+                                : {}
+                            }
                           >
                             Excluir
                           </ActionButton>
@@ -274,18 +295,22 @@ export function Clientes() {
                   <MobileCardHeader>
                     <MobileCardTitle
                       onClick={() => setClienteHistorico(cliente)}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: "pointer" }}
                     >
                       <span className="primary">{cliente.razaoSocial}</span>
                       {cliente.nomeFantasia && (
-                        <span className="secondary">{cliente.nomeFantasia}</span>
+                        <span className="secondary">
+                          {cliente.nomeFantasia}
+                        </span>
                       )}
                     </MobileCardTitle>
                   </MobileCardHeader>
                   <MobileCardBody>
                     <MobileCardField>
                       <span className="label">CPF/CNPJ</span>
-                      <span className="value">{formatDocument(cliente.cnpj)}</span>
+                      <span className="value">
+                        {formatDocument(cliente.cnpj)}
+                      </span>
                     </MobileCardField>
                     <MobileCardField>
                       <span className="label">Cidade/UF</span>
@@ -296,7 +321,9 @@ export function Clientes() {
                     </MobileCardField>
                     <MobileCardField className="full-width">
                       <span className="label">Telefone</span>
-                      <span className="value">{cliente.telefone ? formatPhone(cliente.telefone) : '-'}</span>
+                      <span className="value">
+                        {cliente.telefone ? formatPhone(cliente.telefone) : "-"}
+                      </span>
                     </MobileCardField>
                   </MobileCardBody>
                   <MobileCardActions>
@@ -316,7 +343,11 @@ export function Clientes() {
                       $variant="delete"
                       onClick={() => setClienteDelete(cliente)}
                       disabled={clienteTemOrcamentos(cliente.id!)}
-                      style={clienteTemOrcamentos(cliente.id!) ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+                      style={
+                        clienteTemOrcamentos(cliente.id!)
+                          ? { opacity: 0.4, cursor: "not-allowed" }
+                          : {}
+                      }
                     >
                       Excluir
                     </ActionButton>
@@ -339,8 +370,8 @@ export function Clientes() {
           <h3>Nenhum cliente encontrado</h3>
           <p>
             {searchTerm
-              ? 'Tente buscar por outro termo'
-              : 'Cadastre seu primeiro cliente clicando no botão acima'}
+              ? "Tente buscar por outro termo"
+              : "Cadastre seu primeiro cliente clicando no botão acima"}
           </p>
         </EmptyState>
       )}
@@ -363,33 +394,33 @@ export function Clientes() {
       {clienteDelete && (
         <div
           style={{
-            position: 'fixed',
+            position: "fixed",
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             zIndex: 1000,
           }}
           onClick={() => setClienteDelete(null)}
         >
           <div
             style={{
-              background: 'white',
-              padding: '24px',
-              borderRadius: '12px',
-              maxWidth: '400px',
-              width: '100%',
+              background: "white",
+              padding: "24px",
+              borderRadius: "12px",
+              maxWidth: "400px",
+              width: "100%",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <ConfirmDialog>
-              <h3 style={{ marginBottom: '16px' }}>Confirmar Exclusão</h3>
+              <h3 style={{ marginBottom: "16px" }}>Confirmar Exclusão</h3>
               <p>
-                Tem certeza que deseja excluir o cliente{' '}
+                Tem certeza que deseja excluir o cliente{" "}
                 <strong>{clienteDelete.razaoSocial}</strong>?
               </p>
               <DialogButtons>
@@ -401,13 +432,15 @@ export function Clientes() {
                   onClick={handleDeleteCliente}
                   disabled={excluirCliente.isLoading}
                 >
-                  {excluirCliente.isLoading ? 'Excluindo...' : 'Excluir'}
+                  {excluirCliente.isLoading ? "Excluindo..." : "Excluir"}
                 </Button>
               </DialogButtons>
             </ConfirmDialog>
           </div>
         </div>
       )}
+      {/* Footer */}
+      <Footer />
     </Container>
   );
 }
