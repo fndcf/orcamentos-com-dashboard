@@ -1,0 +1,208 @@
+import { describe, it, expect } from 'vitest';
+import type {
+  OrcamentoStatus,
+  Cliente,
+  OrcamentoItem,
+  Orcamento,
+  PalavraChave,
+  ConfiguracoesGerais,
+  Notificacao,
+  Usuario,
+  DashboardStats,
+  BrasilAPICNPJ,
+} from '../../types';
+
+describe('Types', () => {
+  describe('OrcamentoStatus', () => {
+    it('deve aceitar valores válidos de status', () => {
+      const statusAberto: OrcamentoStatus = 'aberto';
+      const statusAceito: OrcamentoStatus = 'aceito';
+      const statusRecusado: OrcamentoStatus = 'recusado';
+      const statusExpirado: OrcamentoStatus = 'expirado';
+
+      expect(statusAberto).toBe('aberto');
+      expect(statusAceito).toBe('aceito');
+      expect(statusRecusado).toBe('recusado');
+      expect(statusExpirado).toBe('expirado');
+    });
+  });
+
+  describe('Cliente', () => {
+    it('deve criar objeto Cliente válido', () => {
+      const cliente: Cliente = {
+        id: '1',
+        razaoSocial: 'Empresa LTDA',
+        nomeFantasia: 'Empresa',
+        cnpj: '12.345.678/0001-90',
+        endereco: 'Rua Teste, 123',
+        cidade: 'São Paulo',
+        estado: 'SP',
+        cep: '01234-567',
+        telefone: '(11) 99999-9999',
+        email: 'contato@empresa.com',
+        createdAt: new Date(),
+      };
+
+      expect(cliente.razaoSocial).toBe('Empresa LTDA');
+      expect(cliente.cnpj).toBe('12.345.678/0001-90');
+    });
+
+    it('deve aceitar Cliente sem campos opcionais', () => {
+      const cliente: Cliente = {
+        razaoSocial: 'Empresa LTDA',
+        cnpj: '12.345.678/0001-90',
+        endereco: 'Rua Teste, 123',
+        cidade: 'São Paulo',
+        estado: 'SP',
+        cep: '01234-567',
+        telefone: '(11) 99999-9999',
+        email: 'contato@empresa.com',
+        createdAt: new Date(),
+      };
+
+      expect(cliente.id).toBeUndefined();
+      expect(cliente.nomeFantasia).toBeUndefined();
+    });
+  });
+
+  describe('OrcamentoItem', () => {
+    it('deve criar objeto OrcamentoItem válido', () => {
+      const item: OrcamentoItem = {
+        descricao: 'Extintor ABC 6kg',
+        quantidade: 10,
+        unidade: 'UN',
+        valorUnitario: 150.0,
+        valorTotal: 1500.0,
+      };
+
+      expect(item.descricao).toBe('Extintor ABC 6kg');
+      expect(item.valorTotal).toBe(1500.0);
+    });
+  });
+
+  describe('Orcamento', () => {
+    it('deve criar objeto Orcamento válido', () => {
+      const orcamento: Orcamento = {
+        id: '1',
+        numero: 1,
+        versao: 1,
+        tipo: 'simples',
+        clienteId: 'c1',
+        clienteNome: 'Cliente Teste',
+        clienteCnpj: '12.345.678/0001-90',
+        status: 'aberto',
+        dataEmissao: new Date(),
+        dataValidade: new Date(),
+        itens: [],
+        valorTotal: 0,
+        createdAt: new Date(),
+      };
+
+      expect(orcamento.numero).toBe(1);
+      expect(orcamento.status).toBe('aberto');
+      expect(orcamento.tipo).toBe('simples');
+    });
+  });
+
+  describe('PalavraChave', () => {
+    it('deve criar objeto PalavraChave válido', () => {
+      const palavra: PalavraChave = {
+        id: '1',
+        palavra: 'extintor',
+        prazoDias: 365,
+        ativo: true,
+        createdAt: new Date(),
+      };
+
+      expect(palavra.palavra).toBe('extintor');
+      expect(palavra.prazoDias).toBe(365);
+    });
+  });
+
+  describe('ConfiguracoesGerais', () => {
+    it('deve criar objeto ConfiguracoesGerais válido', () => {
+      const config: ConfiguracoesGerais = {
+        diasValidadeOrcamento: 30,
+        nomeEmpresa: 'FLAMA',
+        cnpjEmpresa: '54.513.212/0001-00',
+        enderecoEmpresa: 'Rua José Apelian, 196',
+        telefoneEmpresa: '13 99173-7341',
+        emailEmpresa: 'contato@flama.com.br',
+      };
+
+      expect(config.diasValidadeOrcamento).toBe(30);
+      expect(config.nomeEmpresa).toBe('FLAMA');
+    });
+  });
+
+  describe('Notificacao', () => {
+    it('deve criar objeto Notificacao válido', () => {
+      const notificacao: Notificacao = {
+        id: '1',
+        orcamentoId: 'o1',
+        orcamentoNumero: 1,
+        clienteId: 'c1',
+        clienteNome: 'Cliente Teste',
+        itemDescricao: 'Extintor ABC',
+        palavraChave: 'extintor',
+        dataVencimento: new Date(),
+        lida: false,
+        createdAt: new Date(),
+      };
+
+      expect(notificacao.orcamentoNumero).toBe(1);
+      expect(notificacao.lida).toBe(false);
+    });
+  });
+
+  describe('Usuario', () => {
+    it('deve criar objeto Usuario válido', () => {
+      const usuario: Usuario = {
+        id: '1',
+        email: 'usuario@email.com',
+        nome: 'Usuário Teste',
+        createdAt: new Date(),
+      };
+
+      expect(usuario.email).toBe('usuario@email.com');
+      expect(usuario.nome).toBe('Usuário Teste');
+    });
+  });
+
+  describe('DashboardStats', () => {
+    it('deve criar objeto DashboardStats válido', () => {
+      const stats: DashboardStats = {
+        totalAbertos: 10,
+        totalAceitos: 50,
+        totalRecusados: 15,
+        totalExpirados: 5,
+        valorTotalMes: 150000,
+      };
+
+      expect(stats.totalAbertos).toBe(10);
+      expect(stats.valorTotalMes).toBe(150000);
+    });
+  });
+
+  describe('BrasilAPICNPJ', () => {
+    it('deve criar objeto BrasilAPICNPJ válido', () => {
+      const dados: BrasilAPICNPJ = {
+        cnpj: '54513212000100',
+        razao_social: 'FLAMA SISTEMAS DE PROTECAO LTDA',
+        nome_fantasia: 'FLAMA',
+        logradouro: 'Rua José Apelian',
+        numero: '196',
+        complemento: '',
+        bairro: 'Savoy',
+        municipio: 'Itanhaém',
+        uf: 'SP',
+        cep: '11742630',
+        telefone: '1399173734',
+        email: 'contato@flama.com.br',
+      };
+
+      expect(dados.razao_social).toBe('FLAMA SISTEMAS DE PROTECAO LTDA');
+      expect(dados.municipio).toBe('Itanhaém');
+    });
+  });
+});

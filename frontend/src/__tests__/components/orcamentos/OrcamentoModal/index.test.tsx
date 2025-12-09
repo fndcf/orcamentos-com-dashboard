@@ -1,0 +1,466 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { OrcamentoModal } from '../../../../components/orcamentos/OrcamentoModal';
+import { useClientes } from '../../../../hooks/useClientes';
+import { useServicosAtivos } from '../../../../hooks/useServicos';
+import { useCategoriasItemAtivas } from '../../../../hooks/useCategoriasItem';
+import { useLimitacoesAtivas } from '../../../../hooks/useLimitacoes';
+
+vi.mock('../../../../hooks/useClientes', () => ({
+  useClientes: vi.fn(),
+  useCriarCliente: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isLoading: false,
+  })),
+  useBuscarCnpjBrasilAPI: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isLoading: false,
+  })),
+}));
+
+vi.mock('../../../../hooks/useServicos', () => ({
+  useServicosAtivos: vi.fn(),
+}));
+
+vi.mock('../../../../hooks/useCategoriasItem', () => ({
+  useCategoriasItemAtivas: vi.fn(),
+}));
+
+vi.mock('../../../../hooks/useLimitacoes', () => ({
+  useLimitacoesAtivas: vi.fn(),
+}));
+
+vi.mock('../../../../hooks/useItensServico', () => ({
+  useItensServicoPorCategoria: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+  })),
+  useItensServicoAtivosPorCategoria: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+  })),
+}));
+
+const createWrapper = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+};
+
+const mockClientes = [
+  {
+    id: 'cliente1',
+    razaoSocial: 'Cliente Teste LTDA',
+    cnpj: '12345678000190',
+    tipoPessoa: 'juridica',
+  },
+  {
+    id: 'cliente2',
+    razaoSocial: 'Outro Cliente',
+    cnpj: '98765432000110',
+    tipoPessoa: 'juridica',
+  },
+];
+
+const mockServicos = [
+  { id: 'serv1', descricao: 'Instalação de Hidrantes', ativo: true },
+  { id: 'serv2', descricao: 'Manutenção de Extintores', ativo: true },
+];
+
+const mockCategorias = [
+  { id: 'cat1', nome: 'Bomba de Incêndio', ativo: true, ordem: 1 },
+  { id: 'cat2', nome: 'Sistema de Hidrantes', ativo: true, ordem: 2 },
+];
+
+const mockLimitacoes = [
+  { id: 'lim1', texto: 'Limitação 1', ativo: true, ordem: 1 },
+  { id: 'lim2', texto: 'Limitação 2', ativo: true, ordem: 2 },
+];
+
+const mockOnClose = vi.fn();
+const mockOnSave = vi.fn();
+const mockRefetch = vi.fn();
+
+describe('OrcamentoModal', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    vi.mocked(useClientes).mockReturnValue({
+      data: mockClientes,
+      refetch: mockRefetch,
+      isLoading: false,
+    } as any);
+
+    vi.mocked(useServicosAtivos).mockReturnValue({
+      data: mockServicos,
+      isLoading: false,
+    } as any);
+
+    vi.mocked(useCategoriasItemAtivas).mockReturnValue({
+      data: mockCategorias,
+      isLoading: false,
+    } as any);
+
+    vi.mocked(useLimitacoesAtivas).mockReturnValue({
+      data: mockLimitacoes,
+      isLoading: false,
+    } as any);
+  });
+
+  describe('Renderização básica', () => {
+    it('deve renderizar modal com título Novo Orçamento', () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByText('Novo Orçamento')).toBeInTheDocument();
+    });
+
+    it('deve renderizar seletor de cliente', () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByText('Cliente *')).toBeInTheDocument();
+    });
+
+    it('não deve renderizar quando fechado', () => {
+      render(
+        <OrcamentoModal
+          isOpen={false}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.queryByText('Novo Orçamento')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Validação de orçamento simples', () => {
+    it('deve mostrar erro quando cliente não selecionado', async () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Encontra o botão de submit
+      const submitButtons = screen.getAllByRole('button');
+      const salvarButton = submitButtons.find(btn =>
+        btn.textContent?.includes('Orçamento') && btn.getAttribute('type') === 'submit'
+      );
+      if (salvarButton) {
+        fireEvent.click(salvarButton);
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText('Selecione um cliente ou cadastre um novo')).toBeInTheDocument();
+      });
+    });
+
+    it('deve mostrar erro quando itens vazios', async () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Selecionar cliente
+      const clienteSelect = screen.getByRole('combobox');
+      fireEvent.change(clienteSelect, { target: { value: 'cliente1' } });
+
+      // Encontra o botão de submit
+      const submitButtons = screen.getAllByRole('button');
+      const salvarButton = submitButtons.find(btn =>
+        btn.textContent?.includes('Orçamento') && btn.getAttribute('type') === 'submit'
+      );
+      if (salvarButton) {
+        fireEvent.click(salvarButton);
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText('Adicione pelo menos um item com descrição')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Edição de orçamento existente', () => {
+    it('deve preencher dados de orçamento simples existente', () => {
+      const orcamentoExistente = {
+        id: 'orc1',
+        numero: 123,
+        tipo: 'simples' as const,
+        clienteId: 'cliente1',
+        itens: [
+          { descricao: 'Item teste', quantidade: 2, unidade: 'UN', valorUnitario: 100, valorTotal: 200 },
+        ],
+        observacoes: 'Obs teste',
+        consultor: 'João',
+        contato: '11999999999',
+        status: 'pendente' as const,
+        dataCriacao: new Date(),
+        valorTotal: 200,
+      };
+
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+          orcamento={orcamentoExistente}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByText('Editar Orçamento #123')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Obs teste')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('João')).toBeInTheDocument();
+    });
+
+    it('deve preencher dados de orçamento completo existente', () => {
+      const orcamentoCompleto = {
+        id: 'orc2',
+        numero: 456,
+        tipo: 'completo' as const,
+        clienteId: 'cliente1',
+        servicoId: 'serv1',
+        itens: [],
+        itensCompleto: [
+          {
+            etapa: 'residencial' as const,
+            categoriaId: 'cat1',
+            categoriaNome: 'Bomba de Incêndio',
+            descricao: 'Item completo',
+            unidade: 'UN',
+            quantidade: 1,
+            valorUnitarioMaoDeObra: 100,
+            valorUnitarioMaterial: 50,
+            valorTotalMaoDeObra: 100,
+            valorTotalMaterial: 50,
+            valorTotal: 150,
+          },
+        ],
+        limitacoesSelecionadas: ['Limitação 1'],
+        prazoExecucaoServicos: 25,
+        prazoVistoriaBombeiros: 35,
+        condicaoPagamento: 'parcelado' as const,
+        parcelamentoTexto: '3x sem juros',
+        status: 'pendente' as const,
+        dataCriacao: new Date(),
+        valorTotal: 150,
+      };
+
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+          orcamento={orcamentoCompleto}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByText('Editar Orçamento #456')).toBeInTheDocument();
+    });
+  });
+
+  describe('Duplicar orçamento', () => {
+    it('deve preencher dados para duplicar orçamento simples', () => {
+      const orcamentoOriginal = {
+        id: 'orc1',
+        numero: 789,
+        tipo: 'simples' as const,
+        clienteId: 'cliente1',
+        itens: [
+          { descricao: 'Item para duplicar', quantidade: 3, unidade: 'UN', valorUnitario: 50, valorTotal: 150 },
+        ],
+        status: 'pendente' as const,
+        dataCriacao: new Date(),
+        valorTotal: 150,
+      };
+
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+          duplicarDe={orcamentoOriginal}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByText('Duplicar Orçamento #789')).toBeInTheDocument();
+    });
+
+    it('deve preencher dados para duplicar orçamento completo', () => {
+      const orcamentoCompleto = {
+        id: 'orc2',
+        numero: 999,
+        tipo: 'completo' as const,
+        clienteId: 'cliente1',
+        servicoId: 'serv1',
+        itens: [],
+        itensCompleto: [
+          {
+            etapa: 'comercial' as const,
+            categoriaId: 'cat2',
+            categoriaNome: 'Sistema de Hidrantes',
+            descricao: 'Item duplicado',
+            unidade: 'M',
+            quantidade: 10,
+            valorUnitarioMaoDeObra: 200,
+            valorUnitarioMaterial: 100,
+            valorTotalMaoDeObra: 2000,
+            valorTotalMaterial: 1000,
+            valorTotal: 3000,
+          },
+        ],
+        limitacoesSelecionadas: ['Limitação 2'],
+        prazoExecucaoServicos: 30,
+        prazoVistoriaBombeiros: 40,
+        condicaoPagamento: 'a_combinar' as const,
+        status: 'pendente' as const,
+        dataCriacao: new Date(),
+        valorTotal: 3000,
+      };
+
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+          duplicarDe={orcamentoCompleto}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByText('Duplicar Orçamento #999')).toBeInTheDocument();
+    });
+  });
+
+  describe('Novo cliente inline', () => {
+    it('deve mostrar formulário de novo cliente ao clicar no botão', async () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      const novoClienteButton = screen.getAllByRole('button').find(btn =>
+        btn.textContent?.includes('Novo Cliente')
+      );
+      if (novoClienteButton) {
+        fireEvent.click(novoClienteButton);
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText('Cadastrar Novo Cliente')).toBeInTheDocument();
+      });
+    });
+
+    it('deve esconder formulário de novo cliente ao clicar novamente', async () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      const novoClienteButton = screen.getAllByRole('button').find(btn =>
+        btn.textContent?.includes('Novo Cliente')
+      );
+      if (novoClienteButton) {
+        fireEvent.click(novoClienteButton);
+        await waitFor(() => {
+          expect(screen.getByText('Cadastrar Novo Cliente')).toBeInTheDocument();
+        });
+
+        fireEvent.click(novoClienteButton);
+        await waitFor(() => {
+          expect(screen.queryByText('Cadastrar Novo Cliente')).not.toBeInTheDocument();
+        });
+      }
+    });
+  });
+
+  describe('Botões de ação', () => {
+    it('deve chamar onClose ao clicar em cancelar', () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      const cancelarButton = screen.getByRole('button', { name: 'Cancelar' });
+      fireEvent.click(cancelarButton);
+
+      expect(mockOnClose).toHaveBeenCalled();
+    });
+
+    it('deve mostrar botão desabilitado quando loading', () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+          loading={true}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      const submitButtons = screen.getAllByRole('button');
+      const salvarButton = submitButtons.find(btn =>
+        btn.getAttribute('type') === 'submit'
+      );
+      expect(salvarButton).toBeDisabled();
+    });
+  });
+
+  describe('Seleção de cliente', () => {
+    it('deve conseguir selecionar cliente no combobox', () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      const clienteSelect = screen.getByRole('combobox');
+      fireEvent.change(clienteSelect, { target: { value: 'cliente1' } });
+
+      expect(clienteSelect).toHaveValue('cliente1');
+    });
+  });
+});

@@ -1,0 +1,601 @@
+import styled from 'styled-components';
+
+export const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+export const ClienteSelect = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+export const ClienteInfo = styled.div`
+  padding: 12px;
+  background: var(--background);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+
+  strong {
+    color: var(--text-primary);
+  }
+
+  @media (max-width: 768px) {
+    font-size: 0.85rem;
+    padding: 10px;
+  }
+`;
+
+export const NovoClienteSection = styled.div`
+  border: 2px solid var(--primary);
+  border-radius: 8px;
+  padding: 16px;
+  background: rgba(255, 107, 53, 0.05);
+
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
+`;
+
+export const NovoClienteHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+
+  h4 {
+    margin: 0;
+    color: var(--primary);
+    font-size: 1rem;
+  }
+`;
+
+export const DocumentRow = styled.div`
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+
+  > div:first-child {
+    flex: 1;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+
+    > div:first-child {
+      flex: none;
+    }
+
+    button {
+      width: 100%;
+    }
+  }
+`;
+
+export const CheckboxRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+
+  label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+`;
+
+export const StatusMessage = styled.p<{ $type: 'success' | 'error' | 'info' }>`
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 0;
+
+  ${({ $type }) => {
+    switch ($type) {
+      case 'success':
+        return 'background: rgba(76, 175, 80, 0.1); color: var(--success);';
+      case 'error':
+        return 'background: rgba(244, 67, 54, 0.1); color: var(--error);';
+      case 'info':
+        return 'background: rgba(33, 150, 243, 0.1); color: var(--info);';
+    }
+  }}
+`;
+
+export const ItensSection = styled.div`
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
+`;
+
+export const SectionTitle = styled.h3`
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+
+    button {
+      width: 100%;
+    }
+  }
+`;
+
+export const ItemRow = styled.div`
+  display: grid;
+  grid-template-columns: 2fr 70px 80px 100px 100px 40px;
+  gap: 8px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+`;
+
+export const RemoveButton = styled.button`
+  background: none;
+  border: none;
+  color: var(--error);
+  cursor: pointer;
+  padding: 8px;
+  font-size: 1.2rem;
+
+  &:hover {
+    background: rgba(244, 67, 54, 0.1);
+    border-radius: 4px;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    background: rgba(244, 67, 54, 0.1);
+    border-radius: 6px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    &::after {
+      content: 'Remover Item';
+      font-size: 0.9rem;
+    }
+  }
+`;
+
+export const TotalSection = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 0;
+  border-top: 2px solid var(--border);
+  margin-top: 16px;
+
+  .total-label {
+    font-weight: 500;
+    margin-right: 16px;
+  }
+
+  .total-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  @media (max-width: 768px) {
+    justify-content: space-between;
+    padding: 12px 0;
+
+    .total-label {
+      margin-right: 0;
+    }
+
+    .total-value {
+      font-size: 1.1rem;
+    }
+  }
+`;
+
+export const ButtonGroup = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+
+  @media (max-width: 768px) {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+    }
+  }
+`;
+
+export const ToggleButton = styled.button<{ $active?: boolean }>`
+  background: ${({ $active }) => $active ? 'var(--primary)' : 'transparent'};
+  color: ${({ $active }) => $active ? 'white' : 'var(--primary)'};
+  border: 2px solid var(--primary);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    background: ${({ $active }) => $active ? 'var(--primary-dark)' : 'rgba(255, 107, 53, 0.1)'};
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    padding: 10px 16px;
+  }
+`;
+
+export const TipoOrcamentoSelector = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+export const TipoOption = styled.label<{ $selected: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  border: 2px solid ${({ $selected }) => $selected ? 'var(--primary)' : 'var(--border)'};
+  border-radius: 8px;
+  cursor: pointer;
+  flex: 1;
+  transition: all 0.2s;
+  background: ${({ $selected }) => $selected ? 'rgba(255, 107, 53, 0.05)' : 'transparent'};
+
+  &:hover {
+    border-color: var(--primary);
+  }
+
+  input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+  }
+
+  .tipo-info {
+    flex: 1;
+
+    .tipo-titulo {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .tipo-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+  }
+`;
+
+export const TipoLocked = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--background);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+
+  strong {
+    color: var(--text-primary);
+  }
+`;
+
+export const CompletoSection = styled.div`
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  overflow: hidden;
+
+  h4 {
+    margin: 0 0 12px 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+`;
+
+export const LimitacoesGrid = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--background);
+  border-radius: 6px;
+`;
+
+export const LimitacaoCheckbox = styled.label`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.03);
+  }
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  span {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+  }
+`;
+
+export const ItemCompletoContainer = styled.div`
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: var(--background);
+  position: relative;
+`;
+
+export const ItemCompletoRow1 = styled.div`
+  display: grid;
+  grid-template-columns: 120px 160px 1fr;
+  gap: 8px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+
+  > div {
+    min-width: 0;
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr 1fr;
+
+    > div:nth-child(1) { grid-column: 1 / 2; } /* Etapa */
+    > div:nth-child(2) { grid-column: 2 / 3; } /* Categoria */
+    > div:nth-child(3) { grid-column: 1 / 3; } /* Descrição */
+  }
+`;
+
+export const DescricaoAutocompleteContainer = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
+export const DescricaoInputWrapper = styled.div`
+  display: flex;
+  gap: 4px;
+  align-items: center;
+`;
+
+export const DescricaoDropdownButton = styled.button`
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--surface);
+    border-color: var(--primary);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+  }
+`;
+
+export const DescricaoDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  margin-top: 4px;
+`;
+
+export const DescricaoOption = styled.div`
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: rgba(204, 0, 0, 0.05);
+  }
+
+  .descricao {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+  }
+
+  .unidade {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+`;
+
+export const DescricaoEmptyMessage = styled.div`
+  padding: 12px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+`;
+
+export const ItemCompletoRow2 = styled.div`
+  display: grid;
+  grid-template-columns: 70px 80px 1fr 1fr 1fr 1fr;
+  gap: 8px;
+  align-items: flex-end;
+
+  > div {
+    min-width: 0;
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr 1fr;
+
+    > div:nth-child(1) { grid-column: 1 / 2; } /* Qtd */
+    > div:nth-child(2) { grid-column: 2 / 3; } /* Unidade */
+    > div:nth-child(3) { grid-column: 1 / 2; } /* M.O. Unit */
+    > div:nth-child(4) { grid-column: 2 / 3; } /* Mat. Unit */
+    > div:nth-child(5) { grid-column: 1 / 2; } /* Total M.O. */
+    > div:nth-child(6) { grid-column: 2 / 3; } /* Total Mat. */
+  }
+`;
+
+export const RemoveItemButton = styled.button`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--error);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 1.2rem;
+  border-radius: 4px;
+
+  &:hover {
+    background: rgba(244, 67, 54, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+`;
+
+export const TotaisCompleto = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 16px;
+  background: var(--background);
+  border-radius: 8px;
+  margin-top: 16px;
+
+  .total-item {
+    text-align: center;
+
+    .label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+
+      &.destaque {
+        font-size: 1.25rem;
+        color: var(--primary);
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+`;
+
+export const CondicaoPagamentoSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+export const CondicaoOption = styled.label<{ $selected: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid ${({ $selected }) => $selected ? 'var(--primary)' : 'var(--border)'};
+  border-radius: 6px;
+  cursor: pointer;
+  background: ${({ $selected }) => $selected ? 'rgba(255, 107, 53, 0.05)' : 'transparent'};
+
+  input {
+    accent-color: var(--primary);
+  }
+`;

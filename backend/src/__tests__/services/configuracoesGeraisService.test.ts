@@ -1,0 +1,136 @@
+import { configuracoesGeraisService } from '../../services/configuracoesGeraisService';
+import { configuracoesGeraisRepository } from '../../repositories/configuracoesGeraisRepository';
+import { ValidationError } from '../../utils/errors';
+import { ConfiguracoesGerais } from '../../models';
+
+// Mock do repository
+jest.mock('../../repositories/configuracoesGeraisRepository');
+
+describe('configuracoesGeraisService', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const mockConfiguracoes: ConfiguracoesGerais = {
+    diasValidadeOrcamento: 30,
+    nomeEmpresa: 'Empresa Teste',
+    cnpjEmpresa: '12345678901234',
+    enderecoEmpresa: 'Rua Teste, 123',
+    telefoneEmpresa: '11999999999',
+    emailEmpresa: 'teste@empresa.com',
+  };
+
+  describe('buscar', () => {
+    it('deve retornar configurações', async () => {
+      (configuracoesGeraisRepository.get as jest.Mock).mockResolvedValue(mockConfiguracoes);
+
+      const resultado = await configuracoesGeraisService.buscar();
+
+      expect(configuracoesGeraisRepository.get).toHaveBeenCalled();
+      expect(resultado).toEqual(mockConfiguracoes);
+    });
+  });
+
+  describe('atualizar', () => {
+    it('deve atualizar configurações com sucesso', async () => {
+      const dados = { diasValidadeOrcamento: 60 };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      const resultado = await configuracoesGeraisService.atualizar(dados);
+
+      expect(configuracoesGeraisRepository.update).toHaveBeenCalledWith(dados);
+      expect(resultado.diasValidadeOrcamento).toBe(60);
+    });
+
+    it('deve atualizar nome da empresa', async () => {
+      const dados = { nomeEmpresa: 'Nova Empresa' };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      const resultado = await configuracoesGeraisService.atualizar(dados);
+
+      expect(resultado.nomeEmpresa).toBe('Nova Empresa');
+    });
+
+    it('deve lançar ValidationError quando dias de validade for menor que 1', async () => {
+      await expect(configuracoesGeraisService.atualizar({ diasValidadeOrcamento: 0 })).rejects.toThrow(ValidationError);
+      await expect(configuracoesGeraisService.atualizar({ diasValidadeOrcamento: 0 })).rejects.toThrow(
+        'Dias de validade deve ser entre 1 e 365'
+      );
+    });
+
+    it('deve lançar ValidationError quando dias de validade for maior que 365', async () => {
+      await expect(configuracoesGeraisService.atualizar({ diasValidadeOrcamento: 400 })).rejects.toThrow(ValidationError);
+      await expect(configuracoesGeraisService.atualizar({ diasValidadeOrcamento: 400 })).rejects.toThrow(
+        'Dias de validade deve ser entre 1 e 365'
+      );
+    });
+
+    it('deve lançar ValidationError quando CNPJ for inválido', async () => {
+      await expect(configuracoesGeraisService.atualizar({ cnpjEmpresa: '123' })).rejects.toThrow(ValidationError);
+      await expect(configuracoesGeraisService.atualizar({ cnpjEmpresa: '123' })).rejects.toThrow('CNPJ inválido');
+    });
+
+    it('deve aceitar CNPJ formatado válido', async () => {
+      const dados = { cnpjEmpresa: '12.345.678/9012-34' };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      await configuracoesGeraisService.atualizar(dados);
+
+      expect(configuracoesGeraisRepository.update).toHaveBeenCalledWith(dados);
+    });
+
+    it('deve aceitar CNPJ vazio', async () => {
+      const dados = { cnpjEmpresa: '' };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      await configuracoesGeraisService.atualizar(dados);
+
+      expect(configuracoesGeraisRepository.update).toHaveBeenCalledWith(dados);
+    });
+
+    it('deve lançar ValidationError quando email for inválido', async () => {
+      await expect(configuracoesGeraisService.atualizar({ emailEmpresa: 'emailinvalido' })).rejects.toThrow(
+        ValidationError
+      );
+      await expect(configuracoesGeraisService.atualizar({ emailEmpresa: 'emailinvalido' })).rejects.toThrow(
+        'Email inválido'
+      );
+    });
+
+    it('deve aceitar email válido', async () => {
+      const dados = { emailEmpresa: 'novo@email.com' };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      await configuracoesGeraisService.atualizar(dados);
+
+      expect(configuracoesGeraisRepository.update).toHaveBeenCalledWith(dados);
+    });
+
+    it('deve aceitar email vazio', async () => {
+      const dados = { emailEmpresa: '' };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      await configuracoesGeraisService.atualizar(dados);
+
+      expect(configuracoesGeraisRepository.update).toHaveBeenCalledWith(dados);
+    });
+
+    it('deve aceitar dias de validade no limite mínimo', async () => {
+      const dados = { diasValidadeOrcamento: 1 };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      await configuracoesGeraisService.atualizar(dados);
+
+      expect(configuracoesGeraisRepository.update).toHaveBeenCalledWith(dados);
+    });
+
+    it('deve aceitar dias de validade no limite máximo', async () => {
+      const dados = { diasValidadeOrcamento: 365 };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      await configuracoesGeraisService.atualizar(dados);
+
+      expect(configuracoesGeraisRepository.update).toHaveBeenCalledWith(dados);
+    });
+  });
+});

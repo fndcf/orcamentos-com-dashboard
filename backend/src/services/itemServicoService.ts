@@ -1,0 +1,140 @@
+import { itemServicoRepository } from '../repositories/itemServicoRepository';
+import { categoriaItemRepository } from '../repositories/categoriaItemRepository';
+import { ItemServico } from '../models';
+import { AppError, ValidationError, NotFoundError } from '../utils/errors';
+
+export const itemServicoService = {
+  async listar(): Promise<ItemServico[]> {
+    return itemServicoRepository.findAll();
+  },
+
+  async listarPorCategoria(categoriaId: string): Promise<ItemServico[]> {
+    if (!categoriaId) {
+      throw new ValidationError('ID da categoria é obrigatório');
+    }
+
+    const categoria = await categoriaItemRepository.findById(categoriaId);
+    if (!categoria) {
+      throw new NotFoundError('Categoria não encontrada');
+    }
+
+    return itemServicoRepository.findByCategoria(categoriaId);
+  },
+
+  async listarAtivosPorCategoria(categoriaId: string): Promise<ItemServico[]> {
+    if (!categoriaId) {
+      throw new ValidationError('ID da categoria é obrigatório');
+    }
+
+    return itemServicoRepository.findAtivosByCategoria(categoriaId);
+  },
+
+  async buscarPorId(id: string): Promise<ItemServico> {
+    if (!id) {
+      throw new ValidationError('ID é obrigatório');
+    }
+
+    const item = await itemServicoRepository.findById(id);
+    if (!item) {
+      throw new NotFoundError('Item de serviço não encontrado');
+    }
+
+    return item;
+  },
+
+  async criar(data: { categoriaId: string; descricao: string; unidade: string; ativo?: boolean }): Promise<ItemServico> {
+    if (!data.categoriaId) {
+      throw new ValidationError('ID da categoria é obrigatório');
+    }
+
+    if (!data.descricao || data.descricao.trim().length < 5) {
+      throw new ValidationError('Descrição deve ter pelo menos 5 caracteres');
+    }
+
+    if (!data.unidade || data.unidade.trim().length < 1) {
+      throw new ValidationError('Unidade é obrigatória');
+    }
+
+    const categoria = await categoriaItemRepository.findById(data.categoriaId);
+    if (!categoria) {
+      throw new NotFoundError('Categoria não encontrada');
+    }
+
+    // Verificar se já existe um item com a mesma descrição nesta categoria
+    const existente = await itemServicoRepository.findByDescricaoInCategoria(data.descricao.trim(), data.categoriaId);
+    if (existente) {
+      throw new AppError('Já existe um item com esta descrição nesta categoria', 409);
+    }
+
+    const ordem = await itemServicoRepository.getNextOrdem(data.categoriaId);
+
+    return itemServicoRepository.create({
+      categoriaId: data.categoriaId,
+      descricao: data.descricao.trim(),
+      unidade: data.unidade.trim().toUpperCase(),
+      ativo: data.ativo !== undefined ? data.ativo : true,
+      ordem,
+    });
+  },
+
+  async atualizar(
+    id: string,
+    data: { descricao?: string; unidade?: string; ativo?: boolean; ordem?: number }
+  ): Promise<ItemServico> {
+    if (!id) {
+      throw new ValidationError('ID é obrigatório');
+    }
+
+    const existente = await itemServicoRepository.findById(id);
+    if (!existente) {
+      throw new NotFoundError('Item de serviço não encontrado');
+    }
+
+    if (data.descricao !== undefined && data.descricao.trim().length < 5) {
+      throw new ValidationError('Descrição deve ter pelo menos 5 caracteres');
+    }
+
+    if (data.unidade !== undefined && data.unidade.trim().length < 1) {
+      throw new ValidationError('Unidade é obrigatória');
+    }
+
+    // Verificar se a nova descrição já existe em outro item da mesma categoria
+    if (data.descricao !== undefined) {
+      const duplicado = await itemServicoRepository.findByDescricaoInCategoria(data.descricao.trim(), existente.categoriaId);
+      if (duplicado && duplicado.id !== id) {
+        throw new AppError('Já existe um item com esta descrição nesta categoria', 409);
+      }
+    }
+
+    const updateData: Partial<ItemServico> = {};
+    if (data.descricao !== undefined) updateData.descricao = data.descricao.trim();
+    if (data.unidade !== undefined) updateData.unidade = data.unidade.trim().toUpperCase();
+    if (data.ativo !== undefined) updateData.ativo = data.ativo;
+    if (data.ordem !== undefined) updateData.ordem = data.ordem;
+
+    const updated = await itemServicoRepository.update(id, updateData);
+    if (!updated) {
+      throw new Error('Erro ao atualizar item de serviço');
+    }
+
+    return updated;
+  },
+
+  async excluir(id: string): Promise<void> {
+    if (!id) {
+      throw new ValidationError('ID é obrigatório');
+    }
+
+    const existente = await itemServicoRepository.findById(id);
+    if (!existente) {
+      throw new NotFoundError('Item de serviço não encontrado');
+    }
+
+    await itemServicoRepository.delete(id);
+  },
+
+  async toggleAtivo(id: string): Promise<ItemServico> {
+    const existente = await this.buscarPorId(id);
+    return this.atualizar(id, { ativo: !existente.ativo });
+  },
+};

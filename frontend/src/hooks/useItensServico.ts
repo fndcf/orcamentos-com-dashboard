@@ -1,0 +1,76 @@
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { itemServicoService } from '../services/itemServicoService';
+import { ItemServico } from '../types';
+
+export function useItensServico() {
+  return useQuery<ItemServico[]>('itens-servico', itemServicoService.listar);
+}
+
+export function useItensServicoPorCategoria(categoriaId: string | undefined) {
+  return useQuery<ItemServico[]>(
+    ['itens-servico', 'categoria', categoriaId],
+    () => itemServicoService.listarPorCategoria(categoriaId!),
+    {
+      enabled: !!categoriaId,
+    }
+  );
+}
+
+export function useItensServicoAtivosPorCategoria(categoriaId: string | undefined) {
+  return useQuery<ItemServico[]>(
+    ['itens-servico', 'categoria', categoriaId, 'ativos'],
+    () => itemServicoService.listarAtivosPorCategoria(categoriaId!),
+    {
+      enabled: !!categoriaId,
+    }
+  );
+}
+
+export function useCriarItemServico() {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    (data: { categoriaId: string; descricao: string; unidade: string; ativo?: boolean }) =>
+      itemServicoService.criar(data),
+    {
+      onSuccess: (_, variables) => {
+        queryClient.invalidateQueries('itens-servico');
+        queryClient.invalidateQueries(['itens-servico', 'categoria', variables.categoriaId]);
+      },
+    }
+  );
+}
+
+export function useAtualizarItemServico() {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    ({ id, data }: { id: string; data: { descricao?: string; unidade?: string; ativo?: boolean; ordem?: number } }) =>
+      itemServicoService.atualizar(id, data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('itens-servico');
+      },
+    }
+  );
+}
+
+export function useToggleItemServico() {
+  const queryClient = useQueryClient();
+
+  return useMutation((id: string) => itemServicoService.toggleAtivo(id), {
+    onSuccess: () => {
+      queryClient.invalidateQueries('itens-servico');
+    },
+  });
+}
+
+export function useExcluirItemServico() {
+  const queryClient = useQueryClient();
+
+  return useMutation((id: string) => itemServicoService.excluir(id), {
+    onSuccess: () => {
+      queryClient.invalidateQueries('itens-servico');
+    },
+  });
+}
