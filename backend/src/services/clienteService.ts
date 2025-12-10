@@ -28,21 +28,23 @@ export const clienteService = {
       throw new ValidationError('Nome/Razão social deve ter pelo menos 3 caracteres');
     }
 
-    if (!data.cnpj) {
-      throw new ValidationError('CPF/CNPJ é obrigatório');
-    }
+    const docLimpo = data.cnpj?.replace(/\D/g, '') || '';
 
-    const docLimpo = data.cnpj.replace(/\D/g, '');
+    // Se documento foi informado, validar
+    if (docLimpo) {
+      // Validar CPF (11 dígitos) ou CNPJ (14 dígitos)
+      if (docLimpo.length !== 11 && docLimpo.length !== 14) {
+        throw new ValidationError('CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos');
+      }
 
-    // Validar CPF (11 dígitos) ou CNPJ (14 dígitos)
-    if (docLimpo.length !== 11 && docLimpo.length !== 14) {
-      throw new ValidationError('CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos');
-    }
-
-    // Verificar se já existe cliente com este documento
-    const existente = await clienteRepository.findByDocumento(docLimpo);
-    if (existente) {
-      throw new ValidationError('Já existe um cliente cadastrado com este CPF/CNPJ');
+      // Verificar se já existe cliente com este documento
+      const existente = await clienteRepository.findByDocumento(docLimpo);
+      if (existente) {
+        throw new ValidationError('Já existe um cliente cadastrado com este CPF/CNPJ');
+      }
+    } else if (data.tipoPessoa === 'juridica') {
+      // CNPJ é obrigatório para pessoa jurídica
+      throw new ValidationError('CNPJ é obrigatório para pessoa jurídica');
     }
 
     return clienteRepository.create(data);
@@ -56,14 +58,25 @@ export const clienteService = {
     if (data.cnpj) {
       const docLimpo = data.cnpj.replace(/\D/g, '');
 
-      if (docLimpo.length !== 11 && docLimpo.length !== 14) {
+      // Se documento foi informado, validar formato
+      if (docLimpo && docLimpo.length !== 11 && docLimpo.length !== 14) {
         throw new ValidationError('CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos');
       }
 
       // Verificar se já existe outro cliente com este documento
-      const existente = await clienteRepository.findByDocumento(docLimpo);
-      if (existente && existente.id !== id) {
-        throw new ValidationError('Já existe outro cliente cadastrado com este CPF/CNPJ');
+      if (docLimpo) {
+        const existente = await clienteRepository.findByDocumento(docLimpo);
+        if (existente && existente.id !== id) {
+          throw new ValidationError('Já existe outro cliente cadastrado com este CPF/CNPJ');
+        }
+      }
+    }
+
+    // Se está mudando para pessoa jurídica, CNPJ é obrigatório
+    if (data.tipoPessoa === 'juridica') {
+      const docLimpo = data.cnpj?.replace(/\D/g, '') || '';
+      if (!docLimpo || docLimpo.length !== 14) {
+        throw new ValidationError('CNPJ é obrigatório para pessoa jurídica');
       }
     }
 

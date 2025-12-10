@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   useLimitacoes,
   useCriarLimitacao,
   useAtualizarLimitacao,
   useToggleLimitacao,
   useExcluirLimitacao,
-} from '../../../hooks/useLimitacoes';
-import { Modal, Button } from '../../../components/ui';
-import { Limitacao } from '../../../types';
-import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
+} from "../../../hooks/useLimitacoes";
+import { Modal, Button } from "../../../components/ui";
+import { Limitacao } from "../../../types";
+import { logger } from "../../../utils/logger";
+import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import {
   Section,
   ItemsList,
@@ -24,7 +25,7 @@ import {
   ErrorAlert,
   TextArea,
   ModalButtons,
-} from '../styles';
+} from "../styles";
 
 export function LimitacoesTab() {
   const { data: limitacoes } = useLimitacoes();
@@ -37,11 +38,11 @@ export function LimitacoesTab() {
   const [editando, setEditando] = useState<Limitacao | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Limitacao | null>(null);
 
-  const [texto, setTexto] = useState('');
+  const [texto, setTexto] = useState("");
   const [modalError, setModalError] = useState<string | null>(null);
 
   const resetForm = () => {
-    setTexto('');
+    setTexto("");
     setEditando(null);
     setModalError(null);
   };
@@ -78,8 +79,12 @@ export function LimitacoesTab() {
       }
       handleCloseModal();
     } catch (error: any) {
-      console.error('Erro ao salvar:', error);
-      const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Erro ao salvar. Tente novamente.';
+      logger.error("Erro ao salvar limitação", { error });
+      const errorMessage =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Erro ao salvar. Tente novamente.";
       setModalError(errorMessage);
     }
   };
@@ -88,7 +93,7 @@ export function LimitacoesTab() {
     try {
       await toggleLimitacao.mutateAsync(id);
     } catch (error) {
-      console.error('Erro ao alterar status:', error);
+      logger.error("Erro ao alterar status da limitação", { error });
     }
   };
 
@@ -99,7 +104,7 @@ export function LimitacoesTab() {
       await excluirLimitacao.mutateAsync(confirmDelete.id!);
       setConfirmDelete(null);
     } catch (error) {
-      console.error('Erro ao excluir:', error);
+      logger.error("Erro ao excluir limitação", { error });
     }
   };
 
@@ -108,15 +113,25 @@ export function LimitacoesTab() {
   return (
     <>
       <Section>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: 16,
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
           <div>
-            <h2>Limitações e Observações</h2>
+            <h2>Observações e Limitações</h2>
             <p className="description">
-              Cadastre os parágrafos de limitações e observações que podem ser selecionados
-              no orçamento completo. No orçamento, você escolhe quais incluir.
+              Cadastre os parágrafos de observações e limitações que podem ser
+              selecionados no orçamento completo. No orçamento, você escolhe
+              quais incluir.
             </p>
           </div>
-          <Button onClick={handleNovoClick}>+ Nova Limitação</Button>
+          <Button onClick={handleNovoClick}>+ Nova Observação</Button>
         </div>
 
         {limitacoes && limitacoes.length > 0 ? (
@@ -125,19 +140,30 @@ export function LimitacoesTab() {
               <Item key={l.id} $ativo={l.ativo}>
                 <ItemInfo>
                   <div className="titulo">
-                    Limitação #{l.ordem}
-                    <StatusBadge $ativo={l.ativo}>{l.ativo ? 'Ativa' : 'Inativa'}</StatusBadge>
+                    Observação #{l.ordem}
+                    <StatusBadge $ativo={l.ativo}>
+                      {l.ativo ? "Ativa" : "Inativa"}
+                    </StatusBadge>
                   </div>
                   <div className="descricao">{l.texto}</div>
                 </ItemInfo>
                 <ItemActions>
-                  <ActionButton $variant="edit" onClick={() => handleEditarClick(l)}>
+                  <ActionButton
+                    $variant="edit"
+                    onClick={() => handleEditarClick(l)}
+                  >
                     Editar
                   </ActionButton>
-                  <ActionButton $variant="toggle" onClick={() => handleToggle(l.id!)}>
-                    {l.ativo ? 'Desativar' : 'Ativar'}
+                  <ActionButton
+                    $variant="toggle"
+                    onClick={() => handleToggle(l.id!)}
+                  >
+                    {l.ativo ? "Desativar" : "Ativar"}
                   </ActionButton>
-                  <ActionButton $variant="delete" onClick={() => setConfirmDelete(l)}>
+                  <ActionButton
+                    $variant="delete"
+                    onClick={() => setConfirmDelete(l)}
+                  >
                     Excluir
                   </ActionButton>
                 </ItemActions>
@@ -146,8 +172,10 @@ export function LimitacoesTab() {
           </ItemsList>
         ) : (
           <EmptyState>
-            <p>Nenhuma limitação cadastrada</p>
-            <Button onClick={handleNovoClick}>Cadastrar Primeira Limitação</Button>
+            <p>Nenhuma observação cadastrada</p>
+            <Button onClick={handleNovoClick}>
+              Cadastrar Primeira Observação
+            </Button>
           </EmptyState>
         )}
       </Section>
@@ -156,20 +184,23 @@ export function LimitacoesTab() {
       <Modal
         isOpen={modalOpen}
         onClose={handleCloseModal}
-        title={editando ? 'Editar Limitação' : 'Nova Limitação'}
+        title={editando ? "Editar Observação" : "Nova Observação"}
         width="600px"
       >
         {modalError && <ErrorAlert>{modalError}</ErrorAlert>}
 
         <FormGroup>
-          <Label>Texto da Limitação/Observação</Label>
+          <Label>Texto da Observação/Limitação</Label>
           <TextArea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             placeholder="Ex: O Contratante deverá nos informar procedimentos e rotinas operacionais ligadas à saúde e segurança a serem observadas e seguidas por nossos profissionais durante a execução dos trabalhos de campo."
             rows={5}
           />
-          <HelpText>Mínimo de 20 caracteres. Este parágrafo poderá ser selecionado no orçamento.</HelpText>
+          <HelpText>
+            Mínimo de 20 caracteres. Este parágrafo poderá ser selecionado no
+            orçamento.
+          </HelpText>
         </FormGroup>
 
         <ModalButtons>
@@ -177,7 +208,7 @@ export function LimitacoesTab() {
             Cancelar
           </Button>
           <Button onClick={handleSalvar} disabled={isSaveDisabled}>
-            {editando ? 'Salvar Alterações' : 'Cadastrar'}
+            {editando ? "Salvar Alterações" : "Cadastrar"}
           </Button>
         </ModalButtons>
       </Modal>
@@ -187,7 +218,10 @@ export function LimitacoesTab() {
         isOpen={!!confirmDelete}
         onClose={() => setConfirmDelete(null)}
         onConfirm={handleExcluir}
-        itemDescription={`a limitação "${confirmDelete?.texto.substring(0, 50)}..."`}
+        itemDescription={`a limitação "${confirmDelete?.texto.substring(
+          0,
+          50
+        )}..."`}
       />
     </>
   );

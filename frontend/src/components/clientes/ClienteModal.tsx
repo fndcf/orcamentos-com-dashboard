@@ -229,7 +229,7 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
 
         <DocumentRow>
           <InputGroup>
-            <Label htmlFor="cnpj">{isPessoaFisica ? 'CPF *' : 'CNPJ *'}</Label>
+            <Label htmlFor="cnpj">{isPessoaFisica ? 'CPF' : 'CNPJ *'}</Label>
             <Input
               id="cnpj"
               name="cnpj"
@@ -237,7 +237,7 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
               onChange={handleDocumentoChange}
               placeholder={isPessoaFisica ? '000.000.000-00' : '00.000.000/0000-00'}
               maxLength={maxDocLength}
-              required
+              required={!isPessoaFisica}
             />
           </InputGroup>
           {!isPessoaFisica && (

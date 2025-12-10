@@ -4,6 +4,7 @@ import { palavraChaveRepository } from '../repositories/palavraChaveRepository';
 import { Notificacao, PalavraChave, Orcamento } from '../models';
 import { NotFoundError } from '../utils/errors';
 import { eventBus, OrcamentoEvents, OrcamentoStatusChangedEvent } from '../events';
+import { logger } from '../utils/logger';
 
 export const notificacaoService = {
   async listarTodas(): Promise<Notificacao[]> {
@@ -20,6 +21,10 @@ export const notificacaoService = {
 
   async listarVencidas(): Promise<Notificacao[]> {
     return notificacaoRepository.findVencidas();
+  },
+
+  async listarAtivas(diasAntecedencia: number = 60): Promise<Notificacao[]> {
+    return notificacaoRepository.findAtivas(diasAntecedencia);
   },
 
   async buscarPorId(id: string): Promise<Notificacao> {
@@ -184,12 +189,14 @@ export const notificacaoService = {
     naoLidas: number;
     vencidas: number;
     proximasVencer: number;
+    ativas: number;
   }> {
-    const [todas, naoLidas, vencidas, proximas] = await Promise.all([
+    const [todas, naoLidas, vencidas, proximas, ativas] = await Promise.all([
       notificacaoRepository.findAll(),
       notificacaoRepository.findNaoLidas(),
       notificacaoRepository.findVencidas(),
       notificacaoRepository.findProximas(30),
+      notificacaoRepository.findAtivas(10),
     ]);
 
     return {
@@ -197,6 +204,7 @@ export const notificacaoService = {
       naoLidas: naoLidas.length,
       vencidas: vencidas.length,
       proximasVencer: proximas.length,
+      ativas: ativas.length,
     };
   },
 };
@@ -219,7 +227,7 @@ export function inicializarEventHandlers(): void {
         await notificacaoService.removerNotificacoesDoOrcamento(orcamentoId);
       }
     } catch (error) {
-      console.error('[NotificacaoService] Erro ao processar evento de mudança de status:', error);
+      logger.error('[NotificacaoService] Erro ao processar evento de mudança de status:', { error });
       // Não propaga o erro - EventBus já trata isso
     }
   });

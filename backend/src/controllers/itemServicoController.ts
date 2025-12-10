@@ -43,8 +43,17 @@ export const itemServicoController = {
 
   async criar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { categoriaId, descricao, unidade, ativo } = req.body;
-      const item = await itemServicoService.criar({ categoriaId, descricao, unidade, ativo });
+      const { categoriaId, descricao, unidade, ativo, valorUnitario, valorMaoDeObraUnitario, valorCusto, valorMaoDeObraCusto } = req.body;
+      const item = await itemServicoService.criar({
+        categoriaId,
+        descricao,
+        unidade,
+        ativo,
+        valorUnitario,
+        valorMaoDeObraUnitario,
+        valorCusto,
+        valorMaoDeObraCusto,
+      });
       res.status(201).json(item);
     } catch (error) {
       next(error);
@@ -54,8 +63,17 @@ export const itemServicoController = {
   async atualizar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const { descricao, unidade, ativo, ordem } = req.body;
-      const item = await itemServicoService.atualizar(id, { descricao, unidade, ativo, ordem });
+      const { descricao, unidade, ativo, ordem, valorUnitario, valorMaoDeObraUnitario, valorCusto, valorMaoDeObraCusto } = req.body;
+      const item = await itemServicoService.atualizar(id, {
+        descricao,
+        unidade,
+        ativo,
+        ordem,
+        valorUnitario,
+        valorMaoDeObraUnitario,
+        valorCusto,
+        valorMaoDeObraCusto,
+      });
       res.json(item);
     } catch (error) {
       next(error);

@@ -6,6 +6,8 @@
  * - notificacaoService escuta esses eventos e reage
  */
 
+import { logger } from '../utils/logger';
+
 type EventHandler<T = unknown> = (payload: T) => void | Promise<void>;
 
 interface EventMap {
@@ -68,10 +70,7 @@ class EventBusImpl {
       try {
         await handler(payload);
       } catch (error) {
-        console.error(
-          `[EventBus] Error in handler for event "${event}":`,
-          error
-        );
+        logger.error(`[EventBus] Error in handler for event "${event}"`, { error });
         // Não propaga o erro - outros handlers devem continuar executando
       }
     });

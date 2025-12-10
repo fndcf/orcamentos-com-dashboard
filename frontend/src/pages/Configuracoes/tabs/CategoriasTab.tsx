@@ -15,6 +15,7 @@ import {
 } from '../../../hooks/useItensServico';
 import { Modal, Button, Input } from '../../../components/ui';
 import { CategoriaItem, ItemServico } from '../../../types';
+import { logger } from '../../../utils/logger';
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
 import {
   Section,
@@ -60,6 +61,10 @@ export function CategoriasTab() {
   const [editandoItemServico, setEditandoItemServico] = useState<ItemServico | null>(null);
   const [itemServicoDescricao, setItemServicoDescricao] = useState('');
   const [itemServicoUnidade, setItemServicoUnidade] = useState('');
+  const [itemServicoValorUnitario, setItemServicoValorUnitario] = useState<string>('');
+  const [itemServicoValorMaoDeObraUnitario, setItemServicoValorMaoDeObraUnitario] = useState<string>('');
+  const [itemServicoValorCusto, setItemServicoValorCusto] = useState<string>('');
+  const [itemServicoValorMaoDeObraCusto, setItemServicoValorMaoDeObraCusto] = useState<string>('');
   const [confirmDeleteItemServico, setConfirmDeleteItemServico] = useState<ItemServico | null>(null);
   const [itemServicoError, setItemServicoError] = useState<string | null>(null);
 
@@ -109,7 +114,7 @@ export function CategoriasTab() {
       }
       handleCloseModal();
     } catch (error: any) {
-      console.error('Erro ao salvar:', error);
+      logger.error('Erro ao salvar categoria', { error });
       const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Erro ao salvar. Tente novamente.';
       setModalError(errorMessage);
     }
@@ -119,7 +124,7 @@ export function CategoriasTab() {
     try {
       await toggleCategoria.mutateAsync(id);
     } catch (error) {
-      console.error('Erro ao alterar status:', error);
+      logger.error('Erro ao alterar status da categoria', { error });
     }
   };
 
@@ -130,7 +135,7 @@ export function CategoriasTab() {
       await excluirCategoria.mutateAsync(confirmDelete.id!);
       setConfirmDelete(null);
     } catch (error) {
-      console.error('Erro ao excluir:', error);
+      logger.error('Erro ao excluir categoria', { error });
     }
   };
 
@@ -139,6 +144,10 @@ export function CategoriasTab() {
     setEditandoItemServico(null);
     setItemServicoDescricao('');
     setItemServicoUnidade('');
+    setItemServicoValorUnitario('');
+    setItemServicoValorMaoDeObraUnitario('');
+    setItemServicoValorCusto('');
+    setItemServicoValorMaoDeObraCusto('');
     setCategoriaExpandida(categoriaId);
     setItemServicoModalOpen(true);
   };
@@ -147,6 +156,10 @@ export function CategoriasTab() {
     setEditandoItemServico(item);
     setItemServicoDescricao(item.descricao);
     setItemServicoUnidade(item.unidade);
+    setItemServicoValorUnitario(item.valorUnitario?.toString() || '');
+    setItemServicoValorMaoDeObraUnitario(item.valorMaoDeObraUnitario?.toString() || '');
+    setItemServicoValorCusto(item.valorCusto?.toString() || '');
+    setItemServicoValorMaoDeObraCusto(item.valorMaoDeObraCusto?.toString() || '');
     setItemServicoModalOpen(true);
   };
 
@@ -155,6 +168,10 @@ export function CategoriasTab() {
     setEditandoItemServico(null);
     setItemServicoDescricao('');
     setItemServicoUnidade('');
+    setItemServicoValorUnitario('');
+    setItemServicoValorMaoDeObraUnitario('');
+    setItemServicoValorCusto('');
+    setItemServicoValorMaoDeObraCusto('');
     setItemServicoError(null);
   };
 
@@ -164,25 +181,30 @@ export function CategoriasTab() {
 
     setItemServicoError(null);
 
+    const dadosItem = {
+      descricao: itemServicoDescricao.trim(),
+      unidade: itemServicoUnidade.trim().toUpperCase(),
+      valorUnitario: itemServicoValorUnitario ? parseFloat(itemServicoValorUnitario) : undefined,
+      valorMaoDeObraUnitario: itemServicoValorMaoDeObraUnitario ? parseFloat(itemServicoValorMaoDeObraUnitario) : undefined,
+      valorCusto: itemServicoValorCusto ? parseFloat(itemServicoValorCusto) : undefined,
+      valorMaoDeObraCusto: itemServicoValorMaoDeObraCusto ? parseFloat(itemServicoValorMaoDeObraCusto) : undefined,
+    };
+
     try {
       if (editandoItemServico) {
         await atualizarItemServico.mutateAsync({
           id: editandoItemServico.id!,
-          data: {
-            descricao: itemServicoDescricao.trim(),
-            unidade: itemServicoUnidade.trim().toUpperCase(),
-          },
+          data: dadosItem,
         });
       } else if (categoriaExpandida) {
         await criarItemServico.mutateAsync({
           categoriaId: categoriaExpandida,
-          descricao: itemServicoDescricao.trim(),
-          unidade: itemServicoUnidade.trim().toUpperCase(),
+          ...dadosItem,
         });
       }
       handleCloseItemServicoModal();
     } catch (error: any) {
-      console.error('Erro ao salvar item de servico:', error);
+      logger.error('Erro ao salvar item de serviço', { error });
       const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Erro ao salvar. Tente novamente.';
       setItemServicoError(errorMessage);
     }
@@ -192,7 +214,7 @@ export function CategoriasTab() {
     try {
       await toggleItemServico.mutateAsync(id);
     } catch (error) {
-      console.error('Erro ao alterar status do item:', error);
+      logger.error('Erro ao alterar status do item de serviço', { error });
     }
   };
 
@@ -203,7 +225,7 @@ export function CategoriasTab() {
       await excluirItemServico.mutateAsync(confirmDeleteItemServico.id!);
       setConfirmDeleteItemServico(null);
     } catch (error) {
-      console.error('Erro ao excluir item de servico:', error);
+      logger.error('Erro ao excluir item de serviço', { error });
     }
   };
 
@@ -273,6 +295,16 @@ export function CategoriasTab() {
                           <ItemServicoInfo>
                             <div className="descricao">{item.descricao}</div>
                             <div className="unidade">Unidade: {item.unidade}</div>
+                            {(item.valorUnitario !== undefined || item.valorMaoDeObraUnitario !== undefined) && (
+                              <div className="unidade">
+                                Venda: Mat. R$ {(item.valorUnitario || 0).toFixed(2)} | M.O. R$ {(item.valorMaoDeObraUnitario || 0).toFixed(2)}
+                              </div>
+                            )}
+                            {(item.valorCusto !== undefined || item.valorMaoDeObraCusto !== undefined) && (
+                              <div className="unidade" style={{ color: 'var(--text-tertiary)' }}>
+                                Custo: Mat. R$ {(item.valorCusto || 0).toFixed(2)} | M.O. R$ {(item.valorMaoDeObraCusto || 0).toFixed(2)}
+                              </div>
+                            )}
                           </ItemServicoInfo>
                           <ItemServicoActions>
                             <SmallButton $variant="edit" onClick={() => handleEditarItemServico(item)}>
@@ -349,7 +381,7 @@ export function CategoriasTab() {
         isOpen={itemServicoModalOpen}
         onClose={handleCloseItemServicoModal}
         title={editandoItemServico ? 'Editar Item de Serviço' : 'Novo Item de Serviço'}
-        width="550px"
+        width="650px"
       >
         {itemServicoError && <ErrorAlert>{itemServicoError}</ErrorAlert>}
 
@@ -364,7 +396,7 @@ export function CategoriasTab() {
           <HelpText>Mínimo de 5 caracteres. Esta descrição aparecerá como opção ao criar orçamentos.</HelpText>
         </FormGroup>
 
-        <FormGroup>
+        <FormGroup style={{ marginBottom: 16 }}>
           <Label>Unidade de Medida</Label>
           <Input
             value={itemServicoUnidade}
@@ -375,6 +407,69 @@ export function CategoriasTab() {
           <HelpText>Ex: UN (unidade), M (metro), M2 (metro quadrado), CJ (conjunto), VB (verba)</HelpText>
         </FormGroup>
 
+        {/* Valores de Venda */}
+        <div style={{ marginBottom: 16, padding: '12px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px' }}>
+          <Label style={{ marginBottom: 12, display: 'block', fontWeight: 600 }}>Valores de Venda (Unitários)</Label>
+          <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+            <FormGroup style={{ marginBottom: 0, flex: 1, minWidth: 0 }}>
+              <Label style={{ fontSize: '0.85rem' }}>Material</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={itemServicoValorUnitario}
+                onChange={(e) => setItemServicoValorUnitario(e.target.value)}
+                placeholder="0,00"
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+            </FormGroup>
+            <FormGroup style={{ marginBottom: 0, flex: 1, minWidth: 0 }}>
+              <Label style={{ fontSize: '0.85rem' }}>M. de Obra</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={itemServicoValorMaoDeObraUnitario}
+                onChange={(e) => setItemServicoValorMaoDeObraUnitario(e.target.value)}
+                placeholder="0,00"
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+            </FormGroup>
+          </div>
+        </div>
+
+        {/* Valores de Custo */}
+        <div style={{ marginBottom: 16, padding: '12px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
+          <Label style={{ marginBottom: 12, display: 'block', fontWeight: 600, color: 'var(--text-secondary)' }}>Valores de Custo (Ref. Interna)</Label>
+          <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+            <FormGroup style={{ marginBottom: 0, flex: 1, minWidth: 0 }}>
+              <Label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Material</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={itemServicoValorCusto}
+                onChange={(e) => setItemServicoValorCusto(e.target.value)}
+                placeholder="0,00"
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+            </FormGroup>
+            <FormGroup style={{ marginBottom: 0, flex: 1, minWidth: 0 }}>
+              <Label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>M. de Obra</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={itemServicoValorMaoDeObraCusto}
+                onChange={(e) => setItemServicoValorMaoDeObraCusto(e.target.value)}
+                placeholder="0,00"
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+            </FormGroup>
+          </div>
+          <HelpText style={{ marginTop: 8 }}>Valores de custo não aparecem no orçamento.</HelpText>
+        </div>
+
         <ModalButtons>
           <Button $variant="ghost" onClick={handleCloseItemServicoModal}>
             Cancelar
@@ -383,7 +478,7 @@ export function CategoriasTab() {
             onClick={handleSalvarItemServico}
             disabled={!itemServicoDescricao.trim() || itemServicoDescricao.trim().length < 5 || !itemServicoUnidade.trim()}
           >
-            {editandoItemServico ? 'Salvar Alteracoes' : 'Cadastrar'}
+            {editandoItemServico ? 'Salvar Alterações' : 'Cadastrar'}
           </Button>
         </ModalButtons>
       </Modal>

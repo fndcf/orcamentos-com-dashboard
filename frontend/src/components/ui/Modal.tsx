@@ -75,6 +75,9 @@ const CloseButton = styled.button`
 
 const ModalBody = styled.div`
   padding: 24px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 
   @media (max-width: 768px) {
     padding: 16px;

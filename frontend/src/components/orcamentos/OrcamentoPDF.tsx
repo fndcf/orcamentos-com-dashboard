@@ -8,6 +8,7 @@ import {
 } from '@react-pdf/renderer';
 import { Orcamento, ConfiguracoesGerais } from '../../types';
 import { configuracoesGeraisService } from '../../services/configuracoesGeraisService';
+import { logger } from '../../utils/logger';
 
 // Cores do tema
 const COLORS = {
@@ -24,7 +25,7 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingLeft: 40,
     paddingRight: 40,
-    paddingBottom: 70, // Espaço extra para o rodapé fixo
+    paddingBottom: 75, // Espaço para o rodapé fixo
     fontSize: 9,
     fontFamily: 'Helvetica',
     color: COLORS.dark,
@@ -172,6 +173,7 @@ const styles = StyleSheet.create({
   colDescricao: {
     flex: 1,
     paddingHorizontal: 8,
+    textAlign: 'justify',
   },
   colUnid: {
     width: 45,
@@ -244,6 +246,7 @@ const styles = StyleSheet.create({
   observacoesText: {
     lineHeight: 1.5,
     color: COLORS.dark,
+    textAlign: 'justify',
   },
   servicoText: {
     fontSize: 9,
@@ -278,6 +281,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     lineHeight: 1.4,
     color: COLORS.gray,
+    textAlign: 'justify',
   },
   // Assinatura
   assinaturaSection: {
@@ -363,6 +367,29 @@ const formatCEP = (cep: string | undefined): string => {
   return cep;
 };
 
+// Converte número para texto por extenso (português)
+const numeroPorExtenso = (num: number): string => {
+  const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+  const dezenas = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+  const centenas = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+
+  if (num === 0) return 'zero';
+  if (num === 100) return 'cem';
+  if (num < 20) return unidades[num];
+  if (num < 100) {
+    const dezena = Math.floor(num / 10);
+    const unidade = num % 10;
+    return unidade ? `${dezenas[dezena]} e ${unidades[unidade]}` : dezenas[dezena];
+  }
+  if (num < 1000) {
+    const centena = Math.floor(num / 100);
+    const resto = num % 100;
+    if (resto === 0) return centenas[centena] === 'cento' ? 'cem' : centenas[centena];
+    return `${centenas[centena]} e ${numeroPorExtenso(resto)}`;
+  }
+  return String(num); // Para números maiores, retorna o número
+};
+
 interface OrcamentoPDFProps {
   orcamento: Orcamento;
   configuracoes?: ConfiguracoesGerais;
@@ -418,32 +445,34 @@ export function OrcamentoPDFDocument({ orcamento, configuracoes }: OrcamentoPDFP
             {orcamento.clienteTipoPessoa === 'fisica' ? 'Cliente: ' : 'Empresa: '}{orcamento.clienteNome}
           </Text>
           <View style={styles.clienteGrid}>
-            <View style={styles.clienteItem}>
-              <Text style={styles.clienteLabel}>CNPJ/CPF</Text>
-              <Text style={styles.clienteValue}>{orcamento.clienteCnpj}</Text>
-            </View>
-            {orcamento.contato && (
+            {orcamento.clienteCnpj && orcamento.clienteCnpj.trim() !== '' && (
+              <View style={styles.clienteItem}>
+                <Text style={styles.clienteLabel}>{orcamento.clienteTipoPessoa === 'fisica' ? 'CPF' : 'CNPJ'}</Text>
+                <Text style={styles.clienteValue}>{orcamento.clienteCnpj}</Text>
+              </View>
+            )}
+            {orcamento.contato && orcamento.contato.trim() !== '' && (
               <View style={styles.clienteItem}>
                 <Text style={styles.clienteLabel}>Contato</Text>
                 <Text style={styles.clienteValue}>{orcamento.contato}</Text>
               </View>
             )}
-            {enderecoCompleto && (
+            {enderecoCompleto && enderecoCompleto.trim() !== '' && (
               <View style={styles.clienteItemFull}>
                 <Text style={styles.clienteLabel}>Endereço</Text>
                 <Text style={styles.clienteValue}>
                   {enderecoCompleto}
-                  {orcamento.clienteCep && ` - CEP: ${formatCEP(orcamento.clienteCep)}`}
+                  {orcamento.clienteCep && orcamento.clienteCep.trim() !== '' ? ` - CEP: ${formatCEP(orcamento.clienteCep)}` : ''}
                 </Text>
               </View>
             )}
-            {orcamento.clienteTelefone && (
+            {orcamento.clienteTelefone && orcamento.clienteTelefone.trim() !== '' && (
               <View style={styles.clienteItem}>
                 <Text style={styles.clienteLabel}>Telefone</Text>
                 <Text style={styles.clienteValue}>{orcamento.clienteTelefone}</Text>
               </View>
             )}
-            {orcamento.clienteEmail && (
+            {orcamento.clienteEmail && orcamento.clienteEmail.trim() !== '' && (
               <View style={styles.clienteItem}>
                 <Text style={styles.clienteLabel}>E-mail</Text>
                 <Text style={styles.clienteValue}>{orcamento.clienteEmail}</Text>
@@ -498,7 +527,7 @@ export function OrcamentoPDFDocument({ orcamento, configuracoes }: OrcamentoPDFP
         <View style={styles.condicoesSection}>
           <View style={styles.condicoesBox}>
             <Text style={styles.condicoesTitle}>Validade da Proposta</Text>
-            <Text style={styles.condicoesValue}>30 dias</Text>
+            <Text style={styles.condicoesValue}>{configuracoes?.diasValidadeOrcamento || 30} dias</Text>
           </View>
           <View style={styles.condicoesBox}>
             <Text style={styles.condicoesTitle}>Condição de Pagamento</Text>
@@ -510,13 +539,28 @@ export function OrcamentoPDFDocument({ orcamento, configuracoes }: OrcamentoPDFP
           </View>
         </View>
 
-        {/* Observações */}
-        {orcamento.observacoes && (
+        {/* Observações (inclui limitações selecionadas + observações adicionais) */}
+        {(orcamento.limitacoesSelecionadas?.length || orcamento.observacoes) && (
           <>
             <Text style={styles.sectionTitle}>Observações</Text>
             <View style={styles.observacoesSection}>
               <View style={styles.observacoesBox}>
-                <Text style={styles.observacoesText}>{orcamento.observacoes}</Text>
+                {/* Limitações selecionadas como bullets */}
+                {orcamento.limitacoesSelecionadas && orcamento.limitacoesSelecionadas.length > 0 && (
+                  orcamento.limitacoesSelecionadas.map((limitacao, index) => (
+                    <View key={index} style={{ flexDirection: 'row', marginBottom: 4 }}>
+                      <Text style={{ marginRight: 6 }}>•</Text>
+                      <Text style={styles.observacoesText}>{limitacao}</Text>
+                    </View>
+                  ))
+                )}
+                {/* Observações adicionais também como bullet */}
+                {orcamento.observacoes && (
+                  <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+                    <Text style={{ marginRight: 6 }}>•</Text>
+                    <Text style={styles.observacoesText}>{orcamento.observacoes}</Text>
+                  </View>
+                )}
               </View>
             </View>
           </>
@@ -564,6 +608,7 @@ const stylesCompleto = StyleSheet.create({
   colDescricaoCompleto: {
     flex: 1,
     paddingHorizontal: 4,
+    textAlign: 'justify',
   },
   colUnidCompleto: {
     width: 32,
@@ -766,6 +811,8 @@ const stylesCompleto = StyleSheet.create({
     marginTop: 10,
     marginBottom: 25,
     gap: 10,
+    // @ts-ignore - propriedade válida no react-pdf
+    minPresenceAhead: 40,
   },
   totalBoxCompleto: {
     backgroundColor: COLORS.lightGray,
@@ -795,7 +842,7 @@ const stylesCompleto = StyleSheet.create({
   limitacoesSection: {
     marginBottom: 20,
     // @ts-ignore - propriedade válida no react-pdf
-    minPresenceAhead: 50,
+    minPresenceAhead: 60,
   },
   limitacoesBox: {
     padding: 12,
@@ -817,6 +864,7 @@ const stylesCompleto = StyleSheet.create({
     fontSize: 9,
     lineHeight: 1.4,
     color: COLORS.dark,
+    textAlign: 'justify',
   },
   // Prazo e condições
   prazoCondicoesSection: {
@@ -831,7 +879,7 @@ const stylesCompleto = StyleSheet.create({
     backgroundColor: COLORS.lightGray,
     borderRadius: 4,
     // @ts-ignore - propriedade válida no react-pdf
-    minPresenceAhead: 40,
+    minPresenceAhead: 50,
   },
   precosSubtitulo: {
     fontSize: 10,
@@ -844,6 +892,7 @@ const stylesCompleto = StyleSheet.create({
     fontSize: 9,
     lineHeight: 1.5,
     color: COLORS.dark,
+    textAlign: 'justify',
   },
   precosValorTotal: {
     fontSize: 14,
@@ -872,6 +921,77 @@ const stylesCompleto = StyleSheet.create({
     fontSize: 9,
     lineHeight: 1.4,
     color: COLORS.dark,
+    textAlign: 'justify',
+  },
+  // Tabela de parcelamento
+  parcelamentoTable: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 4,
+  },
+  parcelamentoTableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#4a4a4a',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  parcelamentoTableHeaderText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 8,
+  },
+  parcelamentoTableRow: {
+    flexDirection: 'row',
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  parcelamentoTableRowAlt: {
+    flexDirection: 'row',
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.lightGray,
+  },
+  parcelamentoColParcelas: {
+    width: 60,
+    fontSize: 9,
+  },
+  parcelamentoColValor: {
+    width: 90,
+    fontSize: 9,
+    textAlign: 'right',
+  },
+  parcelamentoColJuros: {
+    width: 70,
+    fontSize: 8,
+    textAlign: 'center',
+    color: COLORS.gray,
+  },
+  parcelamentoColTotal: {
+    flex: 1,
+    fontSize: 9,
+    textAlign: 'right',
+    fontWeight: 'bold',
+  },
+  parcelamentoEntradaBox: {
+    backgroundColor: COLORS.primaryLight,
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  parcelamentoEntradaText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  parcelamentoRestanteText: {
+    fontSize: 9,
+    color: COLORS.dark,
+    marginTop: 4,
   },
 });
 
@@ -942,16 +1062,16 @@ export function OrcamentoCompletoPDFDocument({ orcamento, configuracoes }: Orcam
               {orcamento.clienteNome}
             </Text>
           </View>
-          {enderecoCompleto && (
+          {enderecoCompleto && enderecoCompleto.trim() !== '' && (
             <View style={{ marginBottom: 4 }}>
               <Text style={styles.clienteValue}>
                 <Text style={{ fontWeight: 'bold' }}>Endereço: </Text>
                 {enderecoCompleto}
-                {orcamento.clienteCep && ` - CEP: ${formatCEP(orcamento.clienteCep)}`}
+                {orcamento.clienteCep && orcamento.clienteCep.trim() !== '' ? ` - CEP: ${formatCEP(orcamento.clienteCep)}` : ''}
               </Text>
             </View>
           )}
-          {orcamento.clienteTelefone && (
+          {orcamento.clienteTelefone && orcamento.clienteTelefone.trim() !== '' && (
             <View style={{ marginBottom: 4 }}>
               <Text style={styles.clienteValue}>
                 <Text style={{ fontWeight: 'bold' }}>Telefone: </Text>
@@ -959,7 +1079,7 @@ export function OrcamentoCompletoPDFDocument({ orcamento, configuracoes }: Orcam
               </Text>
             </View>
           )}
-          {orcamento.contato && (
+          {orcamento.contato && orcamento.contato.trim() !== '' && (
             <View style={{ marginBottom: 4 }}>
               <Text style={styles.clienteValue}>
                 <Text style={{ fontWeight: 'bold' }}>Contato: </Text>
@@ -967,7 +1087,7 @@ export function OrcamentoCompletoPDFDocument({ orcamento, configuracoes }: Orcam
               </Text>
             </View>
           )}
-          {orcamento.clienteEmail && (
+          {orcamento.clienteEmail && orcamento.clienteEmail.trim() !== '' && (
             <View style={{ marginBottom: 4 }}>
               <Text style={styles.clienteValue}>
                 <Text style={{ fontWeight: 'bold' }}>E-mail: </Text>
@@ -975,7 +1095,7 @@ export function OrcamentoCompletoPDFDocument({ orcamento, configuracoes }: Orcam
               </Text>
             </View>
           )}
-          {orcamento.servicoDescricao && (
+          {orcamento.servicoDescricao && orcamento.servicoDescricao.trim() !== '' && (
             <View style={{ marginBottom: 4 }}>
               <Text style={styles.clienteValue}>
                 <Text style={{ fontWeight: 'bold' }}>Serviço: </Text>
@@ -1211,22 +1331,32 @@ export function OrcamentoCompletoPDFDocument({ orcamento, configuracoes }: Orcam
           </View>
         </View>
 
-        {/* Observações e Limitações */}
-        {orcamento.limitacoesSelecionadas && orcamento.limitacoesSelecionadas.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Observações e Limitações</Text>
-            <View style={stylesCompleto.limitacoesSection}>
-              <View style={stylesCompleto.limitacoesBox}>
-                {orcamento.limitacoesSelecionadas.map((limitacao, index) => (
-                  <View key={index} style={stylesCompleto.limitacaoItem}>
-                    <Text style={stylesCompleto.limitacaoBullet}>•</Text>
-                    <Text style={stylesCompleto.limitacaoText}>{limitacao}</Text>
-                  </View>
-                ))}
-              </View>
+        {/* Observações e Limitações - View wrapper para evitar sobreposição com rodapé */}
+        <View style={stylesCompleto.limitacoesSection}>
+          <Text style={styles.sectionTitle}>Observações e Limitações</Text>
+          <View style={stylesCompleto.limitacoesBox}>
+            {/* Parágrafos fixos */}
+            <View style={stylesCompleto.limitacaoItem}>
+              <Text style={stylesCompleto.limitacaoBullet}>•</Text>
+              <Text style={stylesCompleto.limitacaoText}>
+                O Contratante deverá nos informar procedimentos e rotinas operacionais ligadas à saúde e segurança a serem observadas e seguidas por nossos profissionais durante a execução dos trabalhos de campo.
+              </Text>
             </View>
-          </>
-        )}
+            <View style={stylesCompleto.limitacaoItem}>
+              <Text style={stylesCompleto.limitacaoBullet}>•</Text>
+              <Text style={stylesCompleto.limitacaoText}>
+                Os serviços serão realizados em horário comercial, de segunda a sexta-feira, das 8 às 17h, ou em horário a combinar.
+              </Text>
+            </View>
+            {/* Limitações selecionadas */}
+            {orcamento.limitacoesSelecionadas && orcamento.limitacoesSelecionadas.map((limitacao, index) => (
+              <View key={index} style={stylesCompleto.limitacaoItem}>
+                <Text style={stylesCompleto.limitacaoBullet}>•</Text>
+                <Text style={stylesCompleto.limitacaoText}>{limitacao}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
 
         {/* Preços e Condições de Pagamento */}
         <Text style={styles.sectionTitle}>Preços e Condições de Pagamento</Text>
@@ -1246,7 +1376,46 @@ export function OrcamentoCompletoPDFDocument({ orcamento, configuracoes }: Orcam
           <Text style={stylesCompleto.precosTexto}>
             Propomos as seguintes condições de pagamento para os investimentos referentes aos seus serviços:
           </Text>
-          <Text style={stylesCompleto.precosCondicao}>{condicaoPagamentoTexto}</Text>
+
+          {/* Se tem dados de parcelamento, mostrar tabela detalhada */}
+          {orcamento.parcelamentoDados && orcamento.parcelamentoDados.opcoes.length > 0 ? (
+            <>
+              {/* Box de entrada */}
+              <View style={stylesCompleto.parcelamentoEntradaBox}>
+                <Text style={stylesCompleto.parcelamentoEntradaText}>
+                  Entrada: {orcamento.parcelamentoDados.entradaPercent}% - {formatCurrency(orcamento.parcelamentoDados.valorEntrada)}
+                </Text>
+                <Text style={stylesCompleto.parcelamentoRestanteText}>
+                  Restante: {formatCurrency(orcamento.parcelamentoDados.valorRestante)}
+                </Text>
+              </View>
+
+              {/* Tabela de opções de parcelamento */}
+              <View style={stylesCompleto.parcelamentoTable}>
+                <View style={stylesCompleto.parcelamentoTableHeader}>
+                  <Text style={[stylesCompleto.parcelamentoTableHeaderText, stylesCompleto.parcelamentoColParcelas]}>PARCELAS</Text>
+                  <Text style={[stylesCompleto.parcelamentoTableHeaderText, stylesCompleto.parcelamentoColValor]}>VALOR/PARCELA</Text>
+                  <Text style={[stylesCompleto.parcelamentoTableHeaderText, stylesCompleto.parcelamentoColJuros]}>JUROS</Text>
+                  <Text style={[stylesCompleto.parcelamentoTableHeaderText, stylesCompleto.parcelamentoColTotal]}>TOTAL FINAL</Text>
+                </View>
+                {orcamento.parcelamentoDados.opcoes.map((opcao, index) => (
+                  <View
+                    key={opcao.numeroParcelas}
+                    style={index % 2 === 0 ? stylesCompleto.parcelamentoTableRow : stylesCompleto.parcelamentoTableRowAlt}
+                  >
+                    <Text style={stylesCompleto.parcelamentoColParcelas}>{opcao.numeroParcelas}x</Text>
+                    <Text style={stylesCompleto.parcelamentoColValor}>{formatCurrency(opcao.valorParcela)}</Text>
+                    <Text style={stylesCompleto.parcelamentoColJuros}>
+                      {opcao.temJuros ? `+${opcao.taxaJuros}%` : 'Sem juros'}
+                    </Text>
+                    <Text style={stylesCompleto.parcelamentoColTotal}>{formatCurrency(opcao.valorTotal)}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : (
+            <Text style={stylesCompleto.precosCondicao}>{condicaoPagamentoTexto}</Text>
+          )}
         </View>
 
         {/* Prazo de Execução */}
@@ -1270,7 +1439,7 @@ export function OrcamentoCompletoPDFDocument({ orcamento, configuracoes }: Orcam
         <Text style={styles.sectionTitle}>Prazo de Validade da Proposta</Text>
         <View style={stylesCompleto.precosBox}>
           <Text style={stylesCompleto.precosTexto}>
-            Esta proposta tem validade de 30 (trinta) dias e o seu aceite poderá ser efetuado por e-mail ou fax.
+            Esta proposta tem validade de {configuracoes?.diasValidadeOrcamento || 30} ({numeroPorExtenso(configuracoes?.diasValidadeOrcamento || 30)}) dias e o seu aceite poderá ser efetuado por e-mail ou fax.
           </Text>
         </View>
 
@@ -1324,7 +1493,7 @@ export async function gerarPDFOrcamento(orcamento: Orcamento): Promise<void> {
   try {
     configuracoes = await configuracoesGeraisService.buscar();
   } catch (error) {
-    console.error('Erro ao buscar configurações:', error);
+    logger.error('Erro ao buscar configurações para PDF', { error });
   }
 
   // Escolher o template correto baseado no tipo

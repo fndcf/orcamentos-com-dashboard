@@ -8,6 +8,7 @@ import {
 } from '../../../hooks/useServicos';
 import { Modal, Button } from '../../../components/ui';
 import { Servico } from '../../../types';
+import { logger } from '../../../utils/logger';
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
 import {
   Section,
@@ -78,7 +79,7 @@ export function ServicosTab() {
       }
       handleCloseModal();
     } catch (error: any) {
-      console.error('Erro ao salvar:', error);
+      logger.error('Erro ao salvar serviço', { error });
       const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Erro ao salvar. Tente novamente.';
       setModalError(errorMessage);
     }
@@ -88,7 +89,7 @@ export function ServicosTab() {
     try {
       await toggleServico.mutateAsync(id);
     } catch (error) {
-      console.error('Erro ao alterar status:', error);
+      logger.error('Erro ao alterar status do serviço', { error });
     }
   };
 
@@ -99,7 +100,7 @@ export function ServicosTab() {
       await excluirServico.mutateAsync(confirmDelete.id!);
       setConfirmDelete(null);
     } catch (error) {
-      console.error('Erro ao excluir:', error);
+      logger.error('Erro ao excluir serviço', { error });
     }
   };
 

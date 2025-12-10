@@ -123,6 +123,28 @@ describe('notificacaoService', () => {
     });
   });
 
+  describe('listarAtivas', () => {
+    it('deve retornar notificações ativas com dias padrão', async () => {
+      const notificacoes = [mockNotificacao];
+      (notificacaoRepository.findAtivas as jest.Mock).mockResolvedValue(notificacoes);
+
+      const resultado = await notificacaoService.listarAtivas();
+
+      expect(notificacaoRepository.findAtivas).toHaveBeenCalledWith(60);
+      expect(resultado).toEqual(notificacoes);
+    });
+
+    it('deve retornar notificações ativas com dias específico', async () => {
+      const notificacoes = [mockNotificacao];
+      (notificacaoRepository.findAtivas as jest.Mock).mockResolvedValue(notificacoes);
+
+      const resultado = await notificacaoService.listarAtivas(10);
+
+      expect(notificacaoRepository.findAtivas).toHaveBeenCalledWith(10);
+      expect(resultado).toEqual(notificacoes);
+    });
+  });
+
   describe('buscarPorId', () => {
     it('deve retornar notificação por ID', async () => {
       (notificacaoRepository.findById as jest.Mock).mockResolvedValue(mockNotificacao);
@@ -399,6 +421,7 @@ describe('notificacaoService', () => {
       (notificacaoRepository.findNaoLidas as jest.Mock).mockResolvedValue([mockNotificacao]);
       (notificacaoRepository.findVencidas as jest.Mock).mockResolvedValue([]);
       (notificacaoRepository.findProximas as jest.Mock).mockResolvedValue([mockNotificacao, { ...mockNotificacao, id: '2' }]);
+      (notificacaoRepository.findAtivas as jest.Mock).mockResolvedValue([mockNotificacao]);
 
       const resultado = await notificacaoService.obterResumo();
 
@@ -407,6 +430,7 @@ describe('notificacaoService', () => {
         naoLidas: 1,
         vencidas: 0,
         proximasVencer: 2,
+        ativas: 1,
       });
     });
   });
@@ -514,9 +538,9 @@ describe('inicializarEventHandlers', () => {
     // Aguarda um tick para o handler assíncrono executar
     await new Promise(resolve => setTimeout(resolve, 10));
 
+    // O logger formata a mensagem com timestamp e nível
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[NotificacaoService] Erro ao processar evento de mudança de status:',
-      expect.any(Error)
+      expect.stringContaining('[NotificacaoService] Erro ao processar evento de mudança de status:')
     );
 
     consoleErrorSpy.mockRestore();

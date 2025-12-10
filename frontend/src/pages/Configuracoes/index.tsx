@@ -85,7 +85,7 @@ export function Configuracoes() {
           $active={activeTab === "limitacoes"}
           onClick={() => setActiveTab("limitacoes")}
         >
-          Limitações
+          Observações
         </Tab>
       </TabsContainer>
 

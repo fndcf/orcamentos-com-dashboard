@@ -116,9 +116,9 @@ describe('EventBus', () => {
       expect(handler1).toHaveBeenCalled();
       expect(handler2).toHaveBeenCalled();
       expect(handler3).toHaveBeenCalled();
+      // O logger formata a mensagem com timestamp e nível
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[EventBus] Error in handler for event'),
-        expect.any(Error)
+        expect.stringContaining('[EventBus] Error in handler for event')
       );
 
       consoleErrorSpy.mockRestore();

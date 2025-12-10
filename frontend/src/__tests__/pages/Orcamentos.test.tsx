@@ -9,6 +9,7 @@ import {
   useAtualizarOrcamento,
   useAtualizarStatusOrcamento,
   useExcluirOrcamento,
+  useVerificarExpirados,
 } from '../../hooks/useOrcamentos';
 
 // Mock dos hooks
@@ -18,6 +19,7 @@ vi.mock('../../hooks/useOrcamentos', () => ({
   useAtualizarOrcamento: vi.fn(),
   useAtualizarStatusOrcamento: vi.fn(),
   useExcluirOrcamento: vi.fn(),
+  useVerificarExpirados: vi.fn(),
 }));
 
 // Mock do OrcamentoModal
@@ -123,6 +125,7 @@ const mockOrcamentos = [
 
 const mockMutations = {
   mutateAsync: vi.fn(),
+  mutate: vi.fn(),
   isLoading: false,
 };
 
@@ -133,6 +136,7 @@ describe('Orcamentos', () => {
     vi.mocked(useAtualizarOrcamento).mockReturnValue(mockMutations as any);
     vi.mocked(useAtualizarStatusOrcamento).mockReturnValue(mockMutations as any);
     vi.mocked(useExcluirOrcamento).mockReturnValue(mockMutations as any);
+    vi.mocked(useVerificarExpirados).mockReturnValue(mockMutations as any);
   });
 
   it('deve mostrar loading quando está carregando', () => {

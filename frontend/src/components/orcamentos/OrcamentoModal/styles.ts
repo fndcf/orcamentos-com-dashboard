@@ -124,6 +124,9 @@ export const ItensSection = styled.div`
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 
   @media (max-width: 768px) {
     padding: 12px;
@@ -395,6 +398,9 @@ export const ItemCompletoContainer = styled.div`
   margin-bottom: 12px;
   background: var(--background);
   position: relative;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 `;
 
 export const ItemCompletoRow1 = styled.div`
@@ -403,9 +409,11 @@ export const ItemCompletoRow1 = styled.div`
   gap: 8px;
   align-items: flex-end;
   margin-bottom: 8px;
+  max-width: 100%;
 
   > div {
     min-width: 0;
+    max-width: 100%;
   }
 
   @media (max-width: 900px) {
@@ -415,17 +423,34 @@ export const ItemCompletoRow1 = styled.div`
     > div:nth-child(2) { grid-column: 2 / 3; } /* Categoria */
     > div:nth-child(3) { grid-column: 1 / 3; } /* Descrição */
   }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr !important;
+
+    > div {
+      grid-column: 1 / -1 !important;
+    }
+  }
 `;
 
 export const DescricaoAutocompleteContainer = styled.div`
   position: relative;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
 `;
 
 export const DescricaoInputWrapper = styled.div`
   display: flex;
   gap: 4px;
   align-items: center;
+  max-width: 100%;
+  min-width: 0;
+
+  input {
+    min-width: 0;
+    flex: 1;
+  }
 `;
 
 export const DescricaoDropdownButton = styled.button`
@@ -456,7 +481,8 @@ export const DescricaoDropdown = styled.div`
   top: 100%;
   left: 0;
   right: 0;
-  max-height: 200px;
+  min-width: 400px;
+  max-height: 300px;
   overflow-y: auto;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -464,10 +490,15 @@ export const DescricaoDropdown = styled.div`
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   margin-top: 4px;
+
+  @media (max-width: 768px) {
+    min-width: 100%;
+    max-height: 250px;
+  }
 `;
 
 export const DescricaoOption = styled.div`
-  padding: 10px 12px;
+  padding: 12px 14px;
   cursor: pointer;
   border-bottom: 1px solid var(--border);
   transition: background 0.2s;
@@ -481,14 +512,20 @@ export const DescricaoOption = styled.div`
   }
 
   .descricao {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: var(--text-primary);
-    margin-bottom: 2px;
+    margin-bottom: 4px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: normal;
   }
 
   .unidade {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
   }
 `;
 
@@ -597,5 +634,159 @@ export const CondicaoOption = styled.label<{ $selected: boolean }>`
 
   input {
     accent-color: var(--primary);
+  }
+`;
+
+export const ParcelamentoContainer = styled.div`
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--background);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+`;
+
+export const EntradaSelector = styled.div`
+  margin-bottom: 16px;
+
+  .label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+`;
+
+export const EntradaOption = styled.button<{ $selected: boolean }>`
+  padding: 8px 16px;
+  border: 1px solid ${({ $selected }) => $selected ? 'var(--primary)' : 'var(--border)'};
+  border-radius: 6px;
+  background: ${({ $selected }) => $selected ? 'var(--primary)' : 'transparent'};
+  color: ${({ $selected }) => $selected ? 'white' : 'var(--text-primary)'};
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--primary);
+    background: ${({ $selected }) => $selected ? 'var(--primary)' : 'rgba(204, 0, 0, 0.05)'};
+  }
+`;
+
+export const ParcelasSelector = styled.div`
+  margin-bottom: 16px;
+
+  .label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+`;
+
+export const ParcelaOption = styled.button<{ $selected: boolean; $disabled?: boolean }>`
+  padding: 10px 16px;
+  border: 1px solid ${({ $selected, $disabled }) =>
+    $disabled ? 'var(--border)' :
+    $selected ? 'var(--primary)' : 'var(--border)'};
+  border-radius: 6px;
+  background: ${({ $selected, $disabled }) =>
+    $disabled ? 'var(--background)' :
+    $selected ? 'var(--primary)' : 'transparent'};
+  color: ${({ $selected, $disabled }) =>
+    $disabled ? 'var(--text-secondary)' :
+    $selected ? 'white' : 'var(--text-primary)'};
+  font-size: 0.85rem;
+  cursor: ${({ $disabled }) => $disabled ? 'not-allowed' : 'pointer'};
+  opacity: ${({ $disabled }) => $disabled ? 0.5 : 1};
+  transition: all 0.2s;
+  min-width: 100px;
+  text-align: center;
+
+  &:hover {
+    ${({ $disabled }) => !$disabled && `
+      border-color: var(--primary);
+    `}
+  }
+
+  .parcela-numero {
+    font-weight: 600;
+    display: block;
+  }
+
+  .parcela-valor {
+    font-size: 0.75rem;
+    opacity: 0.9;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .parcela-juros {
+    font-size: 0.7rem;
+    color: ${({ $selected }) => $selected ? 'rgba(255,255,255,0.8)' : 'var(--warning)'};
+    display: block;
+    margin-top: 2px;
+  }
+`;
+
+export const ParcelamentoResumo = styled.div`
+  padding: 16px;
+  background: rgba(204, 0, 0, 0.05);
+  border-radius: 8px;
+  border: 1px solid var(--primary);
+
+  .titulo {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 12px;
+  }
+
+  .detalhes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+`;
+
+export const ParcelamentoDetalhe = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  padding: 4px 0;
+
+  &.total {
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+    padding-top: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  &.juros {
+    color: var(--warning);
+    font-size: 0.85rem;
+  }
+
+  .label {
+    color: var(--text-secondary);
+  }
+
+  .valor {
+    font-weight: 500;
   }
 `;

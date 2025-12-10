@@ -1,7 +1,9 @@
 import admin from 'firebase-admin';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// Carrega variáveis de ambiente do .env.local em desenvolvimento
+dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 
 if (!admin.apps.length) {
   // Em produção (Cloud Functions), as credenciais são injetadas automaticamente

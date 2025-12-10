@@ -8,6 +8,7 @@ import {
   useAtualizarOrcamento,
   useAtualizarStatusOrcamento,
   useExcluirOrcamento,
+  useVerificarExpirados,
 } from "../hooks/useOrcamentos";
 import {
   Button,
@@ -219,6 +220,13 @@ export function Orcamentos() {
   const atualizarOrcamento = useAtualizarOrcamento();
   const atualizarStatus = useAtualizarStatusOrcamento();
   const excluirOrcamento = useExcluirOrcamento();
+  const verificarExpirados = useVerificarExpirados();
+
+  // Verificar orçamentos expirados ao carregar a página
+  useEffect(() => {
+    verificarExpirados.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Efeito para processar parâmetros da URL (vindo do Dashboard)
   useEffect(() => {

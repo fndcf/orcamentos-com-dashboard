@@ -91,11 +91,15 @@ export function ItensCompleto({
       onItemMultiChange(index, {
         descricao: item.descricao,
         unidade: item.unidade,
+        valorUnitarioMaterial: item.valorUnitario || 0,
+        valorUnitarioMaoDeObra: item.valorMaoDeObraUnitario || 0,
       });
     } else {
       // Fallback para compatibilidade
       onItemChange(index, "descricao", item.descricao);
       onItemChange(index, "unidade", item.unidade);
+      onItemChange(index, "valorUnitarioMaterial", item.valorUnitario || 0);
+      onItemChange(index, "valorUnitarioMaoDeObra", item.valorMaoDeObraUnitario || 0);
     }
     setDescricaoDropdownOpen(null);
   };
@@ -222,6 +226,11 @@ export function ItensCompleto({
                           <div className="descricao">{itemPred.descricao}</div>
                           <div className="unidade">
                             Unidade: {itemPred.unidade}
+                            {(itemPred.valorUnitario || itemPred.valorMaoDeObraUnitario) && (
+                              <span style={{ marginLeft: 8, color: 'var(--primary)' }}>
+                                | Mat: {formatCurrency(itemPred.valorUnitario || 0)} | M.O: {formatCurrency(itemPred.valorMaoDeObraUnitario || 0)}
+                              </span>
+                            )}
                           </div>
                         </DescricaoOption>
                       ))

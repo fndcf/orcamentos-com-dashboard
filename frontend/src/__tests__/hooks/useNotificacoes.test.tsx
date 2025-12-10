@@ -23,6 +23,7 @@ vi.mock('../../services/notificacaoService', () => ({
     listarNaoLidas: vi.fn(),
     listarProximas: vi.fn(),
     listarVencidas: vi.fn(),
+    listarAtivas: vi.fn(),
     obterResumo: vi.fn(),
     marcarComoLida: vi.fn(),
     marcarTodasComoLidas: vi.fn(),
@@ -76,6 +77,7 @@ const mockResumo = {
   naoLidas: 5,
   vencidas: 2,
   proximasVencer: 3,
+  ativas: 4,
 };
 
 describe('useNotificacoes hooks', () => {

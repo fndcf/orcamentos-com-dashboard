@@ -6,6 +6,7 @@ export interface NotificacaoResumo {
   naoLidas: number;
   vencidas: number;
   proximasVencer: number;
+  ativas: number;
 }
 
 export const notificacaoService = {
@@ -26,6 +27,11 @@ export const notificacaoService = {
 
   async listarVencidas(): Promise<Notificacao[]> {
     const response = await api.get('/notificacoes/vencidas');
+    return response.data;
+  },
+
+  async listarAtivas(dias: number = 60): Promise<Notificacao[]> {
+    const response = await api.get(`/notificacoes/ativas?dias=${dias}`);
     return response.data;
   },
 

@@ -129,6 +129,38 @@ describe('notificacaoController', () => {
     });
   });
 
+  describe('listarAtivas', () => {
+    it('deve retornar lista de notificações ativas com dias padrão', async () => {
+      const notificacoes = [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }];
+      (notificacaoService.listarAtivas as jest.Mock).mockResolvedValue(notificacoes);
+
+      await notificacaoController.listarAtivas(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(notificacaoService.listarAtivas).toHaveBeenCalledWith(60);
+      expect(jsonMock).toHaveBeenCalledWith(notificacoes);
+    });
+
+    it('deve retornar lista de notificações ativas com dias especificado', async () => {
+      mockReq.query = { dias: '10' };
+      const notificacoes = [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }];
+      (notificacaoService.listarAtivas as jest.Mock).mockResolvedValue(notificacoes);
+
+      await notificacaoController.listarAtivas(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(notificacaoService.listarAtivas).toHaveBeenCalledWith(10);
+      expect(jsonMock).toHaveBeenCalledWith(notificacoes);
+    });
+
+    it('deve chamar next com erro quando falhar', async () => {
+      const error = new Error('Erro no banco');
+      (notificacaoService.listarAtivas as jest.Mock).mockRejectedValue(error);
+
+      await notificacaoController.listarAtivas(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+  });
+
   describe('buscarPorId', () => {
     it('deve retornar notificação por ID com sucesso', async () => {
       const notificacao = { id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false };

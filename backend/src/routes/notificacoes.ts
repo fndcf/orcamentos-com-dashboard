@@ -25,6 +25,9 @@ router.get('/proximas', notificacaoController.listarProximas);
 // GET /api/notificacoes/vencidas - Listar vencidas
 router.get('/vencidas', notificacaoController.listarVencidas);
 
+// GET /api/notificacoes/ativas - Listar ativas (vencidas + próximas, não lidas) (opcional: ?dias=60)
+router.get('/ativas', notificacaoController.listarAtivas);
+
 // PATCH /api/notificacoes/marcar-todas-lidas - Marcar todas como lidas (antes de /:id)
 router.patch('/marcar-todas-lidas', notificacaoController.marcarTodasComoLidas);
 

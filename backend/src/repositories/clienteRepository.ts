@@ -67,7 +67,7 @@ export const clienteRepository = {
   },
 
   async create(data: Omit<Cliente, 'id' | 'createdAt'>): Promise<Cliente> {
-    const cleanCnpj = data.cnpj.replace(/\D/g, '');
+    const cleanCnpj = data.cnpj?.replace(/\D/g, '') || '';
 
     const clienteData = {
       ...data,

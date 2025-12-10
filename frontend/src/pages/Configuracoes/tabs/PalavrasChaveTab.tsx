@@ -8,6 +8,7 @@ import {
 } from '../../../hooks/usePalavrasChave';
 import { Modal, Button, Input } from '../../../components/ui';
 import { PalavraChave } from '../../../types';
+import { logger } from '../../../utils/logger';
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
 import {
   Section,
@@ -105,7 +106,7 @@ export function PalavrasChaveTab() {
       }
       handleCloseModal();
     } catch (error: any) {
-      console.error('Erro ao salvar:', error);
+      logger.error('Erro ao salvar palavra-chave', { error });
       const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Erro ao salvar. Tente novamente.';
       setModalError(errorMessage);
     }
@@ -115,7 +116,7 @@ export function PalavrasChaveTab() {
     try {
       await togglePalavraChave.mutateAsync(id);
     } catch (error) {
-      console.error('Erro ao alterar status:', error);
+      logger.error('Erro ao alterar status da palavra-chave', { error });
     }
   };
 
@@ -126,7 +127,7 @@ export function PalavrasChaveTab() {
       await excluirPalavraChave.mutateAsync(confirmDelete.id!);
       setConfirmDelete(null);
     } catch (error) {
-      console.error('Erro ao excluir:', error);
+      logger.error('Erro ao excluir palavra-chave', { error });
     }
   };
 

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import {
   useNotificacaoResumo,
-  useNotificacoesNaoLidas,
+  useNotificacoesAtivas,
   useMarcarNotificacaoComoLida,
   useMarcarTodasNotificacoesComoLidas,
 } from "../../hooks/useNotificacoes";
@@ -218,12 +218,13 @@ function diasParaVencimento(data: Date | string): string {
   const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffDias < 0)
-    return `Vencido há ${Math.abs(diffDias)} dia${
+    return `Venceu há ${Math.abs(diffDias)} dia${
       Math.abs(diffDias) !== 1 ? "s" : ""
     }`;
-  if (diffDias === 0) return "Vence hoje";
-  if (diffDias === 1) return "Vence amanhã";
-  return `Vence em ${diffDias} dias`;
+  if (diffDias === 0) return "Renovação hoje";
+  if (diffDias === 1) return "Renovação amanhã";
+  if (diffDias <= 30) return `Renovação em ${diffDias} dias`;
+  return `Renovação em ${diffDias} dias`;
 }
 
 export function NotificacaoDropdown() {
@@ -232,9 +233,17 @@ export function NotificacaoDropdown() {
   const navigate = useNavigate();
 
   const { data: resumo } = useNotificacaoResumo();
-  const { data: notificacoes } = useNotificacoesNaoLidas();
+  // Usar notificações ativas (vencidas + próximas 10 dias) em vez de todas não lidas
+  const { data: notificacoes, isLoading, isError, refetch } = useNotificacoesAtivas(10);
   const marcarLida = useMarcarNotificacaoComoLida();
   const marcarTodasLidas = useMarcarTodasNotificacoesComoLidas();
+
+  // Refetch quando o dropdown é aberto
+  useEffect(() => {
+    if (isOpen) {
+      refetch();
+    }
+  }, [isOpen, refetch]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -267,16 +276,17 @@ export function NotificacaoDropdown() {
     navigate("/notificacoes");
   };
 
-  const naoLidas = resumo?.naoLidas || 0;
+  // Usar contagem de ativas (vencidas + próximas) em vez de todas não lidas
+  const ativas = resumo?.ativas || 0;
   const hasVencidas = (resumo?.vencidas || 0) > 0;
 
   return (
     <Container ref={dropdownRef}>
       <IconButton onClick={() => setIsOpen(!isOpen)} title="Notificações">
         {hasVencidas ? "🔴" : "🔔"}
-        {naoLidas > 0 && (
+        {ativas > 0 && (
           <Badge $hasVencidas={hasVencidas}>
-            {naoLidas > 99 ? "99+" : naoLidas}
+            {ativas > 99 ? "99+" : ativas}
           </Badge>
         )}
       </IconButton>
@@ -286,14 +296,18 @@ export function NotificacaoDropdown() {
           <DropdownTitle>Notificações</DropdownTitle>
           <MarkAllButton
             onClick={handleMarcarTodasLidas}
-            disabled={naoLidas === 0 || marcarTodasLidas.isLoading}
+            disabled={ativas === 0 || marcarTodasLidas.isLoading}
           >
             Marcar todas como lidas
           </MarkAllButton>
         </DropdownHeader>
 
         <NotificacaoList>
-          {notificacoes && notificacoes.length > 0 ? (
+          {isLoading ? (
+            <EmptyState>Carregando...</EmptyState>
+          ) : isError ? (
+            <EmptyState>Erro ao carregar notificações</EmptyState>
+          ) : notificacoes && notificacoes.length > 0 ? (
             notificacoes.slice(0, 5).map((notificacao) => {
               const vencida = isVencida(notificacao.dataVencimento);
               return (

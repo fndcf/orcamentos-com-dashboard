@@ -6,6 +6,7 @@ import {
 import { useBuscarCnpjBrasilAPI } from '../../../hooks/useClientes';
 import { Button, Input } from '../../../components/ui';
 import { ConfiguracoesGerais, BrasilAPICNPJ } from '../../../types';
+import { logger } from '../../../utils/logger';
 import {
   Section,
   FormGroup,
@@ -28,6 +29,10 @@ export function EmpresaTab() {
     telefoneEmpresa: '',
     emailEmpresa: '',
     diasValidadeOrcamento: 30,
+    parcelamentoMaxParcelas: 6,
+    parcelamentoValorMinimo: 1000,
+    parcelamentoJurosAPartirDe: 3,
+    parcelamentoTaxaJuros: 2.5,
   });
   const [empresaFormDirty, setEmpresaFormDirty] = useState(false);
   const [empresaSaving, setEmpresaSaving] = useState(false);
@@ -42,6 +47,10 @@ export function EmpresaTab() {
         telefoneEmpresa: configuracoesGerais.telefoneEmpresa || '',
         emailEmpresa: configuracoesGerais.emailEmpresa || '',
         diasValidadeOrcamento: configuracoesGerais.diasValidadeOrcamento || 30,
+        parcelamentoMaxParcelas: configuracoesGerais.parcelamentoMaxParcelas ?? 6,
+        parcelamentoValorMinimo: configuracoesGerais.parcelamentoValorMinimo ?? 1000,
+        parcelamentoJurosAPartirDe: configuracoesGerais.parcelamentoJurosAPartirDe ?? 3,
+        parcelamentoTaxaJuros: configuracoesGerais.parcelamentoTaxaJuros ?? 2.5,
       });
       setEmpresaFormDirty(false);
     }
@@ -60,7 +69,7 @@ export function EmpresaTab() {
       setEmpresaFormDirty(false);
       setEmpresaMessage({ type: 'success', text: 'Configurações salvas com sucesso!' });
     } catch (error) {
-      console.error('Erro ao salvar configurações da empresa:', error);
+      logger.error('Erro ao salvar configurações da empresa', { error });
       setEmpresaMessage({ type: 'error', text: 'Erro ao salvar configurações' });
     } finally {
       setEmpresaSaving(false);
@@ -134,6 +143,10 @@ export function EmpresaTab() {
         telefoneEmpresa: configuracoesGerais.telefoneEmpresa || '',
         emailEmpresa: configuracoesGerais.emailEmpresa || '',
         diasValidadeOrcamento: configuracoesGerais.diasValidadeOrcamento || 30,
+        parcelamentoMaxParcelas: configuracoesGerais.parcelamentoMaxParcelas ?? 6,
+        parcelamentoValorMinimo: configuracoesGerais.parcelamentoValorMinimo ?? 1000,
+        parcelamentoJurosAPartirDe: configuracoesGerais.parcelamentoJurosAPartirDe ?? 3,
+        parcelamentoTaxaJuros: configuracoesGerais.parcelamentoTaxaJuros ?? 2.5,
       });
       setEmpresaFormDirty(false);
     }
@@ -220,6 +233,69 @@ export function EmpresaTab() {
         />
         <HelpText>Padrão de validade para novos orçamentos</HelpText>
       </FormGroup>
+
+      {/* Configurações de Parcelamento */}
+      <div style={{ marginBottom: 16, marginTop: 32, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
+        <h2>Configurações de Parcelamento</h2>
+        <p className="description">
+          Configure as regras de parcelamento que serão aplicadas nos orçamentos completos.
+        </p>
+      </div>
+
+      <FormRow style={{ marginBottom: 16 }}>
+        <FormGroup>
+          <Label>Máximo de Parcelas</Label>
+          <Input
+            type="number"
+            value={empresaForm.parcelamentoMaxParcelas ?? 6}
+            onChange={(e) => handleEmpresaFormChange('parcelamentoMaxParcelas', parseInt(e.target.value) || 6)}
+            min="1"
+            max="24"
+            style={{ maxWidth: 100 }}
+          />
+          <HelpText>Número máximo de parcelas permitidas</HelpText>
+        </FormGroup>
+        <FormGroup>
+          <Label>Valor Mínimo por Parcela (R$)</Label>
+          <Input
+            type="number"
+            value={empresaForm.parcelamentoValorMinimo ?? 1000}
+            onChange={(e) => handleEmpresaFormChange('parcelamentoValorMinimo', parseInt(e.target.value) || 1000)}
+            min="0"
+            step="100"
+            style={{ maxWidth: 150 }}
+          />
+          <HelpText>Valor mínimo de cada parcela</HelpText>
+        </FormGroup>
+      </FormRow>
+
+      <FormRow style={{ marginBottom: 24 }}>
+        <FormGroup>
+          <Label>Juros a partir da parcela</Label>
+          <Input
+            type="number"
+            value={empresaForm.parcelamentoJurosAPartirDe ?? 3}
+            onChange={(e) => handleEmpresaFormChange('parcelamentoJurosAPartirDe', parseInt(e.target.value) || 3)}
+            min="1"
+            max="24"
+            style={{ maxWidth: 100 }}
+          />
+          <HelpText>A partir de qual parcela aplicar juros</HelpText>
+        </FormGroup>
+        <FormGroup>
+          <Label>Taxa de Juros por Parcela (%)</Label>
+          <Input
+            type="number"
+            value={empresaForm.parcelamentoTaxaJuros ?? 2.5}
+            onChange={(e) => handleEmpresaFormChange('parcelamentoTaxaJuros', parseFloat(e.target.value) || 2.5)}
+            min="0"
+            max="100"
+            step="0.1"
+            style={{ maxWidth: 100 }}
+          />
+          <HelpText>Percentual de juros por parcela após o limite</HelpText>
+        </FormGroup>
+      </FormRow>
 
       <div style={{ display: 'flex', gap: 12 }}>
         <Button

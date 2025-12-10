@@ -42,7 +42,16 @@ export const itemServicoService = {
     return item;
   },
 
-  async criar(data: { categoriaId: string; descricao: string; unidade: string; ativo?: boolean }): Promise<ItemServico> {
+  async criar(data: {
+    categoriaId: string;
+    descricao: string;
+    unidade: string;
+    ativo?: boolean;
+    valorUnitario?: number;
+    valorMaoDeObraUnitario?: number;
+    valorCusto?: number;
+    valorMaoDeObraCusto?: number;
+  }): Promise<ItemServico> {
     if (!data.categoriaId) {
       throw new ValidationError('ID da categoria é obrigatório');
     }
@@ -68,18 +77,36 @@ export const itemServicoService = {
 
     const ordem = await itemServicoRepository.getNextOrdem(data.categoriaId);
 
-    return itemServicoRepository.create({
+    // Montar objeto apenas com campos definidos (Firestore não aceita undefined)
+    const itemData: Omit<ItemServico, 'id' | 'createdAt'> = {
       categoriaId: data.categoriaId,
       descricao: data.descricao.trim(),
       unidade: data.unidade.trim().toUpperCase(),
       ativo: data.ativo !== undefined ? data.ativo : true,
       ordem,
-    });
+    };
+
+    // Adicionar valores apenas se definidos
+    if (data.valorUnitario !== undefined) itemData.valorUnitario = data.valorUnitario;
+    if (data.valorMaoDeObraUnitario !== undefined) itemData.valorMaoDeObraUnitario = data.valorMaoDeObraUnitario;
+    if (data.valorCusto !== undefined) itemData.valorCusto = data.valorCusto;
+    if (data.valorMaoDeObraCusto !== undefined) itemData.valorMaoDeObraCusto = data.valorMaoDeObraCusto;
+
+    return itemServicoRepository.create(itemData);
   },
 
   async atualizar(
     id: string,
-    data: { descricao?: string; unidade?: string; ativo?: boolean; ordem?: number }
+    data: {
+      descricao?: string;
+      unidade?: string;
+      ativo?: boolean;
+      ordem?: number;
+      valorUnitario?: number;
+      valorMaoDeObraUnitario?: number;
+      valorCusto?: number;
+      valorMaoDeObraCusto?: number;
+    }
   ): Promise<ItemServico> {
     if (!id) {
       throw new ValidationError('ID é obrigatório');
@@ -111,6 +138,10 @@ export const itemServicoService = {
     if (data.unidade !== undefined) updateData.unidade = data.unidade.trim().toUpperCase();
     if (data.ativo !== undefined) updateData.ativo = data.ativo;
     if (data.ordem !== undefined) updateData.ordem = data.ordem;
+    if (data.valorUnitario !== undefined) updateData.valorUnitario = data.valorUnitario;
+    if (data.valorMaoDeObraUnitario !== undefined) updateData.valorMaoDeObraUnitario = data.valorMaoDeObraUnitario;
+    if (data.valorCusto !== undefined) updateData.valorCusto = data.valorCusto;
+    if (data.valorMaoDeObraCusto !== undefined) updateData.valorMaoDeObraCusto = data.valorMaoDeObraCusto;
 
     const updated = await itemServicoRepository.update(id, updateData);
     if (!updated) {

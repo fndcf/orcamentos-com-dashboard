@@ -1,6 +1,7 @@
 import { orcamentoRepository } from '../repositories/orcamentoRepository';
 import { clienteRepository } from '../repositories/clienteRepository';
-import { Orcamento, OrcamentoItem, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, TipoPessoa } from '../models';
+import { configuracoesGeraisRepository } from '../repositories/configuracoesGeraisRepository';
+import { Orcamento, OrcamentoItem, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, TipoPessoa, ParcelamentoDados } from '../models';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { eventBus, OrcamentoEvents } from '../events';
 
@@ -24,6 +25,7 @@ interface CriarOrcamentoDTO {
   prazoVistoriaBombeiros?: number;
   condicaoPagamento?: 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
+  parcelamentoDados?: ParcelamentoDados;
   // Campos comuns
   observacoes?: string;
   diasValidade?: number;
@@ -43,6 +45,7 @@ interface AtualizarOrcamentoDTO {
   prazoVistoriaBombeiros?: number;
   condicaoPagamento?: 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
+  parcelamentoDados?: ParcelamentoDados;
   // Campos comuns
   observacoes?: string;
   dataValidade?: Date;
@@ -77,9 +80,13 @@ export const orcamentoService = {
     // Obter próximo número
     const numero = await orcamentoRepository.getNextNumero();
 
+    // Buscar configuração de dias de validade
+    const configuracoes = await configuracoesGeraisRepository.get();
+    const diasValidadeConfig = configuracoes.diasValidadeOrcamento || 30;
+
     // Definir datas
     const dataEmissao = new Date();
-    const diasValidade = data.diasValidade || 30;
+    const diasValidade = data.diasValidade || diasValidadeConfig;
     const dataValidade = new Date();
     dataValidade.setDate(dataValidade.getDate() + diasValidade);
 
@@ -90,8 +97,8 @@ export const orcamentoService = {
       tipo,
       clienteId: data.clienteId,
       clienteNome: cliente.razaoSocial,
-      clienteCnpj: cliente.cnpj,
-      clienteTipoPessoa: detectarTipoPessoa(cliente.cnpj),
+      clienteCnpj: cliente.cnpj || '',
+      clienteTipoPessoa: detectarTipoPessoa(cliente.cnpj || ''),
       status: 'aberto',
       dataEmissao,
       dataValidade,
@@ -144,6 +151,11 @@ export const orcamentoService = {
 
       orcamento.itens = itensCalculados;
       orcamento.valorTotal = itensCalculados.reduce((acc, item) => acc + item.valorTotal, 0);
+
+      // Campos opcionais do orçamento simples (limitações)
+      if (data.limitacoesSelecionadas && data.limitacoesSelecionadas.length > 0) {
+        orcamento.limitacoesSelecionadas = data.limitacoesSelecionadas;
+      }
 
     } else {
       // Orçamento completo
@@ -198,6 +210,7 @@ export const orcamentoService = {
       if (data.prazoVistoriaBombeiros) orcamento.prazoVistoriaBombeiros = data.prazoVistoriaBombeiros;
       if (data.condicaoPagamento) orcamento.condicaoPagamento = data.condicaoPagamento;
       if (data.parcelamentoTexto?.trim()) orcamento.parcelamentoTexto = data.parcelamentoTexto.trim();
+      if (data.parcelamentoDados) orcamento.parcelamentoDados = data.parcelamentoDados;
     }
 
     return orcamentoRepository.create(orcamento);
@@ -292,6 +305,7 @@ export const orcamentoService = {
     if (data.prazoVistoriaBombeiros !== undefined) updateData.prazoVistoriaBombeiros = data.prazoVistoriaBombeiros;
     if (data.condicaoPagamento !== undefined) updateData.condicaoPagamento = data.condicaoPagamento;
     if (data.parcelamentoTexto !== undefined) updateData.parcelamentoTexto = data.parcelamentoTexto?.trim() || undefined;
+    if (data.parcelamentoDados !== undefined) updateData.parcelamentoDados = data.parcelamentoDados;
 
     if (data.observacoes !== undefined) {
       const obs = data.observacoes?.trim();
@@ -365,10 +379,14 @@ export const orcamentoService = {
     // Obter próximo número
     const numero = await orcamentoRepository.getNextNumero();
 
+    // Buscar configuração de dias de validade
+    const configuracoes = await configuracoesGeraisRepository.get();
+    const diasValidade = configuracoes.diasValidadeOrcamento || 30;
+
     // Definir novas datas
     const dataEmissao = new Date();
     const dataValidade = new Date();
-    dataValidade.setDate(dataValidade.getDate() + 30);
+    dataValidade.setDate(dataValidade.getDate() + diasValidade);
 
     const novoOrcamento: Omit<Orcamento, 'id' | 'createdAt'> = {
       numero,
@@ -376,8 +394,8 @@ export const orcamentoService = {
       tipo: orcamentoOriginal.tipo || 'simples',
       clienteId: orcamentoOriginal.clienteId,
       clienteNome: cliente.razaoSocial,
-      clienteCnpj: cliente.cnpj,
-      clienteTipoPessoa: detectarTipoPessoa(cliente.cnpj),
+      clienteCnpj: cliente.cnpj || '',
+      clienteTipoPessoa: detectarTipoPessoa(cliente.cnpj || ''),
       status: 'aberto',
       dataEmissao,
       dataValidade,
@@ -408,6 +426,7 @@ export const orcamentoService = {
       if (orcamentoOriginal.prazoVistoriaBombeiros) novoOrcamento.prazoVistoriaBombeiros = orcamentoOriginal.prazoVistoriaBombeiros;
       if (orcamentoOriginal.condicaoPagamento) novoOrcamento.condicaoPagamento = orcamentoOriginal.condicaoPagamento;
       if (orcamentoOriginal.parcelamentoTexto) novoOrcamento.parcelamentoTexto = orcamentoOriginal.parcelamentoTexto;
+      if (orcamentoOriginal.parcelamentoDados) novoOrcamento.parcelamentoDados = orcamentoOriginal.parcelamentoDados;
       if (orcamentoOriginal.valorTotalMaoDeObra) novoOrcamento.valorTotalMaoDeObra = orcamentoOriginal.valorTotalMaoDeObra;
       if (orcamentoOriginal.valorTotalMaterial) novoOrcamento.valorTotalMaterial = orcamentoOriginal.valorTotalMaterial;
     }

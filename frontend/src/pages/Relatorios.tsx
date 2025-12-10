@@ -16,6 +16,7 @@ import {
   Legend,
 } from "recharts";
 import { useOrcamentos } from "../hooks/useOrcamentos";
+import { useItensServico } from "../hooks/useItensServico";
 import { Loading, Button } from "../components/ui";
 import { formatCurrency } from "../utils/constants";
 import { OrcamentoStatus } from "../types";
@@ -23,9 +24,16 @@ import Footer from "@/components/layout/Footer";
 
 const Container = styled.div`
   padding: 24px;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 
   @media (max-width: 768px) {
     padding: 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px 8px;
   }
 `;
 
@@ -154,6 +162,28 @@ const StatCard = styled.div<{ $color?: string }>`
       font-size: 1.3rem;
     }
   }
+
+  @media (max-width: 600px) {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .label {
+      font-size: 0.75rem;
+      margin-bottom: 0;
+      margin-right: 8px;
+    }
+
+    .value {
+      font-size: 1rem;
+      text-align: right;
+    }
+
+    .subvalue {
+      font-size: 0.75rem;
+    }
+  }
 `;
 
 const ChartsRow = styled.div`
@@ -172,6 +202,8 @@ const ChartCard = styled.div`
   padding: 20px;
   border-radius: 12px;
   box-shadow: var(--shadow);
+  max-width: 100%;
+  box-sizing: border-box;
 
   h3 {
     color: var(--text-primary);
@@ -186,10 +218,23 @@ const ChartCard = styled.div`
       font-size: 0.95rem;
     }
   }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    border-radius: 8px;
+
+    h3 {
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+  }
 `;
 
 const FullWidthChart = styled(ChartCard)`
   grid-column: 1 / -1;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
 `;
 
 const TableCard = styled(ChartCard)`
@@ -264,6 +309,246 @@ const NoDataMessage = styled.p`
   padding: 40px;
 `;
 
+const LucroPositivo = styled.span`
+  color: #27ae60;
+  font-weight: 600;
+`;
+
+const LucroNegativo = styled.span`
+  color: #e74c3c;
+  font-weight: 600;
+`;
+
+const MargemBadge = styled.span<{ $positiva: boolean }>`
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: ${({ $positiva }) => ($positiva ? "#e8f5e9" : "#ffebee")};
+  color: ${({ $positiva }) => ($positiva ? "#27ae60" : "#e74c3c")};
+
+  @media (max-width: 480px) {
+    padding: 2px 6px;
+    font-size: 0.7rem;
+  }
+`;
+
+const LucroStatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+`;
+
+const InfoText = styled.p`
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 12px;
+  font-style: italic;
+`;
+
+const SectionTitle = styled.h4<{ $marginTop?: boolean }>`
+  margin-bottom: 12px;
+  margin-top: ${({ $marginTop }) => ($marginTop ? "16px" : "0")};
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+
+  @media (max-width: 768px) {
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+  }
+`;
+
+const LucroTableWrapper = styled.div`
+  overflow-x: auto;
+  margin-top: 24px;
+
+  @media (max-width: 768px) {
+    margin-top: 16px;
+  }
+`;
+
+const LucroTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+
+  th,
+  td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+
+  th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  td {
+    color: var(--text-primary);
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr:hover td {
+    background: var(--background);
+  }
+
+  .rank {
+    font-weight: 700;
+    color: var(--primary);
+    width: 50px;
+  }
+
+  .cliente {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .value {
+    text-align: right;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 768px) {
+    min-width: 600px;
+
+    th,
+    td {
+      padding: 8px 4px;
+      font-size: 0.75rem;
+    }
+
+    th {
+      font-size: 0.65rem;
+    }
+
+    .cliente {
+      max-width: 100px;
+    }
+  }
+`;
+
+// Cards para mobile - exibição em lista
+const MobileCardList = styled.div`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+  }
+`;
+
+const MobileCard = styled.div`
+  background: var(--background);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+
+    .numero {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 0.9rem;
+    }
+
+    .cliente {
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      flex: 1;
+      margin: 0 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .margem {
+      flex-shrink: 0;
+    }
+  }
+
+  .values-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .value-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+
+    .label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .value {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+  }
+
+  .lucro-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+
+    .lucro-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .lucro-value {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+  }
+`;
+
+const DesktopTableWrapper = styled.div`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
 const COLORS = {
   aberto: "#3498db",
   aceito: "#27ae60",
@@ -280,13 +565,15 @@ const STATUS_LABELS: Record<OrcamentoStatus, string> = {
 
 export function Relatorios() {
   const { data: orcamentos, isLoading: loadingOrcamentos } = useOrcamentos();
+  const { data: itensServico } = useItensServico();
 
-  // Filtros de data
+  // Filtros de data - padrão: últimos 3 meses
   const hoje = new Date();
-  const primeiroDiaAnoAnterior = new Date(hoje.getFullYear() - 1, 0, 1); // Início do ano anterior
+  const tresMesesAtras = new Date(hoje);
+  tresMesesAtras.setMonth(tresMesesAtras.getMonth() - 3);
 
   const [dataInicio, setDataInicio] = useState(
-    primeiroDiaAnoAnterior.toISOString().split("T")[0]
+    tresMesesAtras.toISOString().split("T")[0]
   );
   const [dataFim, setDataFim] = useState(hoje.toISOString().split("T")[0]);
 
@@ -485,6 +772,162 @@ export function Relatorios() {
       .sort((a, b) => b.valor - a.valor)
       .slice(0, 10);
   }, [orcamentosFiltrados]);
+
+  // Análise de Lucro por Orçamento - apenas orçamentos onde TODOS os itens têm custo cadastrado
+  const analiseLucro = useMemo(() => {
+    if (!itensServico || itensServico.length === 0) {
+      return null;
+    }
+
+    // Criar mapa de custos e valores de venda por descrição do item (normalizada)
+    const itensPorDescricao: Record<string, {
+      valorUnitario: number;
+      valorMaoDeObraUnitario: number;
+      valorCusto: number;
+      valorMaoDeObraCusto: number;
+    }> = {};
+    itensServico.forEach((item) => {
+      const key = item.descricao.toLowerCase().trim();
+      itensPorDescricao[key] = {
+        valorUnitario: item.valorUnitario || 0,
+        valorMaoDeObraUnitario: item.valorMaoDeObraUnitario || 0,
+        valorCusto: item.valorCusto || 0,
+        valorMaoDeObraCusto: item.valorMaoDeObraCusto || 0,
+      };
+    });
+
+    const orcamentosAceitos = orcamentosFiltrados.filter((o) => o.status === "aceito");
+
+    // Função para verificar se um item tem custo cadastrado
+    const itemTemCusto = (descricao: string): boolean => {
+      const key = descricao.toLowerCase().trim();
+      const itemInfo = itensPorDescricao[key];
+      return !!(itemInfo && (itemInfo.valorCusto > 0 || itemInfo.valorMaoDeObraCusto > 0));
+    };
+
+    // Função para obter valores de um item
+    const obterValoresItem = (descricao: string, quantidade: number) => {
+      const key = descricao.toLowerCase().trim();
+      const itemInfo = itensPorDescricao[key];
+      if (itemInfo) {
+        return {
+          custoMaterial: itemInfo.valorCusto * quantidade,
+          custoMaoDeObra: itemInfo.valorMaoDeObraCusto * quantidade,
+        };
+      }
+      return { custoMaterial: 0, custoMaoDeObra: 0 };
+    };
+
+    // Filtrar apenas orçamentos onde TODOS os itens têm custo cadastrado
+    const orcamentosComCustoCompleto: Array<{
+      numero: number;
+      clienteNome: string;
+      dataAceite: string;
+      vendaMaterial: number;
+      vendaMaoDeObra: number;
+      custoMaterial: number;
+      custoMaoDeObra: number;
+      lucroMaterial: number;
+      lucroMaoDeObra: number;
+      lucroTotal: number;
+      margem: number;
+    }> = [];
+
+    let orcamentosSemCustoCompleto = 0;
+
+    orcamentosAceitos.forEach((orc) => {
+      let todosItensTemCusto = true;
+      let vendaMaterial = 0;
+      let vendaMaoDeObra = 0;
+      let custoMaterial = 0;
+      let custoMaoDeObra = 0;
+
+      // Verificar itens do orçamento simples
+      if (orc.itens && orc.itens.length > 0) {
+        for (const item of orc.itens) {
+          if (!itemTemCusto(item.descricao)) {
+            todosItensTemCusto = false;
+            break;
+          }
+          // No orçamento simples, valorUnitario é o valor de venda (material)
+          vendaMaterial += item.valorTotal;
+          const custos = obterValoresItem(item.descricao, item.quantidade);
+          custoMaterial += custos.custoMaterial;
+          custoMaoDeObra += custos.custoMaoDeObra;
+        }
+      }
+
+      // Verificar itens do orçamento completo
+      if (todosItensTemCusto && orc.itensCompleto && orc.itensCompleto.length > 0) {
+        for (const item of orc.itensCompleto) {
+          if (!itemTemCusto(item.descricao)) {
+            todosItensTemCusto = false;
+            break;
+          }
+          // No orçamento completo, temos separação de material e mão de obra
+          vendaMaterial += item.valorTotalMaterial;
+          vendaMaoDeObra += item.valorTotalMaoDeObra;
+          const custos = obterValoresItem(item.descricao, item.quantidade);
+          custoMaterial += custos.custoMaterial;
+          custoMaoDeObra += custos.custoMaoDeObra;
+        }
+      }
+
+      if (todosItensTemCusto) {
+        const lucroMaterial = vendaMaterial - custoMaterial;
+        const lucroMaoDeObra = vendaMaoDeObra - custoMaoDeObra;
+        const lucroTotal = lucroMaterial + lucroMaoDeObra;
+        const valorTotalVenda = vendaMaterial + vendaMaoDeObra;
+        const margem = valorTotalVenda > 0 ? (lucroTotal / valorTotalVenda) * 100 : 0;
+
+        orcamentosComCustoCompleto.push({
+          numero: orc.numero,
+          clienteNome: orc.clienteNome,
+          dataAceite: orc.dataAceite
+            ? new Date(orc.dataAceite).toLocaleDateString("pt-BR")
+            : new Date(orc.dataEmissao).toLocaleDateString("pt-BR"),
+          vendaMaterial,
+          vendaMaoDeObra,
+          custoMaterial,
+          custoMaoDeObra,
+          lucroMaterial,
+          lucroMaoDeObra,
+          lucroTotal,
+          margem,
+        });
+      } else {
+        orcamentosSemCustoCompleto++;
+      }
+    });
+
+    // Calcular totais
+    const totalVendaMaterial = orcamentosComCustoCompleto.reduce((sum, o) => sum + o.vendaMaterial, 0);
+    const totalVendaMaoDeObra = orcamentosComCustoCompleto.reduce((sum, o) => sum + o.vendaMaoDeObra, 0);
+    const totalCustoMaterial = orcamentosComCustoCompleto.reduce((sum, o) => sum + o.custoMaterial, 0);
+    const totalCustoMaoDeObra = orcamentosComCustoCompleto.reduce((sum, o) => sum + o.custoMaoDeObra, 0);
+    const totalLucroMaterial = totalVendaMaterial - totalCustoMaterial;
+    const totalLucroMaoDeObra = totalVendaMaoDeObra - totalCustoMaoDeObra;
+    const lucroTotal = totalLucroMaterial + totalLucroMaoDeObra;
+    const valorTotalVenda = totalVendaMaterial + totalVendaMaoDeObra;
+    const margemLucro = valorTotalVenda > 0 ? (lucroTotal / valorTotalVenda) * 100 : 0;
+
+    // Ordenar por lucro total (maior primeiro)
+    orcamentosComCustoCompleto.sort((a, b) => b.lucroTotal - a.lucroTotal);
+
+    return {
+      totalVendaMaterial,
+      totalVendaMaoDeObra,
+      totalCustoMaterial,
+      totalCustoMaoDeObra,
+      totalLucroMaterial,
+      totalLucroMaoDeObra,
+      lucroTotal,
+      margemLucro,
+      orcamentos: orcamentosComCustoCompleto,
+      orcamentosSemCustoCompleto,
+      totalOrcamentosAceitos: orcamentosAceitos.length,
+    };
+  }, [orcamentosFiltrados, itensServico]);
 
   // Exportar para CSV
   const exportarCSV = () => {
@@ -753,6 +1196,221 @@ export function Relatorios() {
           )}
         </TableCard>
       </ChartsRow>
+
+      {/* Análise de Lucro por Orçamento */}
+      {analiseLucro && (
+        <ChartsRow>
+          <FullWidthChart>
+            <h3>Análise de Lucro ({analiseLucro.orcamentos.length}/{analiseLucro.totalOrcamentosAceitos} aceitos)</h3>
+
+            {/* Cards de resumo - Material */}
+            <SectionTitle>Material</SectionTitle>
+            <LucroStatsGrid>
+              <StatCard $color="#3498db">
+                <div className="label">Venda</div>
+                <div className="value">{formatCurrency(analiseLucro.totalVendaMaterial)}</div>
+              </StatCard>
+              <StatCard $color="#e74c3c">
+                <div className="label">Custo</div>
+                <div className="value">{formatCurrency(analiseLucro.totalCustoMaterial)}</div>
+              </StatCard>
+              <StatCard $color={analiseLucro.totalLucroMaterial >= 0 ? "#27ae60" : "#e74c3c"}>
+                <div className="label">Lucro</div>
+                <div className="value">
+                  {analiseLucro.totalLucroMaterial >= 0 ? (
+                    <LucroPositivo>{formatCurrency(analiseLucro.totalLucroMaterial)}</LucroPositivo>
+                  ) : (
+                    <LucroNegativo>{formatCurrency(analiseLucro.totalLucroMaterial)}</LucroNegativo>
+                  )}
+                </div>
+              </StatCard>
+              <StatCard $color="#9b59b6">
+                <div className="label">Margem</div>
+                <div className="value">
+                  <MargemBadge $positiva={analiseLucro.totalVendaMaterial > 0 && analiseLucro.totalLucroMaterial >= 0}>
+                    {analiseLucro.totalVendaMaterial > 0
+                      ? ((analiseLucro.totalLucroMaterial / analiseLucro.totalVendaMaterial) * 100).toFixed(1)
+                      : "0.0"}%
+                  </MargemBadge>
+                </div>
+              </StatCard>
+            </LucroStatsGrid>
+
+            {/* Cards de resumo - Mão de Obra */}
+            <SectionTitle $marginTop>Mão de Obra</SectionTitle>
+            <LucroStatsGrid>
+              <StatCard $color="#3498db">
+                <div className="label">Venda</div>
+                <div className="value">{formatCurrency(analiseLucro.totalVendaMaoDeObra)}</div>
+              </StatCard>
+              <StatCard $color="#e74c3c">
+                <div className="label">Custo</div>
+                <div className="value">{formatCurrency(analiseLucro.totalCustoMaoDeObra)}</div>
+              </StatCard>
+              <StatCard $color={analiseLucro.totalLucroMaoDeObra >= 0 ? "#27ae60" : "#e74c3c"}>
+                <div className="label">Lucro</div>
+                <div className="value">
+                  {analiseLucro.totalLucroMaoDeObra >= 0 ? (
+                    <LucroPositivo>{formatCurrency(analiseLucro.totalLucroMaoDeObra)}</LucroPositivo>
+                  ) : (
+                    <LucroNegativo>{formatCurrency(analiseLucro.totalLucroMaoDeObra)}</LucroNegativo>
+                  )}
+                </div>
+              </StatCard>
+              <StatCard $color="#9b59b6">
+                <div className="label">Margem</div>
+                <div className="value">
+                  <MargemBadge $positiva={analiseLucro.totalVendaMaoDeObra > 0 && analiseLucro.totalLucroMaoDeObra >= 0}>
+                    {analiseLucro.totalVendaMaoDeObra > 0
+                      ? ((analiseLucro.totalLucroMaoDeObra / analiseLucro.totalVendaMaoDeObra) * 100).toFixed(1)
+                      : "0.0"}%
+                  </MargemBadge>
+                </div>
+              </StatCard>
+            </LucroStatsGrid>
+
+            {/* Cards de resumo - Total */}
+            <SectionTitle $marginTop>Total Geral</SectionTitle>
+            <LucroStatsGrid>
+              <StatCard $color="#27ae60">
+                <div className="label">Venda</div>
+                <div className="value">{formatCurrency(analiseLucro.totalVendaMaterial + analiseLucro.totalVendaMaoDeObra)}</div>
+              </StatCard>
+              <StatCard $color="#e74c3c">
+                <div className="label">Custo</div>
+                <div className="value">{formatCurrency(analiseLucro.totalCustoMaterial + analiseLucro.totalCustoMaoDeObra)}</div>
+              </StatCard>
+              <StatCard $color={analiseLucro.lucroTotal >= 0 ? "#27ae60" : "#e74c3c"}>
+                <div className="label">Lucro</div>
+                <div className="value">
+                  {analiseLucro.lucroTotal >= 0 ? (
+                    <LucroPositivo>{formatCurrency(analiseLucro.lucroTotal)}</LucroPositivo>
+                  ) : (
+                    <LucroNegativo>{formatCurrency(analiseLucro.lucroTotal)}</LucroNegativo>
+                  )}
+                </div>
+              </StatCard>
+              <StatCard $color="#9b59b6">
+                <div className="label">Margem</div>
+                <div className="value">
+                  <MargemBadge $positiva={analiseLucro.margemLucro >= 0}>
+                    {analiseLucro.margemLucro.toFixed(1)}%
+                  </MargemBadge>
+                </div>
+              </StatCard>
+            </LucroStatsGrid>
+
+            {/* Detalhamento por Orçamento */}
+            <SectionTitle $marginTop style={{ marginTop: '24px', color: 'var(--text-primary)' }}>
+              Detalhamento por Orçamento
+            </SectionTitle>
+
+            {analiseLucro.orcamentos.length > 0 ? (
+              <>
+                {/* Tabela Desktop */}
+                <DesktopTableWrapper>
+                  <LucroTableWrapper>
+                    <LucroTable>
+                      <thead>
+                        <tr>
+                          <th>Nº</th>
+                          <th>Cliente</th>
+                          <th className="value">Venda Mat.</th>
+                          <th className="value">Custo Mat.</th>
+                          <th className="value">Venda M.O.</th>
+                          <th className="value">Custo M.O.</th>
+                          <th className="value">Lucro</th>
+                          <th className="value">Margem</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analiseLucro.orcamentos.map((orc, index) => (
+                          <tr key={index}>
+                            <td className="rank">{orc.numero}</td>
+                            <td className="cliente">{orc.clienteNome}</td>
+                            <td className="value">{formatCurrency(orc.vendaMaterial)}</td>
+                            <td className="value">{formatCurrency(orc.custoMaterial)}</td>
+                            <td className="value">{formatCurrency(orc.vendaMaoDeObra)}</td>
+                            <td className="value">{formatCurrency(orc.custoMaoDeObra)}</td>
+                            <td className="value">
+                              {orc.lucroTotal >= 0 ? (
+                                <LucroPositivo>{formatCurrency(orc.lucroTotal)}</LucroPositivo>
+                              ) : (
+                                <LucroNegativo>{formatCurrency(orc.lucroTotal)}</LucroNegativo>
+                              )}
+                            </td>
+                            <td className="value">
+                              <MargemBadge $positiva={orc.margem >= 0}>
+                                {orc.margem.toFixed(1)}%
+                              </MargemBadge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </LucroTable>
+                  </LucroTableWrapper>
+                </DesktopTableWrapper>
+
+                {/* Cards Mobile */}
+                <MobileCardList>
+                  {analiseLucro.orcamentos.map((orc, index) => (
+                    <MobileCard key={index}>
+                      <div className="header">
+                        <span className="numero">#{orc.numero}</span>
+                        <span className="cliente">{orc.clienteNome}</span>
+                        <span className="margem">
+                          <MargemBadge $positiva={orc.margem >= 0}>
+                            {orc.margem.toFixed(1)}%
+                          </MargemBadge>
+                        </span>
+                      </div>
+                      <div className="values-list">
+                        <div className="value-row">
+                          <span className="label">Venda Material</span>
+                          <span className="value">{formatCurrency(orc.vendaMaterial)}</span>
+                        </div>
+                        <div className="value-row">
+                          <span className="label">Custo Material</span>
+                          <span className="value">{formatCurrency(orc.custoMaterial)}</span>
+                        </div>
+                        <div className="value-row">
+                          <span className="label">Venda M.O.</span>
+                          <span className="value">{formatCurrency(orc.vendaMaoDeObra)}</span>
+                        </div>
+                        <div className="value-row">
+                          <span className="label">Custo M.O.</span>
+                          <span className="value">{formatCurrency(orc.custoMaoDeObra)}</span>
+                        </div>
+                      </div>
+                      <div className="lucro-row">
+                        <span className="lucro-label">Lucro Total</span>
+                        <span className="lucro-value">
+                          {orc.lucroTotal >= 0 ? (
+                            <LucroPositivo>{formatCurrency(orc.lucroTotal)}</LucroPositivo>
+                          ) : (
+                            <LucroNegativo>{formatCurrency(orc.lucroTotal)}</LucroNegativo>
+                          )}
+                        </span>
+                      </div>
+                    </MobileCard>
+                  ))}
+                </MobileCardList>
+              </>
+            ) : (
+              <NoDataMessage>
+                Nenhum orçamento aceito com todos os itens com custo cadastrado
+              </NoDataMessage>
+            )}
+
+            {analiseLucro.orcamentosSemCustoCompleto > 0 && (
+              <InfoText>
+                * {analiseLucro.orcamentosSemCustoCompleto} orçamento(s) não incluídos (itens sem custo).
+              </InfoText>
+            )}
+          </FullWidthChart>
+        </ChartsRow>
+      )}
+
       {/* Footer */}
       <Footer />
     </Container>

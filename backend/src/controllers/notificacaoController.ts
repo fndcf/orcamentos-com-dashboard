@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { notificacaoService } from '../services/notificacaoService';
+import { logger } from '../utils/logger';
 
 export const notificacaoController = {
   async listar(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -13,9 +14,12 @@ export const notificacaoController = {
 
   async listarNaoLidas(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      logger.debug('[notificacaoController] Buscando notificações não lidas...');
       const notificacoes = await notificacaoService.listarNaoLidas();
+      logger.debug('[notificacaoController] Notificações não lidas encontradas:', { count: notificacoes.length });
       res.json(notificacoes);
     } catch (error) {
+      logger.error('[notificacaoController] Erro ao buscar notificações não lidas:', { error });
       next(error);
     }
   },
@@ -33,6 +37,16 @@ export const notificacaoController = {
   async listarVencidas(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const notificacoes = await notificacaoService.listarVencidas();
+      res.json(notificacoes);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async listarAtivas(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const dias = req.query.dias ? parseInt(req.query.dias as string) : 60;
+      const notificacoes = await notificacaoService.listarAtivas(dias);
       res.json(notificacoes);
     } catch (error) {
       next(error);

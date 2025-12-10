@@ -28,6 +28,7 @@ export interface Cliente {
 
 // Interface do Item do Orçamento Simples
 export interface OrcamentoItem {
+  categoriaId?: string; // Opcional - para buscar itens pré-definidos
   descricao: string;
   quantidade: number;
   unidade: string;
@@ -52,6 +53,23 @@ export interface OrcamentoItemCompleto {
 
 // Tipos de Pessoa (Cliente)
 export type TipoPessoa = 'fisica' | 'juridica';
+
+// Interface para opção de parcelamento
+export interface ParcelamentoOpcao {
+  numeroParcelas: number;
+  valorParcela: number;
+  valorTotal: number;
+  temJuros: boolean;
+  taxaJuros: number;
+}
+
+// Interface para dados de parcelamento completos
+export interface ParcelamentoDados {
+  entradaPercent: number;
+  valorEntrada: number;
+  valorRestante: number;
+  opcoes: ParcelamentoOpcao[];
+}
 
 // Interface do Orçamento
 export interface Orcamento {
@@ -86,6 +104,7 @@ export interface Orcamento {
   prazoVistoriaBombeiros?: number; // Dias para vistoria do Corpo de Bombeiros (após protocolo)
   condicaoPagamento?: 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
+  parcelamentoDados?: ParcelamentoDados; // Dados estruturados do parcelamento para o PDF
   // Totais
   valorTotal: number;
   valorTotalMaoDeObra?: number;
@@ -121,6 +140,10 @@ export interface ItemServico {
   categoriaId: string;
   descricao: string;
   unidade: string;
+  valorUnitario?: number;           // Valor unitário de venda
+  valorMaoDeObraUnitario?: number;  // Valor unitário de mão de obra
+  valorCusto?: number;              // Valor de custo (para referência interna)
+  valorMaoDeObraCusto?: number;     // Valor de custo de mão de obra (para referência interna)
   ativo: boolean;
   ordem: number;
   createdAt: Date | string;
@@ -156,6 +179,11 @@ export interface ConfiguracoesGerais {
   telefoneEmpresa: string;
   emailEmpresa?: string;
   logoUrl?: string;
+  // Configurações de parcelamento
+  parcelamentoMaxParcelas?: number; // Máximo de parcelas (ex: 6)
+  parcelamentoValorMinimo?: number; // Valor mínimo por parcela (ex: 1000)
+  parcelamentoJurosAPartirDe?: number; // A partir de qual parcela aplica juros (ex: 3)
+  parcelamentoTaxaJuros?: number; // Taxa de juros por parcela em % (ex: 2.5)
 }
 
 // Interface da Notificação
@@ -220,6 +248,7 @@ export interface OrcamentoSaveData {
   prazoVistoriaBombeiros?: number;
   condicaoPagamento?: 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
+  parcelamentoDados?: ParcelamentoDados;
   // Campos opcionais compartilhados
   observacoes?: string;
   consultor?: string;

@@ -207,4 +207,27 @@ export const notificacaoRepository = {
 
     return !snapshot.empty;
   },
+
+  // Busca notificações ativas (não lidas E que já venceram ou vão vencer em até X dias)
+  async findAtivas(diasAntecedencia: number = 60): Promise<Notificacao[]> {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const limite = new Date();
+    limite.setDate(limite.getDate() + diasAntecedencia);
+
+    // Buscar não lidas que vencem até o limite
+    const snapshot = await db
+      .collection(COLLECTION)
+      .where('lida', '==', false)
+      .where('dataVencimento', '<=', limite)
+      .orderBy('dataVencimento', 'asc')
+      .get();
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      dataVencimento: doc.data().dataVencimento?.toDate(),
+      createdAt: doc.data().createdAt?.toDate(),
+    })) as Notificacao[];
+  },
 };
