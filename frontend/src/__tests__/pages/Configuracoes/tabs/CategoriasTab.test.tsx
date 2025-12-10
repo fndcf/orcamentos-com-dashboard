@@ -356,7 +356,7 @@ describe('CategoriasTab', () => {
       fireEvent.click(screen.getByText('Desativar'));
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Erro ao alterar status:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Erro ao alterar status da categoria'));
       });
 
       consoleSpy.mockRestore();
@@ -414,7 +414,7 @@ describe('CategoriasTab', () => {
       fireEvent.click(modalConfirmButton);
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Erro ao excluir:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Erro ao excluir categoria'));
       });
 
       consoleSpy.mockRestore();
@@ -677,7 +677,7 @@ describe('CategoriasTab', () => {
       fireEvent.click(desativarButtons[desativarButtons.length - 1]);
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Erro ao alterar status do item:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Erro ao alterar status do item de serviço'));
       });
 
       consoleSpy.mockRestore();

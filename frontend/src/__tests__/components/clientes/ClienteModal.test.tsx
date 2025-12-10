@@ -127,7 +127,8 @@ describe('ClienteModal', () => {
     const checkbox = screen.getByRole('checkbox', { name: /Pessoa Física/i });
     fireEvent.click(checkbox);
 
-    expect(screen.getByText('CPF *')).toBeInTheDocument();
+    // CPF é opcional para pessoa física (sem asterisco)
+    expect(screen.getByText('CPF')).toBeInTheDocument();
     expect(screen.getByText('Nome *')).toBeInTheDocument();
     expect(screen.queryByText('Nome Fantasia')).not.toBeInTheDocument();
   });

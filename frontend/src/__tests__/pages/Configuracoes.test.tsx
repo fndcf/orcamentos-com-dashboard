@@ -268,7 +268,7 @@ describe('Configuracoes', () => {
       expect(screen.getByText('Palavras-chave')).toBeInTheDocument();
       expect(screen.getByText('Serviços')).toBeInTheDocument();
       expect(screen.getByText('Categorias')).toBeInTheDocument();
-      expect(screen.getByText('Limitações')).toBeInTheDocument();
+      expect(screen.getByText('Observações')).toBeInTheDocument();
     });
   });
 
@@ -403,7 +403,7 @@ describe('Configuracoes', () => {
     it('deve exibir lista de limitações ao clicar na aba', async () => {
       render(<Configuracoes />, { wrapper: createWrapper() });
 
-      fireEvent.click(screen.getByText('Limitações'));
+      fireEvent.click(screen.getByText('Observações'));
 
       await waitFor(() => {
         expect(screen.getByText('Esta proposta é válida por 30 dias.')).toBeInTheDocument();
@@ -418,10 +418,10 @@ describe('Configuracoes', () => {
 
       render(<Configuracoes />, { wrapper: createWrapper() });
 
-      fireEvent.click(screen.getByText('Limitações'));
+      fireEvent.click(screen.getByText('Observações'));
 
       await waitFor(() => {
-        expect(screen.getByText('Nenhuma limitação cadastrada')).toBeInTheDocument();
+        expect(screen.getByText('Nenhuma observação cadastrada')).toBeInTheDocument();
       });
     });
   });
@@ -483,7 +483,7 @@ describe('Configuracoes', () => {
       render(<Configuracoes />, { wrapper: createWrapper() });
 
       // Clica na aba de Limitações
-      fireEvent.click(screen.getByText('Limitações'));
+      fireEvent.click(screen.getByText('Observações'));
       await waitFor(() => {
         expect(screen.getByText('Esta proposta é válida por 30 dias.')).toBeInTheDocument();
       });
@@ -829,16 +829,16 @@ describe('Configuracoes', () => {
     it('deve abrir modal de nova limitação', async () => {
       render(<Configuracoes />, { wrapper: createWrapper() });
 
-      fireEvent.click(screen.getByText('Limitações'));
+      fireEvent.click(screen.getByText('Observações'));
 
       await waitFor(() => {
-        expect(screen.getByText('+ Nova Limitação')).toBeInTheDocument();
+        expect(screen.getByText('+ Nova Observação')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('+ Nova Limitação'));
+      fireEvent.click(screen.getByText('+ Nova Observação'));
 
       await waitFor(() => {
-        expect(screen.getByText('Nova Limitação')).toBeInTheDocument();
+        expect(screen.getByText('Nova Observação')).toBeInTheDocument();
       });
     });
 
@@ -846,7 +846,7 @@ describe('Configuracoes', () => {
       mockMutations.mutateAsync.mockResolvedValue(undefined);
       render(<Configuracoes />, { wrapper: createWrapper() });
 
-      fireEvent.click(screen.getByText('Limitações'));
+      fireEvent.click(screen.getByText('Observações'));
 
       await waitFor(() => {
         expect(screen.getByText('Esta proposta é válida por 30 dias.')).toBeInTheDocument();

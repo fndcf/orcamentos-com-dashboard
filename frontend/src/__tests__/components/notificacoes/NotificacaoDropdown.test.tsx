@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { NotificacaoDropdown } from '../../../components/notificacoes/NotificacaoDropdown';
 import {
   useNotificacaoResumo,
-  useNotificacoesNaoLidas,
+  useNotificacoesAtivas,
   useMarcarNotificacaoComoLida,
   useMarcarTodasNotificacoesComoLidas,
 } from '../../../hooks/useNotificacoes';
@@ -23,7 +23,7 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('../../../hooks/useNotificacoes', () => ({
   useNotificacaoResumo: vi.fn(),
-  useNotificacoesNaoLidas: vi.fn(),
+  useNotificacoesAtivas: vi.fn(),
   useMarcarNotificacaoComoLida: vi.fn(),
   useMarcarTodasNotificacoesComoLidas: vi.fn(),
 }));
@@ -83,22 +83,28 @@ const mockResumo = {
   naoLidas: 3,
   vencidas: 1,
   proximasVencer: 5,
+  ativas: 3,
 };
 
 const mockMarcarLida = { mutate: vi.fn(), isLoading: false };
 const mockMarcarTodasLidas = { mutate: vi.fn(), isLoading: false };
+const mockRefetch = vi.fn();
 
 describe('NotificacaoDropdown', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockReset();
+    mockRefetch.mockReset();
 
     vi.mocked(useNotificacaoResumo).mockReturnValue({
       data: mockResumo,
     } as any);
 
-    vi.mocked(useNotificacoesNaoLidas).mockReturnValue({
+    vi.mocked(useNotificacoesAtivas).mockReturnValue({
       data: mockNotificacoes,
+      isLoading: false,
+      isError: false,
+      refetch: mockRefetch,
     } as any);
 
     vi.mocked(useMarcarNotificacaoComoLida).mockReturnValue(mockMarcarLida as any);
@@ -111,15 +117,15 @@ describe('NotificacaoDropdown', () => {
     expect(screen.getByTitle('Notificações')).toBeInTheDocument();
   });
 
-  it('deve mostrar badge com número de não lidas', () => {
+  it('deve mostrar badge com número de ativas', () => {
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
 
     expect(screen.getByText('3')).toBeInTheDocument();
   });
 
-  it('deve mostrar 99+ quando houver mais de 99 não lidas', () => {
+  it('deve mostrar 99+ quando houver mais de 99 ativas', () => {
     vi.mocked(useNotificacaoResumo).mockReturnValue({
-      data: { ...mockResumo, naoLidas: 150 },
+      data: { ...mockResumo, ativas: 150 },
     } as any);
 
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
@@ -127,9 +133,9 @@ describe('NotificacaoDropdown', () => {
     expect(screen.getByText('99+')).toBeInTheDocument();
   });
 
-  it('não deve mostrar badge quando não houver não lidas', () => {
+  it('não deve mostrar badge quando não houver ativas', () => {
     vi.mocked(useNotificacaoResumo).mockReturnValue({
-      data: { ...mockResumo, naoLidas: 0 },
+      data: { ...mockResumo, ativas: 0 },
     } as any);
 
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
@@ -198,8 +204,11 @@ describe('NotificacaoDropdown', () => {
   });
 
   it('deve mostrar estado vazio quando não houver notificações', () => {
-    vi.mocked(useNotificacoesNaoLidas).mockReturnValue({
+    vi.mocked(useNotificacoesAtivas).mockReturnValue({
       data: [],
+      isLoading: false,
+      isError: false,
+      refetch: mockRefetch,
     } as any);
 
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
@@ -207,6 +216,36 @@ describe('NotificacaoDropdown', () => {
     fireEvent.click(screen.getByTitle('Notificações'));
 
     expect(screen.getByText('Nenhuma notificação pendente')).toBeInTheDocument();
+  });
+
+  it('deve mostrar estado de carregamento', () => {
+    vi.mocked(useNotificacoesAtivas).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      refetch: mockRefetch,
+    } as any);
+
+    render(<NotificacaoDropdown />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByTitle('Notificações'));
+
+    expect(screen.getByText('Carregando...')).toBeInTheDocument();
+  });
+
+  it('deve mostrar estado de erro', () => {
+    vi.mocked(useNotificacoesAtivas).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: mockRefetch,
+    } as any);
+
+    render(<NotificacaoDropdown />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByTitle('Notificações'));
+
+    expect(screen.getByText('Erro ao carregar notificações')).toBeInTheDocument();
   });
 
   it('deve chamar marcar todas como lidas ao clicar no botão', () => {
@@ -218,9 +257,9 @@ describe('NotificacaoDropdown', () => {
     expect(mockMarcarTodasLidas.mutate).toHaveBeenCalled();
   });
 
-  it('deve desabilitar botão marcar todas quando não houver não lidas', () => {
+  it('deve desabilitar botão marcar todas quando não houver ativas', () => {
     vi.mocked(useNotificacaoResumo).mockReturnValue({
-      data: { ...mockResumo, naoLidas: 0 },
+      data: { ...mockResumo, ativas: 0 },
     } as any);
 
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
@@ -277,28 +316,28 @@ describe('NotificacaoDropdown', () => {
     expect(screen.getByText('MANUTENCAO')).toBeInTheDocument();
   });
 
-  it('deve mostrar "Vence em X dias" para notificações futuras', () => {
+  it('deve mostrar "Renovação em X dias" para notificações futuras', () => {
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
 
     fireEvent.click(screen.getByTitle('Notificações'));
 
-    expect(screen.getByText('Vence em 5 dias')).toBeInTheDocument();
+    expect(screen.getByText('Renovação em 5 dias')).toBeInTheDocument();
   });
 
-  it('deve mostrar "Vence hoje" para notificações com vencimento hoje', () => {
+  it('deve mostrar "Renovação hoje" para notificações com vencimento hoje', () => {
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
 
     fireEvent.click(screen.getByTitle('Notificações'));
 
-    expect(screen.getByText('Vence hoje')).toBeInTheDocument();
+    expect(screen.getByText('Renovação hoje')).toBeInTheDocument();
   });
 
-  it('deve mostrar "Vencido há X dias" para notificações vencidas', () => {
+  it('deve mostrar "Venceu há X dias" para notificações vencidas', () => {
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
 
     fireEvent.click(screen.getByTitle('Notificações'));
 
-    expect(screen.getByText('Vencido há 2 dias')).toBeInTheDocument();
+    expect(screen.getByText('Venceu há 2 dias')).toBeInTheDocument();
   });
 
   it('deve fechar dropdown ao clicar fora', async () => {
@@ -334,8 +373,11 @@ describe('NotificacaoDropdown', () => {
       createdAt: new Date(),
     }));
 
-    vi.mocked(useNotificacoesNaoLidas).mockReturnValue({
+    vi.mocked(useNotificacoesAtivas).mockReturnValue({
       data: manyNotifications,
+      isLoading: false,
+      isError: false,
+      refetch: mockRefetch,
     } as any);
 
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
@@ -346,5 +388,15 @@ describe('NotificacaoDropdown', () => {
     expect(screen.getByText(/Cliente 1 - Orç. #1000/)).toBeInTheDocument();
     expect(screen.getByText(/Cliente 5 - Orç. #1004/)).toBeInTheDocument();
     expect(screen.queryByText(/Cliente 6 - Orç. #1005/)).not.toBeInTheDocument();
+  });
+
+  it('deve chamar refetch quando dropdown é aberto', async () => {
+    render(<NotificacaoDropdown />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByTitle('Notificações'));
+
+    await waitFor(() => {
+      expect(mockRefetch).toHaveBeenCalled();
+    });
   });
 });

@@ -6,6 +6,7 @@ import { useClientes, useCriarCliente, useBuscarCnpjBrasilAPI } from '../../../h
 import { useServicosAtivos } from '../../../hooks/useServicos';
 import { useCategoriasItemAtivas } from '../../../hooks/useCategoriasItem';
 import { useLimitacoesAtivas } from '../../../hooks/useLimitacoes';
+import { useItensServicoAtivosPorCategoria } from '../../../hooks/useItensServico';
 
 // Mock dos hooks
 vi.mock('../../../hooks/useClientes', () => ({
@@ -24,6 +25,10 @@ vi.mock('../../../hooks/useCategoriasItem', () => ({
 
 vi.mock('../../../hooks/useLimitacoes', () => ({
   useLimitacoesAtivas: vi.fn(),
+}));
+
+vi.mock('../../../hooks/useItensServico', () => ({
+  useItensServicoAtivosPorCategoria: vi.fn(),
 }));
 
 const createWrapper = () => {
@@ -128,6 +133,10 @@ describe('OrcamentoModal', () => {
       data: [{ id: 'lim1', texto: 'Limitação Teste', ativo: true, ordem: 1, createdAt: new Date() }],
       isLoading: false,
     } as any);
+    vi.mocked(useItensServicoAtivosPorCategoria).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as any);
   });
 
   it('não deve renderizar quando não está aberto', () => {
@@ -209,8 +218,8 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'c1' } });
+    const selects = screen.getAllByRole('combobox');
+    fireEvent.change(selects[0], { target: { value: 'c1' } });
 
     expect(screen.getByText(/CNPJ\/CPF: 12345678901234/)).toBeInTheDocument();
   });
@@ -361,8 +370,8 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'c1' } });
+    const selects = screen.getAllByRole('combobox');
+    fireEvent.change(selects[0], { target: { value: 'c1' } });
 
     fireEvent.click(screen.getByText('Criar Orçamento'));
 
@@ -384,8 +393,8 @@ describe('OrcamentoModal', () => {
     );
 
     // Selecionar cliente
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'c1' } });
+    const selects = screen.getAllByRole('combobox');
+    fireEvent.change(selects[0], { target: { value: 'c1' } });
 
     // Preencher item
     const descInput = screen.getByPlaceholderText('Descrição do item/serviço');
@@ -438,8 +447,8 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    const select = screen.getByRole('combobox');
-    expect(select).toBeDisabled();
+    const selects = screen.getAllByRole('combobox');
+    expect(selects[0]).toBeDisabled();
   });
 
   it('deve permitir alterar cliente ao duplicar', () => {
@@ -453,8 +462,8 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    const select = screen.getByRole('combobox');
-    expect(select).not.toBeDisabled();
+    const selects = screen.getAllByRole('combobox');
+    expect(selects[0]).not.toBeDisabled();
   });
 
   it('deve desabilitar botão de submit quando loading', () => {
@@ -888,8 +897,8 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      const select = screen.getByRole('combobox');
-      fireEvent.change(select, { target: { value: 'c1' } });
+      const selects = screen.getAllByRole('combobox');
+      fireEvent.change(selects[0], { target: { value: 'c1' } });
 
       expect(screen.getByText(/\(C1\)/)).toBeInTheDocument();
     });
@@ -904,8 +913,8 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      const select = screen.getByRole('combobox');
-      fireEvent.change(select, { target: { value: 'c1' } });
+      const selects = screen.getAllByRole('combobox');
+      fireEvent.change(selects[0], { target: { value: 'c1' } });
 
       expect(screen.getByText(/São Paulo\/SP/)).toBeInTheDocument();
     });

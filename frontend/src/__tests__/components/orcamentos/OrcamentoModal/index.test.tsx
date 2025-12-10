@@ -187,9 +187,9 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      // Selecionar cliente
-      const clienteSelect = screen.getByRole('combobox');
-      fireEvent.change(clienteSelect, { target: { value: 'cliente1' } });
+      // Selecionar cliente (primeiro combobox)
+      const selects = screen.getAllByRole('combobox');
+      fireEvent.change(selects[0], { target: { value: 'cliente1' } });
 
       // Encontra o botão de submit
       const submitButtons = screen.getAllByRole('button');
@@ -477,10 +477,10 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      const clienteSelect = screen.getByRole('combobox');
-      fireEvent.change(clienteSelect, { target: { value: 'cliente1' } });
+      const selects = screen.getAllByRole('combobox');
+      fireEvent.change(selects[0], { target: { value: 'cliente1' } });
 
-      expect(clienteSelect).toHaveValue('cliente1');
+      expect(selects[0]).toHaveValue('cliente1');
     });
   });
 });

@@ -142,11 +142,21 @@ describe('ClienteService', () => {
       );
     });
 
-    it('deve lançar erro para CNPJ/CPF vazio', async () => {
-      const clienteInvalido = { ...novoCliente, cnpj: '' };
+    it('deve lançar erro para CNPJ vazio em pessoa jurídica', async () => {
+      const clienteInvalido = { ...novoCliente, cnpj: '', tipoPessoa: 'juridica' as const };
 
       await expect(clienteService.criar(clienteInvalido)).rejects.toThrow(ValidationError);
-      await expect(clienteService.criar(clienteInvalido)).rejects.toThrow('CPF/CNPJ é obrigatório');
+      await expect(clienteService.criar(clienteInvalido)).rejects.toThrow('CNPJ é obrigatório para pessoa jurídica');
+    });
+
+    it('deve permitir CPF vazio para pessoa física', async () => {
+      const clientePessoaFisica = { ...novoCliente, cnpj: '', tipoPessoa: 'fisica' as const };
+      mockClienteRepository.findByDocumento.mockResolvedValue(null);
+      mockClienteRepository.create.mockResolvedValue({ ...clientePessoaFisica, id: '4', createdAt: new Date() });
+
+      const result = await clienteService.criar(clientePessoaFisica);
+
+      expect(result.id).toBe('4');
     });
 
     it('deve lançar erro para documento com tamanho inválido', async () => {

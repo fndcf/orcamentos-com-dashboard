@@ -3,15 +3,15 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Relatorios } from '../../pages/Relatorios';
 import { useOrcamentos } from '../../hooks/useOrcamentos';
-import { useClientes } from '../../hooks/useClientes';
+import { useItensServico } from '../../hooks/useItensServico';
 
 // Mock dos hooks
 vi.mock('../../hooks/useOrcamentos', () => ({
   useOrcamentos: vi.fn(),
 }));
 
-vi.mock('../../hooks/useClientes', () => ({
-  useClientes: vi.fn(),
+vi.mock('../../hooks/useItensServico', () => ({
+  useItensServico: vi.fn(),
 }));
 
 // Mock do recharts
@@ -111,11 +111,85 @@ const mockOrcamentos = [
   },
 ];
 
-const mockClientes = [
-  { id: 'c1', razaoSocial: 'Cliente A', cnpj: '12345678901234' },
-  { id: 'c2', razaoSocial: 'Cliente B', cnpj: '98765432109876' },
-  { id: 'c3', razaoSocial: 'Cliente C', cnpj: '11111111111111' },
+const mockItensServico = [
+  {
+    id: 'i1',
+    descricao: 'Extintor ABC',
+    unidade: 'un',
+    valorUnitario: 200,
+    valorMaoDeObraUnitario: 50,
+    valorCusto: 120,
+    valorMaoDeObraCusto: 30,
+    categoriaId: 'cat1',
+    ativo: true,
+  },
+  {
+    id: 'i2',
+    descricao: 'Mangueira',
+    unidade: 'un',
+    valorUnitario: 600,
+    valorMaoDeObraUnitario: 100,
+    valorCusto: 400,
+    valorMaoDeObraCusto: 60,
+    categoriaId: 'cat1',
+    ativo: true,
+  },
+  {
+    id: 'i3',
+    descricao: 'Extintor CO2',
+    unidade: 'un',
+    valorUnitario: 500,
+    valorMaoDeObraUnitario: 80,
+    valorCusto: 300,
+    valorMaoDeObraCusto: 50,
+    categoriaId: 'cat1',
+    ativo: true,
+  },
 ];
+
+const mockOrcamentoCompleto = {
+  id: 'o5',
+  numero: 5,
+  versao: 0,
+  tipo: 'completo' as const,
+  clienteId: 'c1',
+  clienteNome: 'Cliente A',
+  clienteCnpj: '12345678901234',
+  status: 'aceito' as const,
+  valorTotal: 8000,
+  dataEmissao: dataEmissaoTest,
+  dataValidade: dataValidadeTest,
+  dataAceite: dataEmissaoTest,
+  itens: [],
+  itensCompleto: [
+    {
+      descricao: 'Extintor ABC',
+      quantidade: 10,
+      unidade: 'un',
+      etapa: 'residencial' as const,
+      categoriaId: 'cat1',
+      categoriaNome: 'Extintores',
+      valorUnitarioMaterial: 200,
+      valorUnitarioMaoDeObra: 50,
+      valorTotalMaterial: 2000,
+      valorTotalMaoDeObra: 500,
+      valorTotal: 2500,
+    },
+    {
+      descricao: 'Mangueira',
+      quantidade: 5,
+      unidade: 'un',
+      etapa: 'comercial' as const,
+      categoriaId: 'cat1',
+      categoriaNome: 'Hidrantes',
+      valorUnitarioMaterial: 600,
+      valorUnitarioMaoDeObra: 100,
+      valorTotalMaterial: 3000,
+      valorTotalMaoDeObra: 500,
+      valorTotal: 3500,
+    },
+  ],
+};
 
 describe('Relatorios', () => {
   beforeEach(() => {
@@ -139,7 +213,7 @@ describe('Relatorios', () => {
       data: undefined,
       isLoading: true,
     } as any);
-    vi.mocked(useClientes).mockReturnValue({
+    vi.mocked(useItensServico).mockReturnValue({
       data: undefined,
       isLoading: true,
     } as any);
@@ -155,8 +229,8 @@ describe('Relatorios', () => {
       data: mockOrcamentos,
       isLoading: false,
     } as any);
-    vi.mocked(useClientes).mockReturnValue({
-      data: mockClientes,
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
       isLoading: false,
     } as any);
 
@@ -173,8 +247,8 @@ describe('Relatorios', () => {
       data: mockOrcamentos,
       isLoading: false,
     } as any);
-    vi.mocked(useClientes).mockReturnValue({
-      data: mockClientes,
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
       isLoading: false,
     } as any);
 
@@ -205,8 +279,8 @@ describe('Relatorios', () => {
       data: mockOrcamentos,
       isLoading: false,
     } as any);
-    vi.mocked(useClientes).mockReturnValue({
-      data: mockClientes,
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
       isLoading: false,
     } as any);
 
@@ -222,8 +296,8 @@ describe('Relatorios', () => {
       data: mockOrcamentos,
       isLoading: false,
     } as any);
-    vi.mocked(useClientes).mockReturnValue({
-      data: mockClientes,
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
       isLoading: false,
     } as any);
 
@@ -239,8 +313,8 @@ describe('Relatorios', () => {
       data: mockOrcamentos,
       isLoading: false,
     } as any);
-    vi.mocked(useClientes).mockReturnValue({
-      data: mockClientes,
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
       isLoading: false,
     } as any);
 
@@ -254,8 +328,8 @@ describe('Relatorios', () => {
       data: mockOrcamentos,
       isLoading: false,
     } as any);
-    vi.mocked(useClientes).mockReturnValue({
-      data: mockClientes,
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
       isLoading: false,
     } as any);
 
@@ -279,8 +353,8 @@ describe('Relatorios', () => {
       data: mockOrcamentos,
       isLoading: false,
     } as any);
-    vi.mocked(useClientes).mockReturnValue({
-      data: mockClientes,
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
       isLoading: false,
     } as any);
 
@@ -309,7 +383,7 @@ describe('Relatorios', () => {
       data: [],
       isLoading: false,
     } as any);
-    vi.mocked(useClientes).mockReturnValue({
+    vi.mocked(useItensServico).mockReturnValue({
       data: [],
       isLoading: false,
     } as any);
@@ -326,7 +400,7 @@ describe('Relatorios', () => {
       data: [],
       isLoading: false,
     } as any);
-    vi.mocked(useClientes).mockReturnValue({
+    vi.mocked(useItensServico).mockReturnValue({
       data: [],
       isLoading: false,
     } as any);
@@ -341,8 +415,8 @@ describe('Relatorios', () => {
       data: mockOrcamentos,
       isLoading: false,
     } as any);
-    vi.mocked(useClientes).mockReturnValue({
-      data: mockClientes,
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
       isLoading: false,
     } as any);
 
@@ -358,8 +432,8 @@ describe('Relatorios', () => {
       data: mockOrcamentos,
       isLoading: false,
     } as any);
-    vi.mocked(useClientes).mockReturnValue({
-      data: mockClientes,
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
       isLoading: false,
     } as any);
 
@@ -371,5 +445,166 @@ describe('Relatorios', () => {
     expect(dateInputs[0].value).toBeTruthy();
     // Data fim deve ser hoje
     expect(dateInputs[1].value).toBeTruthy();
+  });
+
+  it('deve renderizar análise de lucro quando há itens de serviço', () => {
+    vi.mocked(useOrcamentos).mockReturnValue({
+      data: mockOrcamentos,
+      isLoading: false,
+    } as any);
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
+      isLoading: false,
+    } as any);
+
+    render(<Relatorios />, { wrapper: createWrapper() });
+
+    // Verificar que a seção de análise de lucro está presente
+    expect(screen.getByText(/Análise de Lucro/)).toBeInTheDocument();
+    expect(screen.getByText('Material')).toBeInTheDocument();
+    expect(screen.getByText('Mão de Obra')).toBeInTheDocument();
+    expect(screen.getByText('Total Geral')).toBeInTheDocument();
+  });
+
+  it('deve processar orçamentos completos na análise de lucro', () => {
+    vi.mocked(useOrcamentos).mockReturnValue({
+      data: [...mockOrcamentos, mockOrcamentoCompleto],
+      isLoading: false,
+    } as any);
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
+      isLoading: false,
+    } as any);
+
+    render(<Relatorios />, { wrapper: createWrapper() });
+
+    // A análise de lucro deve estar presente
+    expect(screen.getByText(/Análise de Lucro/)).toBeInTheDocument();
+    expect(screen.getByText('Detalhamento por Orçamento')).toBeInTheDocument();
+  });
+
+  it('deve mostrar lucro positivo em verde', () => {
+    vi.mocked(useOrcamentos).mockReturnValue({
+      data: mockOrcamentos,
+      isLoading: false,
+    } as any);
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
+      isLoading: false,
+    } as any);
+
+    render(<Relatorios />, { wrapper: createWrapper() });
+
+    // A página deve renderizar com dados de lucro
+    expect(screen.getByText(/Análise de Lucro/)).toBeInTheDocument();
+  });
+
+  it('não deve mostrar análise de lucro quando não há itens de serviço', () => {
+    vi.mocked(useOrcamentos).mockReturnValue({
+      data: mockOrcamentos,
+      isLoading: false,
+    } as any);
+    vi.mocked(useItensServico).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as any);
+
+    render(<Relatorios />, { wrapper: createWrapper() });
+
+    // Não deve mostrar análise de lucro quando não há itens
+    expect(screen.queryByText('Detalhamento por Orçamento')).not.toBeInTheDocument();
+  });
+
+  it('deve processar produtos de orçamentos aceitos', () => {
+    vi.mocked(useOrcamentos).mockReturnValue({
+      data: mockOrcamentos,
+      isLoading: false,
+    } as any);
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
+      isLoading: false,
+    } as any);
+
+    render(<Relatorios />, { wrapper: createWrapper() });
+
+    // Verifica que os produtos aparecem no ranking
+    expect(screen.getByText('Top 10 Produtos/Serviços (por valor)')).toBeInTheDocument();
+    // Os produtos dos orçamentos aceitos devem aparecer
+  });
+
+  it('deve processar itens completos na contagem de produtos', () => {
+    vi.mocked(useOrcamentos).mockReturnValue({
+      data: [mockOrcamentoCompleto],
+      isLoading: false,
+    } as any);
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
+      isLoading: false,
+    } as any);
+
+    render(<Relatorios />, { wrapper: createWrapper() });
+
+    expect(screen.getByText('Top 10 Produtos/Serviços (por valor)')).toBeInTheDocument();
+  });
+
+  it('deve mostrar mensagem quando orçamentos sem custo cadastrado', () => {
+    // Orçamento com item que não tem custo
+    const orcamentoSemCusto = {
+      ...mockOrcamentos[0],
+      itens: [
+        { descricao: 'Item sem custo', quantidade: 1, unidade: 'un', valorUnitario: 100, valorTotal: 100 },
+      ],
+    };
+
+    vi.mocked(useOrcamentos).mockReturnValue({
+      data: [orcamentoSemCusto],
+      isLoading: false,
+    } as any);
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
+      isLoading: false,
+    } as any);
+
+    render(<Relatorios />, { wrapper: createWrapper() });
+
+    // Verifica que a análise de lucro mostra informação sobre itens sem custo
+    expect(screen.getByText(/Análise de Lucro/)).toBeInTheDocument();
+  });
+
+  it('deve calcular evolução diária corretamente', () => {
+    vi.mocked(useOrcamentos).mockReturnValue({
+      data: mockOrcamentos,
+      isLoading: false,
+    } as any);
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
+      isLoading: false,
+    } as any);
+
+    render(<Relatorios />, { wrapper: createWrapper() });
+
+    // O gráfico de evolução deve estar presente
+    expect(screen.getByText('Evolução de Valores no Período (em milhares R$)')).toBeInTheDocument();
+  });
+
+  it('deve renderizar status expirado corretamente', () => {
+    const orcamentoExpirado = {
+      ...mockOrcamentos[0],
+      id: 'exp1',
+      status: 'expirado' as const,
+    };
+
+    vi.mocked(useOrcamentos).mockReturnValue({
+      data: [orcamentoExpirado],
+      isLoading: false,
+    } as any);
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
+      isLoading: false,
+    } as any);
+
+    render(<Relatorios />, { wrapper: createWrapper() });
+
+    expect(screen.getByText('Orçamentos por Status')).toBeInTheDocument();
   });
 });

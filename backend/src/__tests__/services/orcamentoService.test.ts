@@ -1,6 +1,7 @@
 import { orcamentoService } from '../../services/orcamentoService';
 import { orcamentoRepository } from '../../repositories/orcamentoRepository';
 import { clienteRepository } from '../../repositories/clienteRepository';
+import { configuracoesGeraisRepository } from '../../repositories/configuracoesGeraisRepository';
 import { ValidationError, NotFoundError } from '../../utils/errors';
 
 // Mock dos repositories
@@ -22,6 +23,12 @@ jest.mock('../../repositories/orcamentoRepository', () => ({
 jest.mock('../../repositories/clienteRepository', () => ({
   clienteRepository: {
     findById: jest.fn(),
+  },
+}));
+
+jest.mock('../../repositories/configuracoesGeraisRepository', () => ({
+  configuracoesGeraisRepository: {
+    get: jest.fn(),
   },
 }));
 
@@ -55,8 +62,18 @@ describe('orcamentoService', () => {
     valorTotal: 1000,
   };
 
+  const mockConfiguracoes = {
+    diasValidadeOrcamento: 30,
+    nomeEmpresa: 'Empresa Teste',
+    cnpjEmpresa: '12345678901234',
+    enderecoEmpresa: 'Rua Teste, 123',
+    telefoneEmpresa: '11999999999',
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
+    // Configura o mock das configurações gerais por padrão
+    (configuracoesGeraisRepository.get as jest.Mock).mockResolvedValue(mockConfiguracoes);
   });
 
   describe('listar', () => {

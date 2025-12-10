@@ -408,7 +408,7 @@ describe('ServicosTab', () => {
       fireEvent.click(screen.getByText('Desativar'));
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Erro ao alterar status:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Erro ao alterar status do serviço'));
       });
 
       consoleSpy.mockRestore();
@@ -486,7 +486,7 @@ describe('ServicosTab', () => {
       fireEvent.click(modalConfirmButton);
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Erro ao excluir:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Erro ao excluir serviço'));
       });
 
       consoleSpy.mockRestore();

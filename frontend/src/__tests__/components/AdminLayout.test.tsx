@@ -29,7 +29,7 @@ vi.mock('react-router-dom', async () => {
 // Mock dos hooks de notificações
 vi.mock('../../hooks/useNotificacoes', () => ({
   useNotificacaoResumo: vi.fn(() => ({
-    data: { naoLidas: 3, vencidas: 1, proximasVencer: 2 },
+    data: { naoLidas: 3, vencidas: 1, proximasVencer: 2, ativas: 3 },
     isLoading: false,
     refetch: vi.fn(),
   })),
@@ -41,6 +41,12 @@ vi.mock('../../hooks/useNotificacoes', () => ({
     data: [],
     isLoading: false,
   })),
+  useNotificacoesAtivas: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  })),
   useMarcarComoLida: vi.fn(() => ({
     mutateAsync: vi.fn(),
     isLoading: false,
@@ -50,10 +56,12 @@ vi.mock('../../hooks/useNotificacoes', () => ({
     isLoading: false,
   })),
   useMarcarNotificacaoComoLida: vi.fn(() => ({
+    mutate: vi.fn(),
     mutateAsync: vi.fn(),
     isLoading: false,
   })),
   useMarcarTodasNotificacoesComoLidas: vi.fn(() => ({
+    mutate: vi.fn(),
     mutateAsync: vi.fn(),
     isLoading: false,
   })),

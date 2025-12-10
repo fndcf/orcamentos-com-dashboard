@@ -6,6 +6,7 @@ import {
   useNotificacoesNaoLidas,
   useNotificacoesProximas,
   useNotificacoesVencidas,
+  useNotificacoesAtivas,
   useNotificacaoResumo,
   useMarcarNotificacaoComoLida,
   useMarcarTodasNotificacoesComoLidas,
@@ -32,6 +33,7 @@ vi.mock('../../services/notificacaoService', () => ({
     processarTodos: vi.fn(),
   },
 }));
+
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -180,6 +182,34 @@ describe('useNotificacoes hooks', () => {
       expect(result.current.data).toEqual(mockNotificacoes);
       expect(notificacaoService.listarVencidas).toHaveBeenCalled();
     });
+  });
+
+  describe('useNotificacoesAtivas', () => {
+    it('deve retornar lista de notificações ativas com dias padrão', async () => {
+      vi.mocked(notificacaoService.listarAtivas).mockResolvedValue(mockNotificacoes);
+
+      const { result } = renderHook(() => useNotificacoesAtivas(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data).toEqual(mockNotificacoes);
+      expect(notificacaoService.listarAtivas).toHaveBeenCalledWith(60);
+    });
+
+    it('deve retornar lista de notificações ativas com dias customizado', async () => {
+      vi.mocked(notificacaoService.listarAtivas).mockResolvedValue(mockNotificacoes);
+
+      const { result } = renderHook(() => useNotificacoesAtivas(90), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(notificacaoService.listarAtivas).toHaveBeenCalledWith(90);
+    });
+
   });
 
   describe('useNotificacaoResumo', () => {
