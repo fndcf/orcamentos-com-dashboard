@@ -1,8 +1,8 @@
 // Tipos de Status do Orçamento
 export type OrcamentoStatus = 'aberto' | 'aceito' | 'recusado' | 'expirado';
 
-// Tipos de Orçamento
-export type OrcamentoTipo = 'simples' | 'completo';
+// Tipos de Orçamento (mantido apenas 'completo')
+export type OrcamentoTipo = 'completo';
 
 // Tipos de Etapa do Item (Residencial/Comercial)
 export type EtapaTipo = 'residencial' | 'comercial';
@@ -22,15 +22,6 @@ export interface Cliente {
   email?: string;
   createdAt: Date;
   updatedAt?: Date;
-}
-
-// Interface do Item do Orçamento Simples
-export interface OrcamentoItem {
-  descricao: string;
-  quantidade: number;
-  unidade: string;
-  valorUnitario: number;
-  valorTotal: number;
 }
 
 // Interface do Item do Orçamento Completo
@@ -90,9 +81,7 @@ export interface Orcamento {
   dataEmissao: Date;
   dataValidade: Date;
   dataAceite?: Date;
-  // Campos para orçamento simples
-  itens: OrcamentoItem[];
-  // Campos para orçamento completo
+  // Campos do orçamento completo
   servicoId?: string;
   servicoDescricao?: string;
   itensCompleto?: OrcamentoItemCompleto[];

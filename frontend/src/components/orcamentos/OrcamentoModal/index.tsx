@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Orcamento,
-  OrcamentoItem,
   OrcamentoItemCompleto,
-  OrcamentoTipo,
   Cliente,
   OrcamentoSaveData,
   ParcelamentoDados,
@@ -25,7 +23,6 @@ import {
   InputRow,
 } from "../../ui";
 import { NovoClienteForm } from "./NovoClienteForm";
-import { ItensSimples } from "./ItensSimples";
 import { ItensCompleto } from "./ItensCompleto";
 import {
   ServicoSection,
@@ -38,9 +35,6 @@ import {
   ClienteSelect,
   ClienteInfo,
   ToggleButton,
-  TipoOrcamentoSelector,
-  TipoOption,
-  TipoLocked,
   ButtonGroup,
   CompletoSection,
   CheckboxOption,
@@ -54,14 +48,6 @@ interface OrcamentoModalProps {
   duplicarDe?: Orcamento | null;
   loading?: boolean;
 }
-
-const emptyItem: OrcamentoItem = {
-  descricao: "",
-  quantidade: 1,
-  unidade: "Serv.",
-  valorUnitario: 0,
-  valorTotal: 0,
-};
 
 const emptyItemCompleto: OrcamentoItemCompleto = {
   etapa: "residencial",
@@ -91,18 +77,12 @@ export function OrcamentoModal({
   const { data: limitacoesAtivas } = useLimitacoesAtivas();
   const { data: configuracoes } = useConfiguracoesGerais();
 
-  // Estado do tipo de orçamento
-  const [tipoOrcamento, setTipoOrcamento] = useState<OrcamentoTipo>("simples");
-
   const [clienteId, setClienteId] = useState("");
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(
     null
   );
 
-  // Estados para orçamento simples
-  const [itens, setItens] = useState<OrcamentoItem[]>([{ ...emptyItem }]);
-
-  // Estados para orçamento completo
+  // Estados do orçamento
   const [servicoId, setServicoId] = useState("");
   const [itensCompleto, setItensCompleto] = useState<OrcamentoItemCompleto[]>([
     { ...emptyItemCompleto },
@@ -130,70 +110,38 @@ export function OrcamentoModal({
 
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Verifica se é edição (não pode mudar tipo)
-  const isEdicao = !!orcamento && !duplicarDe;
-
   useEffect(() => {
     if (isOpen) {
       if (orcamento) {
         // Editando orçamento existente
-        setTipoOrcamento(orcamento.tipo || "simples");
         setClienteId(orcamento.clienteId);
         setObservacoes(orcamento.observacoes || "");
         setConsultor(orcamento.consultor || "");
         setContato(orcamento.contato || "");
 
-        // Campos específicos por tipo
-        if (orcamento.tipo === "completo") {
-          setServicoId(orcamento.servicoId || "");
-          setItensCompleto(
-            orcamento.itensCompleto?.length
-              ? orcamento.itensCompleto
-              : [{ ...emptyItemCompleto }]
-          );
-          // Converter textos das limitações de volta para IDs (para compatibilidade com checkboxes)
-          const limitacoesIds = (orcamento.limitacoesSelecionadas || [])
-            .map(
-              (texto) => limitacoesAtivas?.find((l) => l.texto === texto)?.id
-            )
-            .filter((id): id is string => !!id);
-          setLimitacoesSelecionadas(
-            limitacoesIds.length > 0
-              ? limitacoesIds
-              : orcamento.limitacoesSelecionadas || []
-          );
-          setPrazoExecucaoServicos(orcamento.prazoExecucaoServicos || 20);
-          setPrazoVistoriaBombeiros(orcamento.prazoVistoriaBombeiros || 30);
-          setCondicaoPagamento(orcamento.condicaoPagamento || "a_combinar");
-          setParcelamentoTexto(orcamento.parcelamentoTexto || "");
-          setParcelamentoDados(orcamento.parcelamentoDados);
-          setMostrarValoresDetalhados(orcamento.mostrarValoresDetalhados !== false);
-          setItens([{ ...emptyItem }]); // reset simples
-        } else {
-          setItens(
-            orcamento.itens.length > 0 ? orcamento.itens : [{ ...emptyItem }]
-          );
-          // Converter textos das limitações de volta para IDs (para compatibilidade com checkboxes)
-          const limitacoesIds = (orcamento.limitacoesSelecionadas || [])
-            .map(
-              (texto) => limitacoesAtivas?.find((l) => l.texto === texto)?.id
-            )
-            .filter((id): id is string => !!id);
-          setLimitacoesSelecionadas(
-            limitacoesIds.length > 0
-              ? limitacoesIds
-              : orcamento.limitacoesSelecionadas || []
-          );
-          // reset completo
-          setServicoId("");
-          setItensCompleto([{ ...emptyItemCompleto }]);
-          setPrazoExecucaoServicos(20);
-          setPrazoVistoriaBombeiros(30);
-          setCondicaoPagamento("a_combinar");
-          setParcelamentoTexto("");
-          setParcelamentoDados(undefined);
-          setMostrarValoresDetalhados(true);
-        }
+        setServicoId(orcamento.servicoId || "");
+        setItensCompleto(
+          orcamento.itensCompleto?.length
+            ? orcamento.itensCompleto
+            : [{ ...emptyItemCompleto }]
+        );
+        // Converter textos das limitações de volta para IDs (para compatibilidade com checkboxes)
+        const limitacoesIds = (orcamento.limitacoesSelecionadas || [])
+          .map(
+            (texto) => limitacoesAtivas?.find((l) => l.texto === texto)?.id
+          )
+          .filter((id): id is string => !!id);
+        setLimitacoesSelecionadas(
+          limitacoesIds.length > 0
+            ? limitacoesIds
+            : orcamento.limitacoesSelecionadas || []
+        );
+        setPrazoExecucaoServicos(orcamento.prazoExecucaoServicos || 20);
+        setPrazoVistoriaBombeiros(orcamento.prazoVistoriaBombeiros || 30);
+        setCondicaoPagamento(orcamento.condicaoPagamento || "a_combinar");
+        setParcelamentoTexto(orcamento.parcelamentoTexto || "");
+        setParcelamentoDados(orcamento.parcelamentoDados);
+        setMostrarValoresDetalhados(orcamento.mostrarValoresDetalhados !== false);
 
         // Buscar cliente selecionado
         const cliente = clientes?.find((c) => c.id === orcamento.clienteId);
@@ -201,64 +149,34 @@ export function OrcamentoModal({
         setMostrarNovoCliente(false);
       } else if (duplicarDe) {
         // Duplicando orçamento - pré-preenche mas permite alterar cliente
-        setTipoOrcamento(duplicarDe.tipo || "simples");
         setClienteId(duplicarDe.clienteId);
         setObservacoes(duplicarDe.observacoes || "");
         setConsultor(duplicarDe.consultor || "");
         setContato(duplicarDe.contato || "");
 
-        // Campos específicos por tipo
-        if (duplicarDe.tipo === "completo") {
-          setServicoId(duplicarDe.servicoId || "");
-          setItensCompleto(
-            duplicarDe.itensCompleto?.length
-              ? [...duplicarDe.itensCompleto]
-              : [{ ...emptyItemCompleto }]
-          );
-          // Converter textos das limitações de volta para IDs (para compatibilidade com checkboxes)
-          const limitacoesIds = (duplicarDe.limitacoesSelecionadas || [])
-            .map(
-              (texto) => limitacoesAtivas?.find((l) => l.texto === texto)?.id
-            )
-            .filter((id): id is string => !!id);
-          setLimitacoesSelecionadas(
-            limitacoesIds.length > 0
-              ? limitacoesIds
-              : duplicarDe.limitacoesSelecionadas || []
-          );
-          setPrazoExecucaoServicos(duplicarDe.prazoExecucaoServicos || 20);
-          setPrazoVistoriaBombeiros(duplicarDe.prazoVistoriaBombeiros || 30);
-          setCondicaoPagamento(duplicarDe.condicaoPagamento || "a_combinar");
-          setParcelamentoTexto(duplicarDe.parcelamentoTexto || "");
-          setParcelamentoDados(duplicarDe.parcelamentoDados);
-          setMostrarValoresDetalhados(duplicarDe.mostrarValoresDetalhados !== false);
-          setItens([{ ...emptyItem }]);
-        } else {
-          setItens(
-            duplicarDe.itens.length > 0
-              ? [...duplicarDe.itens]
-              : [{ ...emptyItem }]
-          );
-          // Converter textos das limitações de volta para IDs (para compatibilidade com checkboxes)
-          const limitacoesIds = (duplicarDe.limitacoesSelecionadas || [])
-            .map(
-              (texto) => limitacoesAtivas?.find((l) => l.texto === texto)?.id
-            )
-            .filter((id): id is string => !!id);
-          setLimitacoesSelecionadas(
-            limitacoesIds.length > 0
-              ? limitacoesIds
-              : duplicarDe.limitacoesSelecionadas || []
-          );
-          setServicoId("");
-          setItensCompleto([{ ...emptyItemCompleto }]);
-          setPrazoExecucaoServicos(20);
-          setPrazoVistoriaBombeiros(30);
-          setCondicaoPagamento("a_combinar");
-          setParcelamentoTexto("");
-          setParcelamentoDados(undefined);
-          setMostrarValoresDetalhados(true);
-        }
+        setServicoId(duplicarDe.servicoId || "");
+        setItensCompleto(
+          duplicarDe.itensCompleto?.length
+            ? [...duplicarDe.itensCompleto]
+            : [{ ...emptyItemCompleto }]
+        );
+        // Converter textos das limitações de volta para IDs (para compatibilidade com checkboxes)
+        const limitacoesIds = (duplicarDe.limitacoesSelecionadas || [])
+          .map(
+            (texto) => limitacoesAtivas?.find((l) => l.texto === texto)?.id
+          )
+          .filter((id): id is string => !!id);
+        setLimitacoesSelecionadas(
+          limitacoesIds.length > 0
+            ? limitacoesIds
+            : duplicarDe.limitacoesSelecionadas || []
+        );
+        setPrazoExecucaoServicos(duplicarDe.prazoExecucaoServicos || 20);
+        setPrazoVistoriaBombeiros(duplicarDe.prazoVistoriaBombeiros || 30);
+        setCondicaoPagamento(duplicarDe.condicaoPagamento || "a_combinar");
+        setParcelamentoTexto(duplicarDe.parcelamentoTexto || "");
+        setParcelamentoDados(duplicarDe.parcelamentoDados);
+        setMostrarValoresDetalhados(duplicarDe.mostrarValoresDetalhados !== false);
 
         // Buscar cliente selecionado
         const cliente = clientes?.find((c) => c.id === duplicarDe.clienteId);
@@ -266,10 +184,8 @@ export function OrcamentoModal({
         setMostrarNovoCliente(false);
       } else {
         // Novo orçamento
-        setTipoOrcamento("simples");
         setClienteId("");
         setClienteSelecionado(null);
-        setItens([{ ...emptyItem }]);
         setServicoId("");
         setItensCompleto([{ ...emptyItemCompleto }]);
         setLimitacoesSelecionadas([]);
@@ -310,62 +226,6 @@ export function OrcamentoModal({
     setClienteId(novoCliente.id!);
     setClienteSelecionado(novoCliente);
     setMostrarNovoCliente(false);
-  };
-
-  // Handlers para itens simples
-  const handleItemChange = (
-    index: number,
-    field: keyof OrcamentoItem,
-    value: string | number
-  ) => {
-    const newItens = [...itens];
-    newItens[index] = {
-      ...newItens[index],
-      [field]: value,
-    };
-
-    // Recalcular valor total do item
-    if (field === "quantidade" || field === "valorUnitario") {
-      newItens[index].valorTotal =
-        (newItens[index].quantidade || 0) *
-        (newItens[index].valorUnitario || 0);
-    }
-
-    setItens(newItens);
-  };
-
-  const addItem = () => {
-    setItens([...itens, { ...emptyItem }]);
-  };
-
-  const removeItem = (index: number) => {
-    if (itens.length > 1) {
-      setItens(itens.filter((_, i) => i !== index));
-    }
-  };
-
-  // Handler para atualizar múltiplos campos de um item simples de uma vez
-  const handleItemMultiChange = (
-    index: number,
-    changes: Partial<OrcamentoItem>
-  ) => {
-    const newItens = [...itens];
-    newItens[index] = {
-      ...newItens[index],
-      ...changes,
-    };
-
-    // Recalcular valor total se necessário
-    if (
-      changes.quantidade !== undefined ||
-      changes.valorUnitario !== undefined
-    ) {
-      newItens[index].valorTotal =
-        (newItens[index].quantidade || 0) *
-        (newItens[index].valorUnitario || 0);
-    }
-
-    setItens(newItens);
   };
 
   // Handlers para itens completos
@@ -465,8 +325,8 @@ export function OrcamentoModal({
     setLimitacoesSelecionadas(ids);
   };
 
-  // Calcular valor total do orçamento completo
-  const valorTotalOrcamentoCompleto = useMemo(() => {
+  // Calcular valor total do orçamento
+  const valorTotalOrcamento = useMemo(() => {
     return itensCompleto.reduce((total, item) => total + (item.valorTotal || 0), 0);
   }, [itensCompleto]);
 
@@ -477,7 +337,6 @@ export function OrcamentoModal({
     const errorToSelector: Record<string, string> = {
       cliente: '[id="clienteSelect"]',
       servico: '[id="servicoSelect"]',
-      itens: '[id="itensSection"]',
       itensCompleto: '[id="itensCompletoSection"]',
     };
 
@@ -486,12 +345,6 @@ export function OrcamentoModal({
       let selector = errorToSelector[key];
 
       // Para erros de itens específicos
-      if (!selector && key.startsWith("item_")) {
-        const match = key.match(/item_(\d+)/);
-        if (match) {
-          selector = `[data-item-index="${match[1]}"]`;
-        }
-      }
       if (!selector && key.startsWith("itemc_")) {
         const match = key.match(/itemc_(\d+)/);
         if (match) {
@@ -519,51 +372,28 @@ export function OrcamentoModal({
       newErrors.cliente = "Selecione um cliente ou cadastre um novo";
     }
 
-    if (tipoOrcamento === "simples") {
-      const itensValidos = itens.filter((item) => item.descricao.trim());
-      if (itensValidos.length === 0) {
-        newErrors.itens = "Adicione pelo menos um item com descrição";
-      }
+    if (!servicoId) {
+      newErrors.servico = "Selecione um serviço";
+    }
 
-      for (let i = 0; i < itens.length; i++) {
-        const item = itens[i];
-        if (item.descricao.trim()) {
-          if (item.descricao.trim().length < 3) {
-            newErrors[`item_${i}_descricao`] = "Mínimo 3 caracteres";
-          }
-          if (item.quantidade <= 0) {
-            newErrors[`item_${i}_quantidade`] = "Maior que 0";
-          }
-          if (item.valorUnitario < 0) {
-            newErrors[`item_${i}_valor`] = "Não pode ser negativo";
-          }
+    const itensValidos = itensCompleto.filter((item) =>
+      item.descricao.trim()
+    );
+    if (itensValidos.length === 0) {
+      newErrors.itensCompleto = "Adicione pelo menos um item com descrição";
+    }
+
+    for (let i = 0; i < itensCompleto.length; i++) {
+      const item = itensCompleto[i];
+      if (item.descricao.trim()) {
+        if (!item.categoriaId) {
+          newErrors[`itemc_${i}_categoria`] = "Selecione uma categoria";
         }
-      }
-    } else {
-      // Validação para orçamento completo
-      if (!servicoId) {
-        newErrors.servico = "Selecione um serviço";
-      }
-
-      const itensValidos = itensCompleto.filter((item) =>
-        item.descricao.trim()
-      );
-      if (itensValidos.length === 0) {
-        newErrors.itensCompleto = "Adicione pelo menos um item com descrição";
-      }
-
-      for (let i = 0; i < itensCompleto.length; i++) {
-        const item = itensCompleto[i];
-        if (item.descricao.trim()) {
-          if (!item.categoriaId) {
-            newErrors[`itemc_${i}_categoria`] = "Selecione uma categoria";
-          }
-          if (item.descricao.trim().length < 3) {
-            newErrors[`itemc_${i}_descricao`] = "Mínimo 3 caracteres";
-          }
-          if (item.quantidade <= 0) {
-            newErrors[`itemc_${i}_quantidade`] = "Maior que 0";
-          }
+        if (item.descricao.trim().length < 3) {
+          newErrors[`itemc_${i}_descricao`] = "Mínimo 3 caracteres";
+        }
+        if (item.quantidade <= 0) {
+          newErrors[`itemc_${i}_quantidade`] = "Maior que 0";
         }
       }
     }
@@ -584,80 +414,53 @@ export function OrcamentoModal({
 
     if (!validate()) return;
 
-    if (tipoOrcamento === "simples") {
-      // Filtrar itens vazios para orçamento simples
-      const itensValidos = itens
-        .filter((item) => item.descricao.trim())
-        .map((item) => ({
+    // Filtrar itens vazios e adicionar categoriaNome
+    const itensValidosCompleto = itensCompleto
+      .filter((item) => item.descricao.trim())
+      .map((item) => {
+        const categoria = categoriasAtivas?.find(
+          (c) => c.id === item.categoriaId
+        );
+        return {
           ...item,
-          unidade: item.unidade?.trim() || "Serv.",
-          valorTotal: item.quantidade * item.valorUnitario,
-        }));
-
-      // Converter IDs das limitações para textos
-      const limitacoesTextos = limitacoesSelecionadas
-        .map((id) => limitacoesAtivas?.find((l) => l.id === id)?.texto)
-        .filter((texto): texto is string => !!texto);
-
-      await onSave({
-        tipo: "simples",
-        clienteId,
-        itens: itensValidos,
-        limitacoesSelecionadas:
-          limitacoesTextos.length > 0 ? limitacoesTextos : undefined,
-        observacoes: observacoes.trim() || undefined,
-        consultor: consultor.trim() || undefined,
-        contato: contato.trim() || undefined,
+          categoriaNome: categoria?.nome || item.categoriaNome || "",
+          unidade: item.unidade?.trim() || "un",
+        };
       });
-    } else {
-      // Filtrar itens vazios para orçamento completo e adicionar categoriaNome
-      const itensValidosCompleto = itensCompleto
-        .filter((item) => item.descricao.trim())
-        .map((item) => {
-          const categoria = categoriasAtivas?.find(
-            (c) => c.id === item.categoriaId
-          );
-          return {
-            ...item,
-            categoriaNome: categoria?.nome || item.categoriaNome || "",
-            unidade: item.unidade?.trim() || "un",
-          };
-        });
 
-      const servicoSelecionado = servicosAtivos?.find(
-        (s) => s.id === servicoId
-      );
+    const servicoSelecionado = servicosAtivos?.find(
+      (s) => s.id === servicoId
+    );
 
-      // Converter IDs das limitações para textos
-      const limitacoesTextos = limitacoesSelecionadas
-        .map((id) => limitacoesAtivas?.find((l) => l.id === id)?.texto)
-        .filter((texto): texto is string => !!texto);
+    // Converter IDs das limitações para textos
+    const limitacoesTextos = limitacoesSelecionadas
+      .map((id) => limitacoesAtivas?.find((l) => l.id === id)?.texto)
+      .filter((texto): texto is string => !!texto);
 
-      await onSave({
-        tipo: "completo",
-        clienteId,
-        servicoId,
-        servicoDescricao: servicoSelecionado?.descricao,
-        itensCompleto: itensValidosCompleto,
-        limitacoesSelecionadas:
-          limitacoesTextos.length > 0 ? limitacoesTextos : undefined,
-        prazoExecucaoServicos,
-        prazoVistoriaBombeiros,
-        condicaoPagamento,
-        parcelamentoTexto:
-          condicaoPagamento === "parcelado"
-            ? parcelamentoTexto.trim()
-            : undefined,
-        parcelamentoDados:
-          condicaoPagamento === "parcelado"
-            ? parcelamentoDados
-            : undefined,
-        mostrarValoresDetalhados,
-        observacoes: observacoes.trim() || undefined,
-        consultor: consultor.trim() || undefined,
-        contato: contato.trim() || undefined,
-      });
-    }
+    await onSave({
+      tipo: "completo",
+      clienteId,
+      servicoId,
+      servicoDescricao: servicoSelecionado?.descricao,
+      itensCompleto: itensValidosCompleto,
+      limitacoesSelecionadas:
+        limitacoesTextos.length > 0 ? limitacoesTextos : undefined,
+      prazoExecucaoServicos,
+      prazoVistoriaBombeiros,
+      condicaoPagamento,
+      parcelamentoTexto:
+        condicaoPagamento === "parcelado"
+          ? parcelamentoTexto.trim()
+          : undefined,
+      parcelamentoDados:
+        condicaoPagamento === "parcelado"
+          ? parcelamentoDados
+          : undefined,
+      mostrarValoresDetalhados,
+      observacoes: observacoes.trim() || undefined,
+      consultor: consultor.trim() || undefined,
+      contato: contato.trim() || undefined,
+    });
 
     onClose();
   };
@@ -673,7 +476,7 @@ export function OrcamentoModal({
           ? `Duplicar Orçamento #${duplicarDe.numero}`
           : "Novo Orçamento"
       }
-      size={tipoOrcamento === "completo" ? "xlarge" : "large"}
+      size="xlarge"
     >
       <Form ref={formRef} onSubmit={handleSubmit}>
         {/* Seleção de Cliente */}
@@ -724,57 +527,6 @@ export function OrcamentoModal({
           </ClienteInfo>
         )}
 
-        {/* Seletor de Tipo de Orçamento */}
-        <InputGroup>
-          <Label>Tipo de Orçamento *</Label>
-          {isEdicao ? (
-            <TipoLocked>
-              Tipo:{" "}
-              <strong>
-                {tipoOrcamento === "simples"
-                  ? "Orçamento Simples"
-                  : "Orçamento Completo"}
-              </strong>
-              <span style={{ marginLeft: "8px", fontSize: "0.8rem" }}>
-                (não pode ser alterado)
-              </span>
-            </TipoLocked>
-          ) : (
-            <TipoOrcamentoSelector>
-              <TipoOption $selected={tipoOrcamento === "simples"}>
-                <input
-                  type="radio"
-                  name="tipoOrcamento"
-                  value="simples"
-                  checked={tipoOrcamento === "simples"}
-                  onChange={() => setTipoOrcamento("simples")}
-                />
-                <div className="tipo-info">
-                  <div className="tipo-titulo">Orçamento Simples</div>
-                  <div className="tipo-desc">
-                    Lista de itens com valor unitário e total
-                  </div>
-                </div>
-              </TipoOption>
-              <TipoOption $selected={tipoOrcamento === "completo"}>
-                <input
-                  type="radio"
-                  name="tipoOrcamento"
-                  value="completo"
-                  checked={tipoOrcamento === "completo"}
-                  onChange={() => setTipoOrcamento("completo")}
-                />
-                <div className="tipo-info">
-                  <div className="tipo-titulo">Orçamento Completo</div>
-                  <div className="tipo-desc">
-                    Itens categorizados com Mão de Obra e Material
-                  </div>
-                </div>
-              </TipoOption>
-            </TipoOrcamentoSelector>
-          )}
-        </InputGroup>
-
         {/* Formulário de Novo Cliente Inline */}
         {mostrarNovoCliente && (
           <NovoClienteForm
@@ -783,114 +535,73 @@ export function OrcamentoModal({
           />
         )}
 
-        {/* FORMULÁRIO PARA ORÇAMENTO SIMPLES */}
-        {tipoOrcamento === "simples" && (
-          <>
-            <ItensSimples
-              itens={itens}
-              categorias={categoriasAtivas}
-              errors={errors}
-              onItemChange={handleItemChange}
-              onItemMultiChange={handleItemMultiChange}
-              onAddItem={addItem}
-              onRemoveItem={removeItem}
+        <ServicoSection
+          servicoId={servicoId}
+          servicos={servicosAtivos}
+          error={errors.servico}
+          onServicoChange={setServicoId}
+        />
+
+        {/* Checkbox para mostrar valores detalhados no PDF */}
+        <CompletoSection>
+          <CheckboxOption>
+            <input
+              type="checkbox"
+              checked={mostrarValoresDetalhados}
+              onChange={(e) => setMostrarValoresDetalhados(e.target.checked)}
             />
+            <span>
+              Mostrar valores detalhados (Mão de Obra e Material) na proposta
+            </span>
+          </CheckboxOption>
+        </CompletoSection>
 
-            {/* Limitações do Escopo para Orçamento Simples */}
-            <LimitacoesSection
-              limitacoes={limitacoesAtivas}
-              selecionadas={limitacoesSelecionadas}
-              onToggle={handleLimitacaoToggle}
-              onToggleAll={handleLimitacoesToggleAll}
+        <ItensCompleto
+          itens={itensCompleto}
+          categorias={categoriasAtivas}
+          errors={errors}
+          onItemChange={handleItemCompletoChange}
+          onItemMultiChange={handleItemCompletoMultiChange}
+          onAddItem={addItemCompleto}
+          onRemoveItem={removeItemCompleto}
+        />
+
+        <LimitacoesSection
+          limitacoes={limitacoesAtivas}
+          selecionadas={limitacoesSelecionadas}
+          onToggle={handleLimitacaoToggle}
+          onToggleAll={handleLimitacoesToggleAll}
+        />
+
+        {/* Campo de observações adicionais */}
+        <CompletoSection>
+          <h4>Observações Adicionais</h4>
+          <InputGroup>
+            <TextArea
+              placeholder="Digite observações adicionais que não estão nos itens acima..."
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              rows={3}
             />
+          </InputGroup>
+        </CompletoSection>
 
-            {/* Campo de observações adicionais */}
-            <CompletoSection>
-              <h4>Observações Adicionais</h4>
-              <InputGroup>
-                <TextArea
-                  placeholder="Digite observações adicionais que não estão nos itens acima..."
-                  value={observacoes}
-                  onChange={(e) => setObservacoes(e.target.value)}
-                  rows={3}
-                />
-              </InputGroup>
-            </CompletoSection>
-          </>
-        )}
+        <PrazosSection
+          prazoExecucao={prazoExecucaoServicos}
+          prazoVistoria={prazoVistoriaBombeiros}
+          onPrazoExecucaoChange={setPrazoExecucaoServicos}
+          onPrazoVistoriaChange={setPrazoVistoriaBombeiros}
+        />
 
-        {/* FORMULÁRIO PARA ORÇAMENTO COMPLETO */}
-        {tipoOrcamento === "completo" && (
-          <>
-            <ServicoSection
-              servicoId={servicoId}
-              servicos={servicosAtivos}
-              error={errors.servico}
-              onServicoChange={setServicoId}
-            />
-
-            {/* Checkbox para mostrar valores detalhados no PDF */}
-            <CompletoSection>
-              <CheckboxOption>
-                <input
-                  type="checkbox"
-                  checked={mostrarValoresDetalhados}
-                  onChange={(e) => setMostrarValoresDetalhados(e.target.checked)}
-                />
-                <span>
-                  Mostrar valores detalhados (Mão de Obra e Material) na proposta
-                </span>
-              </CheckboxOption>
-            </CompletoSection>
-
-            <ItensCompleto
-              itens={itensCompleto}
-              categorias={categoriasAtivas}
-              errors={errors}
-              onItemChange={handleItemCompletoChange}
-              onItemMultiChange={handleItemCompletoMultiChange}
-              onAddItem={addItemCompleto}
-              onRemoveItem={removeItemCompleto}
-            />
-
-            <LimitacoesSection
-              limitacoes={limitacoesAtivas}
-              selecionadas={limitacoesSelecionadas}
-              onToggle={handleLimitacaoToggle}
-              onToggleAll={handleLimitacoesToggleAll}
-            />
-
-            {/* Campo de observações adicionais para orçamento completo */}
-            <CompletoSection>
-              <h4>Observações Adicionais</h4>
-              <InputGroup>
-                <TextArea
-                  placeholder="Digite observações adicionais que não estão nos itens acima..."
-                  value={observacoes}
-                  onChange={(e) => setObservacoes(e.target.value)}
-                  rows={3}
-                />
-              </InputGroup>
-            </CompletoSection>
-
-            <PrazosSection
-              prazoExecucao={prazoExecucaoServicos}
-              prazoVistoria={prazoVistoriaBombeiros}
-              onPrazoExecucaoChange={setPrazoExecucaoServicos}
-              onPrazoVistoriaChange={setPrazoVistoriaBombeiros}
-            />
-
-            <CondicaoPagamentoFormSection
-              condicao={condicaoPagamento}
-              parcelamentoTexto={parcelamentoTexto}
-              onCondicaoChange={setCondicaoPagamento}
-              onParcelamentoTextoChange={setParcelamentoTexto}
-              onParcelamentoDadosChange={setParcelamentoDados}
-              valorTotal={valorTotalOrcamentoCompleto}
-              configuracoes={configuracoes}
-            />
-          </>
-        )}
+        <CondicaoPagamentoFormSection
+          condicao={condicaoPagamento}
+          parcelamentoTexto={parcelamentoTexto}
+          onCondicaoChange={setCondicaoPagamento}
+          onParcelamentoTextoChange={setParcelamentoTexto}
+          onParcelamentoDadosChange={setParcelamentoDados}
+          valorTotal={valorTotalOrcamento}
+          configuracoes={configuracoes}
+        />
 
         <InputRow>
           <InputGroup>

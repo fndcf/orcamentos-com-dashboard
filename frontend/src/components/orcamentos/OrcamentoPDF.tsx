@@ -494,12 +494,14 @@ export function OrcamentoPDFDocument({ orcamento, configuracoes }: OrcamentoPDFP
               <Text style={[styles.tableHeaderText, styles.colValorTotal]}>Total</Text>
             </View>
 
-            {orcamento.itens.map((item, index) => {
-              const isLast = index === orcamento.itens.length - 1;
+            {(orcamento.itensCompleto || []).map((item, index) => {
+              const itens = orcamento.itensCompleto || [];
+              const isLast = index === itens.length - 1;
               const isAlt = index % 2 === 1;
               const rowStyle = isLast
                 ? (isAlt ? [styles.tableRowLast, { backgroundColor: COLORS.lightGray }] : styles.tableRowLast)
                 : (isAlt ? styles.tableRowAlt : styles.tableRow);
+              const valorUnitario = (item.valorUnitarioMaoDeObra || 0) + (item.valorUnitarioMaterial || 0);
 
               return (
                 <View key={index} style={rowStyle}>
@@ -507,7 +509,7 @@ export function OrcamentoPDFDocument({ orcamento, configuracoes }: OrcamentoPDFP
                   <Text style={styles.colQtd}>{item.quantidade}</Text>
                   <Text style={styles.colDescricao}>{item.descricao}</Text>
                   <Text style={styles.colUnid}>{item.unidade || 'Serv.'}</Text>
-                  <Text style={styles.colValorUnit}>{formatCurrency(item.valorUnitario)}</Text>
+                  <Text style={styles.colValorUnit}>{formatCurrency(valorUnitario)}</Text>
                   <Text style={styles.colValorTotal}>{formatCurrency(item.valorTotal)}</Text>
                 </View>
               );
@@ -1554,16 +1556,373 @@ export async function gerarPDFOrcamento(orcamento: Orcamento): Promise<void> {
     logger.error('Erro ao buscar configurações para PDF', { error });
   }
 
-  // Escolher o template correto baseado no tipo
-  const PDFDocument = orcamento.tipo === 'completo'
-    ? <OrcamentoCompletoPDFDocument orcamento={orcamento} configuracoes={configuracoes} />
-    : <OrcamentoPDFDocument orcamento={orcamento} configuracoes={configuracoes} />;
+  // Usar sempre o template completo
+  const PDFDocument = <OrcamentoCompletoPDFDocument orcamento={orcamento} configuracoes={configuracoes} />;
 
   const blob = await pdf(PDFDocument).toBlob();
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
   link.download = `orcamento-${orcamento.numero}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// Estilos específicos para o PDF de execução
+const stylesExecucao = StyleSheet.create({
+  page: {
+    paddingTop: 40,
+    paddingLeft: 40,
+    paddingRight: 40,
+    paddingBottom: 75,
+    fontSize: 9,
+    fontFamily: 'Helvetica',
+    color: COLORS.dark,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 25,
+    paddingBottom: 15,
+    borderBottomWidth: 3,
+    borderBottomColor: COLORS.primary,
+  },
+  logoSection: {
+    flex: 1,
+  },
+  logoText: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    letterSpacing: 4,
+  },
+  logoSubtitle: {
+    fontSize: 10,
+    color: COLORS.gray,
+    marginTop: 2,
+    letterSpacing: 1,
+  },
+  infoSection: {
+    alignItems: 'flex-end',
+  },
+  titulo: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 4,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+  },
+  infoLabel: {
+    color: COLORS.gray,
+    marginRight: 5,
+  },
+  infoValue: {
+    fontWeight: 'bold',
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 8,
+    marginTop: 15,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  clienteSection: {
+    marginBottom: 15,
+    padding: 12,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 4,
+  },
+  clienteNome: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginBottom: 6,
+    color: COLORS.dark,
+  },
+  clienteInfo: {
+    fontSize: 9,
+    color: COLORS.gray,
+    marginBottom: 2,
+  },
+  tableContainer: {
+    marginBottom: 15,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+  },
+  tableHeaderText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 8,
+    textTransform: 'uppercase',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  tableRowAlt: {
+    flexDirection: 'row',
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.lightGray,
+  },
+  categoriaRow: {
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  categoriaText: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  colItem: { width: '10%', fontSize: 8, textAlign: 'center' },
+  colDescricao: { width: '60%', fontSize: 8 },
+  colUnidade: { width: '15%', fontSize: 8, textAlign: 'center' },
+  colQtd: { width: '15%', fontSize: 8, textAlign: 'center' },
+  etapaTitulo: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 8,
+    marginTop: 5,
+    textTransform: 'uppercase',
+    backgroundColor: COLORS.primaryLight,
+    padding: 6,
+    borderRadius: 4,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 25,
+    left: 40,
+    right: 40,
+    textAlign: 'center',
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  footerEmpresa: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 2,
+  },
+  footerInfo: {
+    fontSize: 8,
+    color: COLORS.gray,
+  },
+  observacoesBox: {
+    marginTop: 15,
+    padding: 12,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
+  },
+  observacoesTexto: {
+    fontSize: 9,
+    color: COLORS.dark,
+    lineHeight: 1.4,
+  },
+});
+
+// Componente PDF de Execução (para orçamentos aceitos)
+function OrdemExecucaoPDFDocument({ orcamento, configuracoes }: { orcamento: Orcamento; configuracoes?: ConfiguracoesGerais }) {
+  const formatDate = (date: Date | string) => {
+    const d = new Date(date);
+    return d.toLocaleDateString('pt-BR');
+  };
+
+  // Separar itens por etapa (residencial/comercial)
+  const itensResidenciais = orcamento.itensCompleto?.filter(item => item.etapa === 'residencial') || [];
+  const itensComerciais = orcamento.itensCompleto?.filter(item => item.etapa === 'comercial') || [];
+
+  // Obter categorias únicas
+  const categoriasResidenciais = [...new Set(itensResidenciais.map(item => item.categoriaNome))];
+  const categoriasComerciais = [...new Set(itensComerciais.map(item => item.categoriaNome))];
+
+  return (
+    <Document>
+      <Page size="A4" style={stylesExecucao.page}>
+        {/* Cabeçalho */}
+        <View style={stylesExecucao.header}>
+          <View style={stylesExecucao.logoSection}>
+            <Text style={stylesExecucao.logoText}>FLAMA</Text>
+            <Text style={stylesExecucao.logoSubtitle}>Sistemas de Proteção</Text>
+          </View>
+          <View style={stylesExecucao.infoSection}>
+            <Text style={stylesExecucao.titulo}>ORDEM DE EXECUÇÃO</Text>
+            <View style={stylesExecucao.infoRow}>
+              <Text style={stylesExecucao.infoLabel}>Orçamento Nº:</Text>
+              <Text style={stylesExecucao.infoValue}>{orcamento.numero}</Text>
+            </View>
+            <View style={stylesExecucao.infoRow}>
+              <Text style={stylesExecucao.infoLabel}>Data Aceite:</Text>
+              <Text style={stylesExecucao.infoValue}>
+                {orcamento.dataAceite ? formatDate(orcamento.dataAceite) : formatDate(new Date())}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Dados do Cliente */}
+        <Text style={stylesExecucao.sectionTitle}>Dados do Cliente</Text>
+        <View style={stylesExecucao.clienteSection}>
+          <Text style={stylesExecucao.clienteNome}>{orcamento.clienteNome}</Text>
+          {orcamento.clienteCnpj && (
+            <Text style={stylesExecucao.clienteInfo}>
+              {orcamento.clienteTipoPessoa === 'fisica' ? 'CPF' : 'CNPJ'}: {orcamento.clienteCnpj}
+            </Text>
+          )}
+          {orcamento.clienteEndereco && (
+            <Text style={stylesExecucao.clienteInfo}>Endereço: {orcamento.clienteEndereco}</Text>
+          )}
+          {(orcamento.clienteCidade || orcamento.clienteEstado) && (
+            <Text style={stylesExecucao.clienteInfo}>
+              {orcamento.clienteCidade}{orcamento.clienteCidade && orcamento.clienteEstado ? ' - ' : ''}{orcamento.clienteEstado}
+              {orcamento.clienteCep ? ` | CEP: ${orcamento.clienteCep}` : ''}
+            </Text>
+          )}
+          {orcamento.clienteTelefone && (
+            <Text style={stylesExecucao.clienteInfo}>Telefone: {orcamento.clienteTelefone}</Text>
+          )}
+          {orcamento.contato && (
+            <Text style={stylesExecucao.clienteInfo}>Contato: {orcamento.contato}</Text>
+          )}
+        </View>
+
+        {/* Título Serviço */}
+        <Text style={stylesExecucao.sectionTitle}>Serviço</Text>
+
+        {/* Tabela de Itens - Residencial */}
+        {itensResidenciais.length > 0 && (
+          <>
+            <Text style={stylesExecucao.etapaTitulo}>Itens - Residencial</Text>
+            <View style={stylesExecucao.tableContainer}>
+              <View style={stylesExecucao.tableHeader}>
+                <Text style={[stylesExecucao.tableHeaderText, stylesExecucao.colItem]}>ITEM</Text>
+                <Text style={[stylesExecucao.tableHeaderText, stylesExecucao.colDescricao]}>DESCRIÇÃO</Text>
+                <Text style={[stylesExecucao.tableHeaderText, stylesExecucao.colUnidade]}>UNID.</Text>
+                <Text style={[stylesExecucao.tableHeaderText, stylesExecucao.colQtd]}>QTE.</Text>
+              </View>
+
+              {categoriasResidenciais.map((categoria, catIdx) => {
+                const itensCategoria = itensResidenciais.filter(item => item.categoriaNome === categoria);
+                const categoriaNumero = catIdx + 1;
+                return (
+                  <View key={categoria}>
+                    <View style={stylesExecucao.categoriaRow}>
+                      <Text style={[stylesExecucao.categoriaText, { width: '10%' }]}>{categoriaNumero}.0</Text>
+                      <Text style={stylesExecucao.categoriaText}>{categoria}</Text>
+                    </View>
+                    {itensCategoria.map((item, idx) => {
+                      const itemNum = `${categoriaNumero}.${idx + 1}`;
+                      const isAlt = idx % 2 === 1;
+                      return (
+                        <View key={idx} style={isAlt ? stylesExecucao.tableRowAlt : stylesExecucao.tableRow}>
+                          <Text style={stylesExecucao.colItem}>{itemNum}</Text>
+                          <Text style={stylesExecucao.colDescricao}>{item.descricao}</Text>
+                          <Text style={stylesExecucao.colUnidade}>{item.unidade || 'un'}</Text>
+                          <Text style={stylesExecucao.colQtd}>{item.quantidade}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        {/* Tabela de Itens - Comercial */}
+        {itensComerciais.length > 0 && (
+          <>
+            <Text style={stylesExecucao.etapaTitulo}>Itens - Comercial</Text>
+            <View style={stylesExecucao.tableContainer}>
+              <View style={stylesExecucao.tableHeader}>
+                <Text style={[stylesExecucao.tableHeaderText, stylesExecucao.colItem]}>ITEM</Text>
+                <Text style={[stylesExecucao.tableHeaderText, stylesExecucao.colDescricao]}>DESCRIÇÃO</Text>
+                <Text style={[stylesExecucao.tableHeaderText, stylesExecucao.colUnidade]}>UNID.</Text>
+                <Text style={[stylesExecucao.tableHeaderText, stylesExecucao.colQtd]}>QTE.</Text>
+              </View>
+
+              {categoriasComerciais.map((categoria, catIdx) => {
+                const itensCategoria = itensComerciais.filter(item => item.categoriaNome === categoria);
+                const categoriaNumero = catIdx + 1;
+                return (
+                  <View key={categoria}>
+                    <View style={stylesExecucao.categoriaRow}>
+                      <Text style={[stylesExecucao.categoriaText, { width: '10%' }]}>{categoriaNumero}.0</Text>
+                      <Text style={stylesExecucao.categoriaText}>{categoria}</Text>
+                    </View>
+                    {itensCategoria.map((item, idx) => {
+                      const itemNum = `${categoriaNumero}.${idx + 1}`;
+                      const isAlt = idx % 2 === 1;
+                      return (
+                        <View key={idx} style={isAlt ? stylesExecucao.tableRowAlt : stylesExecucao.tableRow}>
+                          <Text style={stylesExecucao.colItem}>{itemNum}</Text>
+                          <Text style={stylesExecucao.colDescricao}>{item.descricao}</Text>
+                          <Text style={stylesExecucao.colUnidade}>{item.unidade || 'un'}</Text>
+                          <Text style={stylesExecucao.colQtd}>{item.quantidade}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        {/* Rodapé */}
+        {configuracoes && (
+          <View style={stylesExecucao.footer} fixed>
+            <Text style={stylesExecucao.footerEmpresa}>{configuracoes.nomeEmpresa}</Text>
+            <Text style={stylesExecucao.footerInfo}>
+              CNPJ: {configuracoes.cnpjEmpresa} | {configuracoes.enderecoEmpresa}
+            </Text>
+          </View>
+        )}
+      </Page>
+    </Document>
+  );
+}
+
+// Função para gerar e baixar o PDF de Execução (para orçamentos aceitos)
+export async function gerarPDFExecucao(orcamento: Orcamento): Promise<void> {
+  // Buscar configurações da empresa
+  let configuracoes: ConfiguracoesGerais | undefined;
+  try {
+    configuracoes = await configuracoesGeraisService.buscar();
+  } catch (error) {
+    logger.error('Erro ao buscar configurações para PDF de execução', { error });
+  }
+
+  const PDFDocument = <OrdemExecucaoPDFDocument orcamento={orcamento} configuracoes={configuracoes} />;
+
+  const blob = await pdf(PDFDocument).toBlob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `ordem-execucao-${orcamento.numero}.pdf`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

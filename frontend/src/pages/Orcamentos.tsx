@@ -37,7 +37,7 @@ import {
 } from "../components/ui";
 import { OrcamentoModal } from "../components/orcamentos/OrcamentoModal";
 import { OrcamentoViewModal } from "../components/orcamentos/OrcamentoViewModal";
-import { gerarPDFOrcamento } from "../components/orcamentos/OrcamentoPDF";
+import { gerarPDFOrcamento, gerarPDFExecucao } from "../components/orcamentos/OrcamentoPDF";
 import { formatCurrency, formatDate } from "../utils/constants";
 import Footer from "@/components/layout/Footer";
 
@@ -283,8 +283,6 @@ export function Orcamentos() {
       await atualizarOrcamento.mutateAsync({
         id: orcamentoEdit.id,
         data: {
-          // Campos do orçamento simples
-          itens: data.itens,
           // Campos do orçamento completo
           servicoId: data.servicoId,
           servicoDescricao: data.servicoDescricao,
@@ -294,6 +292,7 @@ export function Orcamentos() {
           prazoVistoriaBombeiros: data.prazoVistoriaBombeiros,
           condicaoPagamento: data.condicaoPagamento,
           parcelamentoTexto: data.parcelamentoTexto,
+          mostrarValoresDetalhados: data.mostrarValoresDetalhados,
           // Campos comuns
           observacoes: data.observacoes,
         },
@@ -465,6 +464,15 @@ export function Orcamentos() {
                           >
                             PDF
                           </ActionButton>
+                          {orcamento.status === "aceito" && (
+                            <ActionButton
+                              $variant="execucao"
+                              onClick={() => gerarPDFExecucao(orcamento)}
+                              title="PDF para Execução"
+                            >
+                              Execução
+                            </ActionButton>
+                          )}
                           {orcamento.status === "aberto" && (
                             <ActionButton
                               $variant="edit"
@@ -555,6 +563,14 @@ export function Orcamentos() {
                     >
                       PDF
                     </ActionButton>
+                    {orcamento.status === "aceito" && (
+                      <ActionButton
+                        $variant="execucao"
+                        onClick={() => gerarPDFExecucao(orcamento)}
+                      >
+                        Execução
+                      </ActionButton>
+                    )}
                     {orcamento.status === "aberto" && (
                       <ActionButton
                         $variant="edit"

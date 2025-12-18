@@ -4,7 +4,7 @@ import { Orcamento, OrcamentoStatus } from '../../types';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { formatCurrency, formatDate, formatDocument, formatPhone } from '../../utils/constants';
-import { gerarPDFOrcamento } from './OrcamentoPDF';
+import { gerarPDFOrcamento, gerarPDFExecucao } from './OrcamentoPDF';
 
 const Header = styled.div`
   display: flex;
@@ -141,23 +141,6 @@ const ItensTable = styled.div`
   overflow: hidden;
 `;
 
-const ItemHeader = styled.div`
-  display: grid;
-  grid-template-columns: 2fr 80px 80px 100px 100px;
-  gap: 12px;
-  padding: 12px 16px;
-  background: var(--background);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
-`;
-
 const ItemHeaderCompleto = styled.div`
   display: grid;
   grid-template-columns: 100px 120px 2fr 60px 60px 90px 90px 90px 90px;
@@ -172,53 +155,6 @@ const ItemHeaderCompleto = styled.div`
 
   @media (max-width: 768px) {
     display: none;
-  }
-`;
-
-const ItemRow = styled.div`
-  display: grid;
-  grid-template-columns: 2fr 80px 80px 100px 100px;
-  gap: 12px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-  font-size: 0.9rem;
-
-  &:first-child {
-    border-top: none;
-  }
-
-  .descricao {
-    color: var(--text-primary);
-  }
-
-  .number {
-    text-align: right;
-    color: var(--text-secondary);
-  }
-
-  .valor {
-    text-align: right;
-    color: var(--text-primary);
-    font-weight: 500;
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 8px;
-
-    .descricao {
-      font-weight: 500;
-    }
-
-    .mobile-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.85rem;
-
-      .label {
-        color: var(--text-secondary);
-      }
-    }
   }
 `;
 
@@ -293,37 +229,6 @@ const MobileItemField = styled.div`
 const DesktopOnly = styled.span`
   @media (max-width: 768px) {
     display: none;
-  }
-`;
-
-const TotalSection = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  padding: 16px;
-  background: var(--background);
-  border-radius: 8px;
-  margin-top: 16px;
-
-  .total {
-    text-align: right;
-
-    .label {
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      margin-bottom: 4px;
-    }
-
-    .value {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--primary);
-    }
-  }
-
-  @media (max-width: 768px) {
-    .total .value {
-      font-size: 1.25rem;
-    }
   }
 `;
 
@@ -417,20 +322,6 @@ const LimitacoesSection = styled.div`
 
   @media (max-width: 768px) {
     padding: 12px;
-  }
-`;
-
-const Observacoes = styled.div`
-  background: var(--background);
-  padding: 16px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  white-space: pre-wrap;
-
-  @media (max-width: 768px) {
-    padding: 12px;
-    font-size: 0.85rem;
   }
 `;
 
@@ -532,12 +423,16 @@ export function OrcamentoViewModal({
     gerarPDFOrcamento(orcamento);
   };
 
+  const handlePDFExecucao = () => {
+    gerarPDFExecucao(orcamento);
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title="Detalhes do Orçamento"
-      size={orcamento.tipo === 'completo' ? 'xlarge' : 'large'}
+      size="xlarge"
     >
       <Header>
         <OrcamentoNumero>
@@ -596,8 +491,8 @@ export function OrcamentoViewModal({
         </ClienteInfo>
       </Section>
 
-      {/* Seção de Serviço (apenas orçamento completo) */}
-      {orcamento.tipo === 'completo' && orcamento.servicoDescricao && (
+      {/* Seção de Serviço */}
+      {orcamento.servicoDescricao && (
         <Section>
           <h4>Serviço</h4>
           <InfoSection>
@@ -609,51 +504,8 @@ export function OrcamentoViewModal({
         </Section>
       )}
 
-      {/* Itens do orçamento simples */}
-      {orcamento.tipo !== 'completo' && (
-        <Section>
-          <h4>Itens do Orçamento</h4>
-          <ItensTable>
-            <ItemHeader>
-              <span>Descrição</span>
-              <span style={{ textAlign: 'right' }}>Qtd</span>
-              <span style={{ textAlign: 'right' }}>Unid</span>
-              <span style={{ textAlign: 'right' }}>Valor Unit.</span>
-              <span style={{ textAlign: 'right' }}>Total</span>
-            </ItemHeader>
-            {orcamento.itens.map((item, index) => (
-              <ItemRow key={index}>
-                <span className="descricao">{item.descricao}</span>
-                <DesktopOnly className="number">{item.quantidade}</DesktopOnly>
-                <DesktopOnly className="number">{item.unidade}</DesktopOnly>
-                <DesktopOnly className="valor">{formatCurrency(item.valorUnitario)}</DesktopOnly>
-                <DesktopOnly className="valor">{formatCurrency(item.valorTotal)}</DesktopOnly>
-                <MobileItemField>
-                  <span className="label">Quantidade:</span>
-                  <span>{item.quantidade} {item.unidade}</span>
-                </MobileItemField>
-                <MobileItemField>
-                  <span className="label">Valor Unitário:</span>
-                  <span>{formatCurrency(item.valorUnitario)}</span>
-                </MobileItemField>
-                <MobileItemField>
-                  <span className="label">Total:</span>
-                  <strong>{formatCurrency(item.valorTotal)}</strong>
-                </MobileItemField>
-              </ItemRow>
-            ))}
-          </ItensTable>
-          <TotalSection>
-            <div className="total">
-              <div className="label">Valor Total</div>
-              <div className="value">{formatCurrency(orcamento.valorTotal)}</div>
-            </div>
-          </TotalSection>
-        </Section>
-      )}
-
-      {/* Itens do orçamento completo */}
-      {orcamento.tipo === 'completo' && orcamento.itensCompleto && (
+      {/* Itens do orçamento */}
+      {orcamento.itensCompleto && (
         <Section>
           <h4>Itens do Orçamento (Mão de Obra e Material)</h4>
           <ItensTable>
@@ -727,8 +579,8 @@ export function OrcamentoViewModal({
         </Section>
       )}
 
-      {/* Limitações (apenas orçamento completo) */}
-      {orcamento.tipo === 'completo' && orcamento.limitacoesSelecionadas && orcamento.limitacoesSelecionadas.length > 0 && (
+      {/* Limitações */}
+      {orcamento.limitacoesSelecionadas && orcamento.limitacoesSelecionadas.length > 0 && (
         <Section>
           <h4>Limitações do Escopo</h4>
           <LimitacoesSection>
@@ -741,10 +593,9 @@ export function OrcamentoViewModal({
         </Section>
       )}
 
-      {/* Prazos e Condições (apenas orçamento completo) */}
-      {orcamento.tipo === 'completo' && (
-        <Section>
-          <h4>Prazos e Condições</h4>
+      {/* Prazos e Condições */}
+      <Section>
+        <h4>Prazos e Condições</h4>
           <InfoSection>
             {orcamento.prazoExecucaoServicos && (
               <div className="info-row">
@@ -767,16 +618,7 @@ export function OrcamentoViewModal({
               </span>
             </div>
           </InfoSection>
-        </Section>
-      )}
-
-      {/* Observações (apenas orçamento simples) */}
-      {orcamento.tipo !== 'completo' && orcamento.observacoes && (
-        <Section>
-          <h4>Observações</h4>
-          <Observacoes>{orcamento.observacoes}</Observacoes>
-        </Section>
-      )}
+      </Section>
 
       <ActionButtons>
         <Button $variant="ghost" onClick={handleGoToOrcamentos}>
@@ -789,6 +631,15 @@ export function OrcamentoViewModal({
         >
           Gerar PDF
         </Button>
+        {orcamento.status === 'aceito' && (
+          <Button
+            $variant="primary"
+            onClick={handlePDFExecucao}
+            style={{ background: '#ea580c', color: 'white' }}
+          >
+            PDF Execução
+          </Button>
+        )}
         {orcamento.status === 'aberto' && (
           <Button $variant="primary" onClick={handleEdit}>
             Editar

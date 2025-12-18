@@ -46,15 +46,6 @@ const mockOnSave = vi.fn();
 // Mock para scrollIntoView que não existe no jsdom
 Element.prototype.scrollIntoView = vi.fn();
 
-// Helper para selecionar tipo completo
-const selectTipoCompleto = () => {
-  const radioButtons = screen.getAllByRole('radio');
-  const completoRadio = radioButtons.find(r => (r as HTMLInputElement).value === 'completo');
-  if (completoRadio) {
-    fireEvent.click(completoRadio);
-  }
-};
-
 const mockClientes = [
   {
     id: 'c1',
@@ -88,7 +79,7 @@ const mockOrcamento = {
   id: 'o1',
   numero: 1,
   versao: 0,
-  tipo: 'simples' as const,
+  tipo: 'completo' as const,
   clienteId: 'c1',
   clienteNome: 'Cliente 1',
   clienteCnpj: '12345678901234',
@@ -96,9 +87,35 @@ const mockOrcamento = {
   valorTotal: 1500,
   dataEmissao: new Date().toISOString(),
   dataValidade: new Date().toISOString(),
-  itens: [
-    { descricao: 'Serviço 1', quantidade: 1, unidade: 'Serv.', valorUnitario: 1000, valorTotal: 1000 },
-    { descricao: 'Serviço 2', quantidade: 2, unidade: 'Un.', valorUnitario: 250, valorTotal: 500 },
+  servicoId: 's1',
+  servicoDescricao: 'Serviço Teste',
+  itensCompleto: [
+    {
+      etapa: 'comercial' as const,
+      categoriaId: 'cat1',
+      categoriaNome: 'Categoria Teste',
+      descricao: 'Serviço 1',
+      unidade: 'Serv.',
+      quantidade: 1,
+      valorUnitarioMaoDeObra: 500,
+      valorUnitarioMaterial: 500,
+      valorTotalMaoDeObra: 500,
+      valorTotalMaterial: 500,
+      valorTotal: 1000,
+    },
+    {
+      etapa: 'comercial' as const,
+      categoriaId: 'cat1',
+      categoriaNome: 'Categoria Teste',
+      descricao: 'Serviço 2',
+      unidade: 'Un.',
+      quantidade: 2,
+      valorUnitarioMaoDeObra: 125,
+      valorUnitarioMaterial: 125,
+      valorTotalMaoDeObra: 250,
+      valorTotalMaterial: 250,
+      valorTotal: 500,
+    },
   ],
   observacoes: 'Obs teste',
   consultor: 'João',
@@ -317,12 +334,14 @@ describe('OrcamentoModal', () => {
     const descInput = screen.getByPlaceholderText('Descrição do item/serviço');
     fireEvent.change(descInput, { target: { value: 'Teste' } });
 
-    const qtdInput = screen.getByDisplayValue('1');
-    fireEvent.change(qtdInput, { target: { value: '2' } });
+    // Com tipo completo, temos M.O. e Material
+    const spinButtons = screen.getAllByRole('spinbutton');
+    // spinButtons[0] = quantidade, spinButtons[1] = M.O. Unit, spinButtons[2] = Mat. Unit
+    fireEvent.change(spinButtons[0], { target: { value: '2' } });
+    fireEvent.change(spinButtons[1], { target: { value: '50' } });
+    fireEvent.change(spinButtons[2], { target: { value: '50' } });
 
-    const valorInput = screen.getByDisplayValue('0');
-    fireEvent.change(valorInput, { target: { value: '100' } });
-
+    // Total = 2 * (50 + 50) = 200
     expect(screen.getByText('R$ 200,00')).toBeInTheDocument();
   });
 
@@ -396,12 +415,21 @@ describe('OrcamentoModal', () => {
     const selects = screen.getAllByRole('combobox');
     fireEvent.change(selects[0], { target: { value: 'c1' } });
 
+    // Selecionar serviço
+    fireEvent.change(selects[1], { target: { value: 's1' } });
+
+    // Selecionar categoria
+    fireEvent.change(selects[3], { target: { value: 'cat1' } });
+
     // Preencher item
     const descInput = screen.getByPlaceholderText('Descrição do item/serviço');
     fireEvent.change(descInput, { target: { value: 'Serviço de Manutenção' } });
 
-    const valorInput = screen.getByDisplayValue('0');
-    fireEvent.change(valorInput, { target: { value: '500' } });
+    // Encontrar campos de valor (mão de obra e material)
+    const spinButtons = screen.getAllByRole('spinbutton');
+    // spinButtons[0] = quantidade, spinButtons[1] = M.O. Unit, spinButtons[2] = Mat. Unit
+    fireEvent.change(spinButtons[1], { target: { value: '300' } });
+    fireEvent.change(spinButtons[2], { target: { value: '200' } });
 
     fireEvent.click(screen.getByText('Criar Orçamento'));
 
@@ -409,10 +437,12 @@ describe('OrcamentoModal', () => {
       expect(mockOnSave).toHaveBeenCalledWith(
         expect.objectContaining({
           clienteId: 'c1',
-          itens: expect.arrayContaining([
+          tipo: 'completo',
+          servicoId: 's1',
+          itensCompleto: expect.arrayContaining([
             expect.objectContaining({
               descricao: 'Serviço de Manutenção',
-              valorUnitario: 500,
+              categoriaId: 'cat1',
             }),
           ]),
         })
@@ -550,7 +580,7 @@ describe('OrcamentoModal', () => {
       createdAt: new Date(),
     };
 
-    it('deve alternar para orçamento completo', () => {
+    it('deve mostrar seção de itens completos por padrão', () => {
       render(
         <OrcamentoModal
           isOpen={true}
@@ -560,30 +590,7 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      // Encontrar o radio de orçamento completo pela role
-      const radioButtons = screen.getAllByRole('radio');
-      const completoRadio = radioButtons.find(r => (r as HTMLInputElement).value === 'completo');
-
-      if (completoRadio) {
-        fireEvent.click(completoRadio);
-        expect(screen.getByText('Itens do Orçamento (com Mão de Obra e Material)')).toBeInTheDocument();
-      }
-    });
-
-    it('deve mostrar seletor de tipo bloqueado ao editar orçamento completo', () => {
-      render(
-        <OrcamentoModal
-          isOpen={true}
-          onClose={mockOnClose}
-          onSave={mockOnSave}
-          orcamento={mockOrcamentoCompleto}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      // Verifica que o tipo está bloqueado
-      expect(screen.getByText(/Tipo:/)).toBeInTheDocument();
-      expect(screen.getByText(/não pode ser alterado/)).toBeInTheDocument();
+      expect(screen.getByText('Itens do Orçamento (com Mão de Obra e Material)')).toBeInTheDocument();
     });
 
     it('deve preencher campos ao editar orçamento completo', () => {
@@ -614,7 +621,7 @@ describe('OrcamentoModal', () => {
       );
 
       // Alternar para completo
-      selectTipoCompleto();
+      // O tipo completo é o padrão agora
 
       // Adicionar item
       fireEvent.click(screen.getByText('+ Adicionar Item'));
@@ -644,7 +651,7 @@ describe('OrcamentoModal', () => {
       );
 
       // Alternar para completo
-      selectTipoCompleto();
+      // O tipo completo é o padrão agora
 
       // Preencher valores
       const descInput = screen.getByPlaceholderText('Descrição do item/serviço');
@@ -676,7 +683,7 @@ describe('OrcamentoModal', () => {
       );
 
       // Alternar para completo
-      selectTipoCompleto();
+      // O tipo completo é o padrão agora
 
       // Selecionar cliente
       const selects = screen.getAllByRole('combobox');
@@ -737,7 +744,7 @@ describe('OrcamentoModal', () => {
       );
 
       // Alternar para completo
-      selectTipoCompleto();
+      // O tipo completo é o padrão agora
 
       // Selecionar cliente
       const selects = screen.getAllByRole('combobox');
@@ -768,7 +775,7 @@ describe('OrcamentoModal', () => {
       );
 
       // Alternar para completo
-      selectTipoCompleto();
+      // O tipo completo é o padrão agora
 
       // Selecionar cliente
       const selects = screen.getAllByRole('combobox');
@@ -803,7 +810,7 @@ describe('OrcamentoModal', () => {
       );
 
       // Alternar para completo
-      selectTipoCompleto();
+      // O tipo completo é o padrão agora
 
       // Encontrar e alterar prazo de execução
       const prazoInputs = screen.getAllByRole('spinbutton');
@@ -828,7 +835,7 @@ describe('OrcamentoModal', () => {
       );
 
       // Alternar para completo
-      selectTipoCompleto();
+      // O tipo completo é o padrão agora
 
       // Encontrar checkbox de limitação
       const limitacaoCheckbox = screen.getByLabelText('Limitação Teste');
@@ -920,11 +927,11 @@ describe('OrcamentoModal', () => {
     });
   });
 
-  describe('Edição de orçamento simples com itens vazios', () => {
-    it('deve inicializar com item vazio quando orçamento não tem itens', () => {
+  describe('Edição de orçamento com itens vazios', () => {
+    it('deve inicializar com item vazio quando orçamento não tem itens completos', () => {
       const orcamentoSemItens = {
         ...mockOrcamento,
-        itens: [],
+        itensCompleto: [],
       };
 
       render(

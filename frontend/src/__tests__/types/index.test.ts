@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type {
   OrcamentoStatus,
   Cliente,
-  OrcamentoItem,
+  OrcamentoItemCompleto,
   Orcamento,
   PalavraChave,
   ConfiguracoesGerais,
@@ -65,18 +65,25 @@ describe('Types', () => {
     });
   });
 
-  describe('OrcamentoItem', () => {
-    it('deve criar objeto OrcamentoItem válido', () => {
-      const item: OrcamentoItem = {
+  describe('OrcamentoItemCompleto', () => {
+    it('deve criar objeto OrcamentoItemCompleto válido', () => {
+      const item: OrcamentoItemCompleto = {
+        etapa: 'residencial',
+        categoriaId: 'cat1',
+        categoriaNome: 'Extintores',
         descricao: 'Extintor ABC 6kg',
-        quantidade: 10,
         unidade: 'UN',
-        valorUnitario: 150.0,
+        quantidade: 10,
+        valorUnitarioMaoDeObra: 50.0,
+        valorUnitarioMaterial: 100.0,
+        valorTotalMaoDeObra: 500.0,
+        valorTotalMaterial: 1000.0,
         valorTotal: 1500.0,
       };
 
       expect(item.descricao).toBe('Extintor ABC 6kg');
       expect(item.valorTotal).toBe(1500.0);
+      expect(item.etapa).toBe('residencial');
     });
   });
 
@@ -86,21 +93,21 @@ describe('Types', () => {
         id: '1',
         numero: 1,
         versao: 1,
-        tipo: 'simples',
+        tipo: 'completo',
         clienteId: 'c1',
         clienteNome: 'Cliente Teste',
         clienteCnpj: '12.345.678/0001-90',
         status: 'aberto',
         dataEmissao: new Date(),
         dataValidade: new Date(),
-        itens: [],
+        itensCompleto: [],
         valorTotal: 0,
         createdAt: new Date(),
       };
 
       expect(orcamento.numero).toBe(1);
       expect(orcamento.status).toBe('aberto');
-      expect(orcamento.tipo).toBe('simples');
+      expect(orcamento.tipo).toBe('completo');
     });
   });
 

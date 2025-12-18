@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 import * as functions from "firebase-functions";
 import routes from "./routes";
 import { errorHandler } from "./middlewares/errorHandler";
-import { logger } from "./utils/logger";
 import { inicializarEventHandlers } from "./services/notificacaoService";
 
 dotenv.config();

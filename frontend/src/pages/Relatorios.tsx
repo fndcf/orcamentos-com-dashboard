@@ -735,22 +735,6 @@ export function Relatorios() {
     );
 
     orcamentosAceitos.forEach((orc) => {
-      // Itens do orçamento simples
-      if (orc.itens && orc.itens.length > 0) {
-        orc.itens.forEach((item) => {
-          const key = item.descricao.toLowerCase().trim();
-          if (!produtoStats[key]) {
-            produtoStats[key] = {
-              descricao: item.descricao,
-              quantidade: 0,
-              valor: 0,
-            };
-          }
-          produtoStats[key].quantidade += item.quantidade;
-          produtoStats[key].valor += item.valorTotal;
-        });
-      }
-
       // Itens do orçamento completo
       if (orc.itensCompleto && orc.itensCompleto.length > 0) {
         orc.itensCompleto.forEach((item) => {
@@ -842,23 +826,8 @@ export function Relatorios() {
       let custoMaterial = 0;
       let custoMaoDeObra = 0;
 
-      // Verificar itens do orçamento simples
-      if (orc.itens && orc.itens.length > 0) {
-        for (const item of orc.itens) {
-          if (!itemTemCusto(item.descricao)) {
-            todosItensTemCusto = false;
-            break;
-          }
-          // No orçamento simples, valorUnitario é o valor de venda (material)
-          vendaMaterial += item.valorTotal;
-          const custos = obterValoresItem(item.descricao, item.quantidade);
-          custoMaterial += custos.custoMaterial;
-          custoMaoDeObra += custos.custoMaoDeObra;
-        }
-      }
-
       // Verificar itens do orçamento completo
-      if (todosItensTemCusto && orc.itensCompleto && orc.itensCompleto.length > 0) {
+      if (orc.itensCompleto && orc.itensCompleto.length > 0) {
         for (const item of orc.itensCompleto) {
           if (!itemTemCusto(item.descricao)) {
             todosItensTemCusto = false;

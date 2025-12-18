@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { OrcamentoPDFDocument, OrcamentoCompletoPDFDocument, gerarPDFOrcamento } from '../../../components/orcamentos/OrcamentoPDF';
+import { OrcamentoPDFDocument, OrcamentoCompletoPDFDocument, gerarPDFOrcamento, gerarPDFExecucao } from '../../../components/orcamentos/OrcamentoPDF';
 import { pdf } from '@react-pdf/renderer';
 import { Orcamento } from '../../../types';
 
@@ -29,7 +29,7 @@ const mockOrcamento = {
   id: 'o1',
   numero: 1,
   versao: 0,
-  tipo: 'simples' as const,
+  tipo: 'completo' as const,
   clienteId: 'c1',
   clienteNome: 'Empresa Teste',
   clienteCnpj: '12345678901234',
@@ -41,11 +41,38 @@ const mockOrcamento = {
   clienteEmail: 'teste@email.com',
   status: 'aberto' as const,
   valorTotal: 1500,
+  valorTotalMaoDeObra: 600,
+  valorTotalMaterial: 900,
   dataEmissao: '2024-01-15T00:00:00.000Z',
   dataValidade: '2024-02-15T00:00:00.000Z',
-  itens: [
-    { descricao: 'Serviço 1', quantidade: 1, unidade: 'Serv.', valorUnitario: 1000, valorTotal: 1000 },
-    { descricao: 'Serviço 2', quantidade: 2, unidade: 'Un.', valorUnitario: 250, valorTotal: 500 },
+  servicoDescricao: 'Assessoria e consultoria',
+  itensCompleto: [
+    {
+      etapa: 'comercial' as const,
+      categoriaId: 'cat1',
+      categoriaNome: 'Extintores',
+      descricao: 'Serviço 1',
+      quantidade: 1,
+      unidade: 'Serv.',
+      valorUnitarioMaoDeObra: 400,
+      valorUnitarioMaterial: 600,
+      valorTotalMaoDeObra: 400,
+      valorTotalMaterial: 600,
+      valorTotal: 1000,
+    },
+    {
+      etapa: 'comercial' as const,
+      categoriaId: 'cat1',
+      categoriaNome: 'Extintores',
+      descricao: 'Serviço 2',
+      quantidade: 2,
+      unidade: 'Un.',
+      valorUnitarioMaoDeObra: 100,
+      valorUnitarioMaterial: 150,
+      valorTotalMaoDeObra: 200,
+      valorTotalMaterial: 300,
+      valorTotal: 500,
+    },
   ],
   observacoes: 'Observações de teste',
   consultor: 'João Consultor',
@@ -124,11 +151,11 @@ describe('OrcamentoPDF', () => {
     it('deve renderizar com múltiplos itens (linhas alternadas)', () => {
       const orcamentoMultiplosItens = {
         ...mockOrcamento,
-        itens: [
-          { descricao: 'Item 1', quantidade: 1, unidade: 'Serv.', valorUnitario: 100, valorTotal: 100 },
-          { descricao: 'Item 2', quantidade: 2, unidade: 'Un.', valorUnitario: 200, valorTotal: 400 },
-          { descricao: 'Item 3', quantidade: 3, unidade: 'Kg', valorUnitario: 50, valorTotal: 150 },
-          { descricao: 'Item 4', quantidade: 1, unidade: 'Serv.', valorUnitario: 300, valorTotal: 300 },
+        itensCompleto: [
+          { etapa: 'comercial' as const, categoriaId: 'cat1', categoriaNome: 'Cat1', descricao: 'Item 1', quantidade: 1, unidade: 'Serv.', valorUnitarioMaoDeObra: 50, valorUnitarioMaterial: 50, valorTotalMaoDeObra: 50, valorTotalMaterial: 50, valorTotal: 100 },
+          { etapa: 'comercial' as const, categoriaId: 'cat1', categoriaNome: 'Cat1', descricao: 'Item 2', quantidade: 2, unidade: 'Un.', valorUnitarioMaoDeObra: 100, valorUnitarioMaterial: 100, valorTotalMaoDeObra: 200, valorTotalMaterial: 200, valorTotal: 400 },
+          { etapa: 'comercial' as const, categoriaId: 'cat1', categoriaNome: 'Cat1', descricao: 'Item 3', quantidade: 3, unidade: 'Kg', valorUnitarioMaoDeObra: 25, valorUnitarioMaterial: 25, valorTotalMaoDeObra: 75, valorTotalMaterial: 75, valorTotal: 150 },
+          { etapa: 'comercial' as const, categoriaId: 'cat1', categoriaNome: 'Cat1', descricao: 'Item 4', quantidade: 1, unidade: 'Serv.', valorUnitarioMaoDeObra: 150, valorUnitarioMaterial: 150, valorTotalMaoDeObra: 150, valorTotalMaterial: 150, valorTotal: 300 },
         ],
       };
       expect(() => {
@@ -139,8 +166,8 @@ describe('OrcamentoPDF', () => {
     it('deve renderizar com item sem unidade', () => {
       const orcamentoItemSemUnidade = {
         ...mockOrcamento,
-        itens: [
-          { descricao: 'Item 1', quantidade: 1, unidade: '', valorUnitario: 100, valorTotal: 100 },
+        itensCompleto: [
+          { etapa: 'comercial' as const, categoriaId: 'cat1', categoriaNome: 'Cat1', descricao: 'Item 1', quantidade: 1, unidade: '', valorUnitarioMaoDeObra: 50, valorUnitarioMaterial: 50, valorTotalMaoDeObra: 50, valorTotalMaterial: 50, valorTotal: 100 },
         ],
       };
       expect(() => {
@@ -543,6 +570,398 @@ describe('OrcamentoPDF', () => {
       expect(() => {
         OrcamentoCompletoPDFDocument({ orcamento: orcamentoSemItens as Orcamento });
       }).not.toThrow();
+    });
+
+    it('deve renderizar com parcelamentoDados', () => {
+      const orcamentoComParcelamento = {
+        ...mockOrcamentoCompleto,
+        condicaoPagamento: 'parcelado' as const,
+        parcelamentoDados: {
+          entradaPercent: 30,
+          valorEntrada: 750,
+          valorRestante: 1750,
+          opcoes: [
+            { numeroParcelas: 2, valorParcela: 875, valorTotal: 1750, temJuros: false, taxaJuros: 0 },
+            { numeroParcelas: 3, valorParcela: 600, valorTotal: 1800, temJuros: true, taxaJuros: 2.5 },
+          ],
+        },
+      };
+      expect(() => {
+        OrcamentoCompletoPDFDocument({ orcamento: orcamentoComParcelamento as Orcamento });
+      }).not.toThrow();
+    });
+
+    it('deve renderizar com mostrarValoresDetalhados como false', () => {
+      const orcamentoSemDetalhes = {
+        ...mockOrcamentoCompleto,
+        mostrarValoresDetalhados: false,
+      };
+      expect(() => {
+        OrcamentoCompletoPDFDocument({ orcamento: orcamentoSemDetalhes as Orcamento });
+      }).not.toThrow();
+    });
+
+    it('deve renderizar com condição de pagamento à vista', () => {
+      const orcamentoAVista = { ...mockOrcamentoCompleto, condicaoPagamento: 'a_vista' as const };
+      expect(() => {
+        OrcamentoCompletoPDFDocument({ orcamento: orcamentoAVista as Orcamento });
+      }).not.toThrow();
+    });
+
+    it('deve renderizar sem CNPJ', () => {
+      const orcamentoSemCnpj = { ...mockOrcamentoCompleto, clienteCnpj: '' };
+      expect(() => {
+        OrcamentoCompletoPDFDocument({ orcamento: orcamentoSemCnpj as Orcamento });
+      }).not.toThrow();
+    });
+  });
+
+  describe('gerarPDFExecucao', () => {
+    const mockOrcamentoAceito = {
+      id: 'o3',
+      numero: 3,
+      versao: 1,
+      tipo: 'completo' as const,
+      clienteId: 'c1',
+      clienteNome: 'Empresa Aceita LTDA',
+      clienteCnpj: '12345678901234',
+      clienteTipoPessoa: 'juridica' as const,
+      clienteEndereco: 'Rua Aceita, 789',
+      clienteCidade: 'São Paulo',
+      clienteEstado: 'SP',
+      clienteCep: '01234567',
+      clienteTelefone: '11977777777',
+      clienteEmail: 'aceito@email.com',
+      status: 'aceito' as const,
+      dataAceite: '2024-01-20T00:00:00.000Z',
+      valorTotal: 3000,
+      valorTotalMaoDeObra: 1200,
+      valorTotalMaterial: 1800,
+      dataEmissao: '2024-01-15T00:00:00.000Z',
+      dataValidade: '2024-02-15T00:00:00.000Z',
+      servicoDescricao: 'Instalação de sistema de incêndio',
+      itensCompleto: [
+        {
+          etapa: 'residencial' as const,
+          categoriaId: 'cat1',
+          categoriaNome: 'Extintores',
+          descricao: 'Extintor ABC 6kg',
+          unidade: 'UN',
+          quantidade: 5,
+          valorUnitarioMaoDeObra: 50,
+          valorUnitarioMaterial: 100,
+          valorTotalMaoDeObra: 250,
+          valorTotalMaterial: 500,
+          valorTotal: 750,
+        },
+        {
+          etapa: 'comercial' as const,
+          categoriaId: 'cat2',
+          categoriaNome: 'Hidrantes',
+          descricao: 'Hidrante de parede',
+          unidade: 'UN',
+          quantidade: 2,
+          valorUnitarioMaoDeObra: 100,
+          valorUnitarioMaterial: 200,
+          valorTotalMaoDeObra: 200,
+          valorTotalMaterial: 400,
+          valorTotal: 600,
+        },
+      ],
+      contato: 'Pedro Contato',
+      observacoes: 'Obs de execução',
+      createdAt: new Date('2024-01-15T00:00:00.000Z'),
+    };
+
+    it('deve gerar e baixar o PDF de execução', async () => {
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as any);
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as any);
+
+      const linkClickSpy = vi.fn();
+      let downloadName = '';
+
+      const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return {
+            set href(_: string) {},
+            set download(name: string) { downloadName = name; },
+            click: linkClickSpy,
+          } as unknown as HTMLElement;
+        }
+        return document.createElement(tagName);
+      });
+
+      await gerarPDFExecucao(mockOrcamentoAceito as Orcamento);
+
+      expect(pdf).toHaveBeenCalled();
+      expect(mockCreateObjectURL).toHaveBeenCalled();
+      expect(linkClickSpy).toHaveBeenCalled();
+      expect(downloadName).toBe('ordem-execucao-3.pdf');
+      expect(mockRevokeObjectURL).toHaveBeenCalled();
+
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
+    });
+
+    it('deve gerar PDF de execução sem dataAceite (usa data atual)', async () => {
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as any);
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as any);
+      const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return { href: '', download: '', click: vi.fn() } as unknown as HTMLElement;
+        }
+        return document.createElement(tagName);
+      });
+
+      const orcamentoSemDataAceite = { ...mockOrcamentoAceito, dataAceite: undefined };
+
+      await gerarPDFExecucao(orcamentoSemDataAceite as Orcamento);
+
+      expect(pdf).toHaveBeenCalled();
+
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
+    });
+
+    it('deve gerar PDF de execução sem CNPJ', async () => {
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as any);
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as any);
+      const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return { href: '', download: '', click: vi.fn() } as unknown as HTMLElement;
+        }
+        return document.createElement(tagName);
+      });
+
+      const orcamentoSemCnpj = { ...mockOrcamentoAceito, clienteCnpj: '' };
+
+      await gerarPDFExecucao(orcamentoSemCnpj as Orcamento);
+
+      expect(pdf).toHaveBeenCalled();
+
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
+    });
+
+    it('deve gerar PDF de execução sem endereço', async () => {
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as any);
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as any);
+      const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return { href: '', download: '', click: vi.fn() } as unknown as HTMLElement;
+        }
+        return document.createElement(tagName);
+      });
+
+      const orcamentoSemEndereco = {
+        ...mockOrcamentoAceito,
+        clienteEndereco: undefined,
+        clienteCidade: undefined,
+        clienteEstado: undefined,
+        clienteCep: undefined,
+      };
+
+      await gerarPDFExecucao(orcamentoSemEndereco as Orcamento);
+
+      expect(pdf).toHaveBeenCalled();
+
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
+    });
+
+    it('deve gerar PDF de execução sem telefone e contato', async () => {
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as any);
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as any);
+      const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return { href: '', download: '', click: vi.fn() } as unknown as HTMLElement;
+        }
+        return document.createElement(tagName);
+      });
+
+      const orcamentoSemTelContato = {
+        ...mockOrcamentoAceito,
+        clienteTelefone: undefined,
+        contato: undefined,
+      };
+
+      await gerarPDFExecucao(orcamentoSemTelContato as Orcamento);
+
+      expect(pdf).toHaveBeenCalled();
+
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
+    });
+
+    it('deve gerar PDF de execução apenas com itens residenciais', async () => {
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as any);
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as any);
+      const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return { href: '', download: '', click: vi.fn() } as unknown as HTMLElement;
+        }
+        return document.createElement(tagName);
+      });
+
+      const orcamentoSoResidencial = {
+        ...mockOrcamentoAceito,
+        itensCompleto: mockOrcamentoAceito.itensCompleto.filter(i => i.etapa === 'residencial'),
+      };
+
+      await gerarPDFExecucao(orcamentoSoResidencial as Orcamento);
+
+      expect(pdf).toHaveBeenCalled();
+
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
+    });
+
+    it('deve gerar PDF de execução apenas com itens comerciais', async () => {
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as any);
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as any);
+      const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return { href: '', download: '', click: vi.fn() } as unknown as HTMLElement;
+        }
+        return document.createElement(tagName);
+      });
+
+      const orcamentoSoComercial = {
+        ...mockOrcamentoAceito,
+        itensCompleto: mockOrcamentoAceito.itensCompleto.filter(i => i.etapa === 'comercial'),
+      };
+
+      await gerarPDFExecucao(orcamentoSoComercial as Orcamento);
+
+      expect(pdf).toHaveBeenCalled();
+
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
+    });
+
+    it('deve gerar PDF de execução sem itens', async () => {
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as any);
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as any);
+      const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return { href: '', download: '', click: vi.fn() } as unknown as HTMLElement;
+        }
+        return document.createElement(tagName);
+      });
+
+      const orcamentoSemItens = { ...mockOrcamentoAceito, itensCompleto: undefined };
+
+      await gerarPDFExecucao(orcamentoSemItens as Orcamento);
+
+      expect(pdf).toHaveBeenCalled();
+
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
+    });
+
+    it('deve gerar PDF de execução com cliente pessoa física', async () => {
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as any);
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as any);
+      const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return { href: '', download: '', click: vi.fn() } as unknown as HTMLElement;
+        }
+        return document.createElement(tagName);
+      });
+
+      const orcamentoPF = { ...mockOrcamentoAceito, clienteTipoPessoa: 'fisica' as const };
+
+      await gerarPDFExecucao(orcamentoPF as Orcamento);
+
+      expect(pdf).toHaveBeenCalled();
+
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
+    });
+
+    it('deve gerar PDF de execução com múltiplas categorias na mesma etapa', async () => {
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as any);
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as any);
+      const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return { href: '', download: '', click: vi.fn() } as unknown as HTMLElement;
+        }
+        return document.createElement(tagName);
+      });
+
+      const orcamentoMultiCat = {
+        ...mockOrcamentoAceito,
+        itensCompleto: [
+          ...mockOrcamentoAceito.itensCompleto,
+          {
+            etapa: 'residencial' as const,
+            categoriaId: 'cat3',
+            categoriaNome: 'Alarmes',
+            descricao: 'Central de alarme',
+            unidade: 'UN',
+            quantidade: 1,
+            valorUnitarioMaoDeObra: 200,
+            valorUnitarioMaterial: 500,
+            valorTotalMaoDeObra: 200,
+            valorTotalMaterial: 500,
+            valorTotal: 700,
+          },
+          {
+            etapa: 'residencial' as const,
+            categoriaId: 'cat1',
+            categoriaNome: 'Extintores',
+            descricao: 'Extintor CO2 4kg',
+            unidade: '',
+            quantidade: 3,
+            valorUnitarioMaoDeObra: 60,
+            valorUnitarioMaterial: 150,
+            valorTotalMaoDeObra: 180,
+            valorTotalMaterial: 450,
+            valorTotal: 630,
+          },
+        ],
+      };
+
+      await gerarPDFExecucao(orcamentoMultiCat as Orcamento);
+
+      expect(pdf).toHaveBeenCalled();
+
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
+    });
+
+    it('deve gerar PDF de execução com cidade e estado parciais', async () => {
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => null as any);
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => null as any);
+      const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return { href: '', download: '', click: vi.fn() } as unknown as HTMLElement;
+        }
+        return document.createElement(tagName);
+      });
+
+      // Apenas cidade, sem estado
+      const orcamentoSoCidade = { ...mockOrcamentoAceito, clienteEstado: undefined };
+      await gerarPDFExecucao(orcamentoSoCidade as Orcamento);
+      expect(pdf).toHaveBeenCalled();
+
+      // Apenas estado, sem cidade
+      const orcamentoSoEstado = { ...mockOrcamentoAceito, clienteCidade: undefined };
+      await gerarPDFExecucao(orcamentoSoEstado as Orcamento);
+
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
     });
   });
 });

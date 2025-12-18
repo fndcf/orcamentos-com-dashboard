@@ -1,13 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { orcamentoService } from '../services/orcamentoService';
-import { OrcamentoItem, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo } from '../types';
+import { OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo } from '../types';
 
 interface CriarOrcamentoDTO {
   tipo: OrcamentoTipo;
   clienteId: string;
-  // Campos para orçamento simples
-  itens?: OrcamentoItem[];
-  // Campos para orçamento completo
+  // Campos do orçamento completo
   servicoId?: string;
   servicoDescricao?: string;
   itensCompleto?: OrcamentoItemCompleto[];
@@ -25,9 +23,7 @@ interface CriarOrcamentoDTO {
 }
 
 interface AtualizarOrcamentoDTO {
-  // Campos para orçamento simples
-  itens?: OrcamentoItem[];
-  // Campos para orçamento completo
+  // Campos do orçamento completo
   servicoId?: string;
   servicoDescricao?: string;
   itensCompleto?: OrcamentoItemCompleto[];

@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import { auth } from '../config/firebase';
-import { UnauthorizedError } from '../utils/errors';
+import { Request, Response, NextFunction } from "express";
+import { auth } from "../config/firebase";
+import { UnauthorizedError } from "../utils/errors";
 
 export interface AuthRequest extends Request {
   user?: {
@@ -17,21 +17,21 @@ export const authMiddleware = async (
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedError('Token não fornecido');
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      throw new UnauthorizedError("Token não fornecido");
     }
 
-    const token = authHeader.split('Bearer ')[1];
+    const token = authHeader.split("Bearer ")[1];
 
     const decodedToken = await auth.verifyIdToken(token);
 
     req.user = {
       uid: decodedToken.uid,
-      email: decodedToken.email || '',
+      email: decodedToken.email || "",
     };
 
     next();
-  } catch (error) {
-    next(new UnauthorizedError('Token inválido ou expirado'));
+  } catch (_error) {
+    next(new UnauthorizedError("Token inválido ou expirado"));
   }
 };

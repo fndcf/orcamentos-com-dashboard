@@ -203,6 +203,69 @@ describe('ClienteService', () => {
         'Já existe outro cliente cadastrado com este CPF/CNPJ'
       );
     });
+
+    it('deve lançar erro ao atualizar com documento de tamanho inválido', async () => {
+      const dadosInvalidos = { cnpj: '123456' };
+
+      await expect(clienteService.atualizar('1', dadosInvalidos)).rejects.toThrow(ValidationError);
+      await expect(clienteService.atualizar('1', dadosInvalidos)).rejects.toThrow(
+        'CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos'
+      );
+    });
+
+    it('deve permitir atualização quando documento pertence ao mesmo cliente', async () => {
+      mockClienteRepository.findByDocumento.mockResolvedValue(mockCliente);
+      mockClienteRepository.update.mockResolvedValue({ ...mockCliente, cnpj: '12345678901234' });
+
+      const result = await clienteService.atualizar('1', { cnpj: '12345678901234' });
+
+      expect(result.cnpj).toBe('12345678901234');
+      expect(mockClienteRepository.update).toHaveBeenCalled();
+    });
+
+    it('deve lançar erro ao mudar para pessoa jurídica sem CNPJ', async () => {
+      const dadosInvalidos = { tipoPessoa: 'juridica' as const, cnpj: '' };
+
+      await expect(clienteService.atualizar('1', dadosInvalidos)).rejects.toThrow(ValidationError);
+      await expect(clienteService.atualizar('1', dadosInvalidos)).rejects.toThrow(
+        'CNPJ é obrigatório para pessoa jurídica'
+      );
+    });
+
+    it('deve lançar erro ao mudar para pessoa jurídica com documento inválido', async () => {
+      const dadosInvalidos = { tipoPessoa: 'juridica' as const, cnpj: '12345678901' }; // CPF ao invés de CNPJ
+
+      await expect(clienteService.atualizar('1', dadosInvalidos)).rejects.toThrow(ValidationError);
+      await expect(clienteService.atualizar('1', dadosInvalidos)).rejects.toThrow(
+        'CNPJ é obrigatório para pessoa jurídica'
+      );
+    });
+
+    it('deve permitir atualização para pessoa jurídica com CNPJ válido', async () => {
+      mockClienteRepository.findByDocumento.mockResolvedValue(null);
+      mockClienteRepository.update.mockResolvedValue({
+        ...mockCliente,
+        tipoPessoa: 'juridica',
+        cnpj: '12345678901234',
+      });
+
+      const result = await clienteService.atualizar('1', {
+        tipoPessoa: 'juridica' as const,
+        cnpj: '12345678901234',
+      });
+
+      expect(result.tipoPessoa).toBe('juridica');
+      expect(mockClienteRepository.update).toHaveBeenCalled();
+    });
+
+    it('deve atualizar com documento vazio quando não está validando', async () => {
+      mockClienteRepository.update.mockResolvedValue({ ...mockCliente, cnpj: '' });
+
+      // Não deve lançar erro porque não está passando cnpj com valor inválido
+      const result = await clienteService.atualizar('1', { razaoSocial: 'Novo Nome' });
+
+      expect(mockClienteRepository.update).toHaveBeenCalledWith('1', { razaoSocial: 'Novo Nome' });
+    });
   });
 
   describe('excluir', () => {

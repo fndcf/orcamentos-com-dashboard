@@ -1,5 +1,5 @@
 import api from './api';
-import { Orcamento, OrcamentoItem, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, ParcelamentoDados } from '../types';
+import { Orcamento, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, ParcelamentoDados } from '../types';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -10,8 +10,6 @@ interface ApiResponse<T> {
 interface CriarOrcamentoDTO {
   tipo: OrcamentoTipo;
   clienteId: string;
-  // Campos para orçamento simples
-  itens?: OrcamentoItem[];
   // Campos para orçamento completo
   servicoId?: string;
   servicoDescricao?: string;
@@ -31,8 +29,6 @@ interface CriarOrcamentoDTO {
 }
 
 interface AtualizarOrcamentoDTO {
-  // Campos para orçamento simples
-  itens?: OrcamentoItem[];
   // Campos para orçamento completo
   servicoId?: string;
   servicoDescricao?: string;

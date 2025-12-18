@@ -26,7 +26,7 @@ const mockOrcamento = {
   id: 'o1',
   numero: 1,
   versao: 0,
-  tipo: 'simples' as const,
+  tipo: 'completo' as const,
   clienteId: 'c1',
   clienteNome: 'Empresa Teste',
   clienteCnpj: '12345678901234',
@@ -37,12 +37,41 @@ const mockOrcamento = {
   clienteEmail: 'teste@email.com',
   status: 'aberto' as const,
   valorTotal: 1500,
+  valorTotalMaoDeObra: 800,
+  valorTotalMaterial: 700,
   dataEmissao: '2024-01-15T00:00:00.000Z',
   dataValidade: '2024-02-15T00:00:00.000Z',
-  itens: [
-    { descricao: 'Serviço 1', quantidade: 1, unidade: 'Serv.', valorUnitario: 1000, valorTotal: 1000 },
-    { descricao: 'Serviço 2', quantidade: 2, unidade: 'Un.', valorUnitario: 250, valorTotal: 500 },
+  servicoId: 's1',
+  servicoDescricao: 'Assessoria e consultoria',
+  itensCompleto: [
+    {
+      etapa: 'comercial' as const,
+      categoriaId: 'cat1',
+      categoriaNome: 'Extintores',
+      descricao: 'Serviço 1',
+      quantidade: 1,
+      unidade: 'Serv.',
+      valorUnitarioMaoDeObra: 500,
+      valorUnitarioMaterial: 500,
+      valorTotalMaoDeObra: 500,
+      valorTotalMaterial: 500,
+      valorTotal: 1000,
+    },
+    {
+      etapa: 'comercial' as const,
+      categoriaId: 'cat1',
+      categoriaNome: 'Extintores',
+      descricao: 'Serviço 2',
+      quantidade: 2,
+      unidade: 'Un.',
+      valorUnitarioMaoDeObra: 75,
+      valorUnitarioMaterial: 75,
+      valorTotalMaoDeObra: 150,
+      valorTotalMaterial: 150,
+      valorTotal: 300,
+    },
   ],
+  condicaoPagamento: 'a_combinar' as const,
   observacoes: 'Observações de teste',
   consultor: 'João Consultor',
   contato: 'Maria Contato',
@@ -112,7 +141,7 @@ describe('OrcamentoViewModal', () => {
 
     expect(screen.getByText('Serviço 1')).toBeInTheDocument();
     expect(screen.getByText('Serviço 2')).toBeInTheDocument();
-    expect(screen.getByText('Itens do Orçamento')).toBeInTheDocument();
+    expect(screen.getByText('Itens do Orçamento (Mão de Obra e Material)')).toBeInTheDocument();
   });
 
   it('deve exibir valor total', () => {
@@ -125,38 +154,10 @@ describe('OrcamentoViewModal', () => {
       { wrapper: Wrapper }
     );
 
-    expect(screen.getByText('Valor Total')).toBeInTheDocument();
+    expect(screen.getByText('Total Geral')).toBeInTheDocument();
     expect(screen.getByText('R$ 1.500,00')).toBeInTheDocument();
   });
 
-  it('deve exibir observações quando existem', () => {
-    render(
-      <OrcamentoViewModal
-        isOpen={true}
-        onClose={mockOnClose}
-        orcamento={mockOrcamento}
-      />,
-      { wrapper: Wrapper }
-    );
-
-    expect(screen.getByText('Observações')).toBeInTheDocument();
-    expect(screen.getByText('Observações de teste')).toBeInTheDocument();
-  });
-
-  it('não deve exibir observações quando não existem', () => {
-    const orcSemObs = { ...mockOrcamento, observacoes: undefined };
-
-    render(
-      <OrcamentoViewModal
-        isOpen={true}
-        onClose={mockOnClose}
-        orcamento={orcSemObs}
-      />,
-      { wrapper: Wrapper }
-    );
-
-    expect(screen.queryByText('Observações')).not.toBeInTheDocument();
-  });
 
   it('deve exibir consultor e contato quando existem', () => {
     render(

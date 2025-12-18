@@ -4,7 +4,7 @@
  * Cada tipo tem apenas os campos necessários para seu contexto
  */
 
-import { OrcamentoItem, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, TipoPessoa } from './index';
+import { OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, TipoPessoa, ParcelamentoDados } from './index';
 
 // ============================================
 // TIPOS BASE COMPARTILHADOS
@@ -35,47 +35,27 @@ export interface OrcamentoClienteInfo {
 // TIPOS PARA CRIAÇÃO/EDIÇÃO (DTOs de entrada)
 // ============================================
 
-/** Dados para salvar orçamento SIMPLES */
-export interface OrcamentoSimplesInput extends OrcamentoBase {
-  tipo: 'simples';
-  itens: OrcamentoItem[];
-}
-
 /** Dados para salvar orçamento COMPLETO */
 export interface OrcamentoCompletoInput extends OrcamentoBase {
   tipo: 'completo';
-  servicoId: string;
-  servicoDescricao: string;
+  servicoId?: string;
+  servicoDescricao?: string;
   itensCompleto: OrcamentoItemCompleto[];
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
   prazoVistoriaBombeiros?: number;
   condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
+  parcelamentoDados?: ParcelamentoDados;
+  mostrarValoresDetalhados?: boolean;
 }
 
 /** União discriminada para dados de salvamento */
-export type OrcamentoSaveInput = OrcamentoSimplesInput | OrcamentoCompletoInput;
+export type OrcamentoSaveInput = OrcamentoCompletoInput;
 
 // ============================================
 // TIPOS PARA LEITURA (DTOs de saída)
 // ============================================
-
-/** Orçamento simples completo (leitura) */
-export interface OrcamentoSimples extends OrcamentoBase, OrcamentoClienteInfo {
-  id: string;
-  numero: number;
-  versao: number;
-  tipo: 'simples';
-  status: OrcamentoStatus;
-  dataEmissao: Date | string;
-  dataValidade: Date | string;
-  dataAceite?: Date | string;
-  itens: OrcamentoItem[];
-  valorTotal: number;
-  createdAt: Date | string;
-  updatedAt?: Date | string;
-}
 
 /** Orçamento completo (leitura) */
 export interface OrcamentoCompleto extends OrcamentoBase, OrcamentoClienteInfo {
@@ -87,14 +67,16 @@ export interface OrcamentoCompleto extends OrcamentoBase, OrcamentoClienteInfo {
   dataEmissao: Date | string;
   dataValidade: Date | string;
   dataAceite?: Date | string;
-  servicoId: string;
-  servicoDescricao: string;
+  servicoId?: string;
+  servicoDescricao?: string;
   itensCompleto: OrcamentoItemCompleto[];
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
   prazoVistoriaBombeiros?: number;
   condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
+  parcelamentoDados?: ParcelamentoDados;
+  mostrarValoresDetalhados?: boolean;
   valorTotal: number;
   valorTotalMaoDeObra?: number;
   valorTotalMaterial?: number;
@@ -103,25 +85,15 @@ export interface OrcamentoCompleto extends OrcamentoBase, OrcamentoClienteInfo {
 }
 
 /** União discriminada para leitura */
-export type OrcamentoUnion = OrcamentoSimples | OrcamentoCompleto;
+export type OrcamentoUnion = OrcamentoCompleto;
 
 // ============================================
 // TYPE GUARDS
 // ============================================
 
-/** Verifica se é um orçamento simples */
-export const isOrcamentoSimples = (orc: OrcamentoUnion): orc is OrcamentoSimples => {
-  return orc.tipo === 'simples';
-};
-
 /** Verifica se é um orçamento completo */
 export const isOrcamentoCompleto = (orc: OrcamentoUnion): orc is OrcamentoCompleto => {
   return orc.tipo === 'completo';
-};
-
-/** Verifica se é input de orçamento simples */
-export const isOrcamentoSimplesInput = (input: OrcamentoSaveInput): input is OrcamentoSimplesInput => {
-  return input.tipo === 'simples';
 };
 
 /** Verifica se é input de orçamento completo */

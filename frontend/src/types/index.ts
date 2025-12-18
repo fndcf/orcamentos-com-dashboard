@@ -4,8 +4,8 @@ export type OrcamentoStatus = 'aberto' | 'aceito' | 'recusado' | 'expirado';
 // Re-exporta tipos discriminados de orçamento
 export * from './orcamento.types';
 
-// Tipos de Orçamento
-export type OrcamentoTipo = 'simples' | 'completo';
+// Tipos de Orçamento (mantido apenas 'completo')
+export type OrcamentoTipo = 'completo';
 
 // Tipos de Etapa do Item (Residencial/Comercial)
 export type EtapaTipo = 'residencial' | 'comercial';
@@ -24,16 +24,6 @@ export interface Cliente {
   email: string;
   createdAt: Date | string;
   updatedAt?: Date | string;
-}
-
-// Interface do Item do Orçamento Simples
-export interface OrcamentoItem {
-  categoriaId?: string; // Opcional - para buscar itens pré-definidos
-  descricao: string;
-  quantidade: number;
-  unidade: string;
-  valorUnitario: number;
-  valorTotal: number;
 }
 
 // Interface do Item do Orçamento Completo
@@ -93,9 +83,7 @@ export interface Orcamento {
   dataEmissao: Date | string;
   dataValidade: Date | string;
   dataAceite?: Date | string;
-  // Campos para orçamento simples
-  itens: OrcamentoItem[];
-  // Campos para orçamento completo
+  // Campos do orçamento
   servicoId?: string;
   servicoDescricao?: string;
   itensCompleto?: OrcamentoItemCompleto[];
@@ -238,9 +226,7 @@ export interface BrasilAPICNPJ {
 export interface OrcamentoSaveData {
   tipo: OrcamentoTipo;
   clienteId: string;
-  // Campos para orçamento simples
-  itens?: OrcamentoItem[];
-  // Campos para orçamento completo
+  // Campos do orçamento
   servicoId?: string;
   servicoDescricao?: string;
   itensCompleto?: OrcamentoItemCompleto[];

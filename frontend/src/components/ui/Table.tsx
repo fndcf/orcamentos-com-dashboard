@@ -81,7 +81,7 @@ export const ActionButtons = styled.div`
   }
 `;
 
-export const ActionButton = styled.button<{ $variant?: 'edit' | 'delete' | 'view' | 'pdf' | 'status' | 'duplicate' }>`
+export const ActionButton = styled.button<{ $variant?: 'edit' | 'delete' | 'view' | 'pdf' | 'status' | 'duplicate' | 'execucao' }>`
   background: none;
   border: none;
   padding: 6px 10px;
@@ -122,6 +122,11 @@ export const ActionButton = styled.button<{ $variant?: 'edit' | 'delete' | 'view
         return `
           color: #059669;
           &:hover { background: rgba(5, 150, 105, 0.1); }
+        `;
+      case 'execucao':
+        return `
+          color: #ea580c;
+          &:hover { background: rgba(234, 88, 12, 0.1); }
         `;
       default:
         return `

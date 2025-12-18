@@ -1,10 +1,14 @@
-import { notificacaoRepository } from '../repositories/notificacaoRepository';
-import { orcamentoRepository } from '../repositories/orcamentoRepository';
-import { palavraChaveRepository } from '../repositories/palavraChaveRepository';
-import { Notificacao, PalavraChave, Orcamento } from '../models';
-import { NotFoundError } from '../utils/errors';
-import { eventBus, OrcamentoEvents, OrcamentoStatusChangedEvent } from '../events';
-import { logger } from '../utils/logger';
+import { notificacaoRepository } from "../repositories/notificacaoRepository";
+import { orcamentoRepository } from "../repositories/orcamentoRepository";
+import { palavraChaveRepository } from "../repositories/palavraChaveRepository";
+import { Notificacao, Orcamento } from "../models";
+import { NotFoundError } from "../utils/errors";
+import {
+  eventBus,
+  OrcamentoEvents,
+  OrcamentoStatusChangedEvent,
+} from "../events";
+import { logger } from "../utils/logger";
 
 export const notificacaoService = {
   async listarTodas(): Promise<Notificacao[]> {
@@ -30,7 +34,7 @@ export const notificacaoService = {
   async buscarPorId(id: string): Promise<Notificacao> {
     const notificacao = await notificacaoRepository.findById(id);
     if (!notificacao) {
-      throw new NotFoundError('Notificação não encontrada');
+      throw new NotFoundError("Notificação não encontrada");
     }
     return notificacao;
   },
@@ -38,7 +42,7 @@ export const notificacaoService = {
   async marcarComoLida(id: string): Promise<Notificacao> {
     const notificacao = await notificacaoRepository.marcarComoLida(id);
     if (!notificacao) {
-      throw new NotFoundError('Notificação não encontrada');
+      throw new NotFoundError("Notificação não encontrada");
     }
     return notificacao;
   },
@@ -50,7 +54,7 @@ export const notificacaoService = {
   async excluir(id: string): Promise<void> {
     const deleted = await notificacaoRepository.delete(id);
     if (!deleted) {
-      throw new NotFoundError('Notificação não encontrada');
+      throw new NotFoundError("Notificação não encontrada");
     }
   },
 
@@ -58,11 +62,13 @@ export const notificacaoService = {
    * Gera notificações para um orçamento específico baseado nas palavras-chave
    * Só processa orçamentos com status "aceito"
    */
-  async gerarNotificacoesParaOrcamento(orcamentoId: string): Promise<Notificacao[]> {
+  async gerarNotificacoesParaOrcamento(
+    orcamentoId: string
+  ): Promise<Notificacao[]> {
     const orcamento = await orcamentoRepository.findById(orcamentoId);
 
     // Só gera notificações para orçamentos aceitos
-    if (orcamento.status !== 'aceito') {
+    if (orcamento.status !== "aceito") {
       return [];
     }
 
@@ -79,24 +85,15 @@ export const notificacaoService = {
       return [];
     }
 
-    const notificacoesParaCriar: Omit<Notificacao, 'id' | 'createdAt'>[] = [];
-    const dataBase = orcamento.dataAceite || orcamento.dataEmissao || new Date();
+    const notificacoesParaCriar: Omit<Notificacao, "id" | "createdAt">[] = [];
+    const dataBase =
+      orcamento.dataAceite || orcamento.dataEmissao || new Date();
 
-    // Buscar itens do orçamento (simples ou completo)
+    // Buscar itens do orçamento completo
     const itensDescricoes: string[] = [];
 
-    // Itens do orçamento simples
-    if (orcamento.itens && orcamento.itens.length > 0) {
-      orcamento.itens.forEach(item => {
-        if (item.descricao) {
-          itensDescricoes.push(item.descricao);
-        }
-      });
-    }
-
-    // Itens do orçamento completo
     if (orcamento.itensCompleto && orcamento.itensCompleto.length > 0) {
-      orcamento.itensCompleto.forEach(item => {
+      orcamento.itensCompleto.forEach((item) => {
         if (item.descricao) {
           itensDescricoes.push(item.descricao);
         }
@@ -120,7 +117,9 @@ export const notificacaoService = {
           if (!existe) {
             // Calcular data de vencimento baseado no prazo da palavra-chave
             const dataVencimento = new Date(dataBase);
-            dataVencimento.setDate(dataVencimento.getDate() + palavraChave.prazoDias);
+            dataVencimento.setDate(
+              dataVencimento.getDate() + palavraChave.prazoDias
+            );
 
             notificacoesParaCriar.push({
               orcamentoId: orcamento.id!,
@@ -149,8 +148,11 @@ export const notificacaoService = {
    * Processa todos os orçamentos aceitos e gera notificações
    * Útil para rodar em batch ou na inicialização
    */
-  async processarTodosOrcamentosAceitos(): Promise<{ processados: number; notificacoesCriadas: number }> {
-    const orcamentosAceitos = await orcamentoRepository.findByStatus('aceito');
+  async processarTodosOrcamentosAceitos(): Promise<{
+    processados: number;
+    notificacoesCriadas: number;
+  }> {
+    const orcamentosAceitos = await orcamentoRepository.findByStatus("aceito");
 
     let notificacoesCriadas = 0;
 
@@ -215,20 +217,26 @@ export const notificacaoService = {
  * sem criar dependência circular
  */
 export function inicializarEventHandlers(): void {
-  eventBus.on(OrcamentoEvents.STATUS_CHANGED, async (event: OrcamentoStatusChangedEvent) => {
-    try {
-      const { orcamentoId, statusAnterior, statusNovo } = event;
+  eventBus.on(
+    OrcamentoEvents.STATUS_CHANGED,
+    async (event: OrcamentoStatusChangedEvent) => {
+      try {
+        const { orcamentoId, statusAnterior, statusNovo } = event;
 
-      if (statusNovo === 'aceito' && statusAnterior !== 'aceito') {
-        // Gerar notificações quando orçamento é aceito
-        await notificacaoService.gerarNotificacoesParaOrcamento(orcamentoId);
-      } else if (statusAnterior === 'aceito' && statusNovo !== 'aceito') {
-        // Remover notificações quando orçamento deixa de ser aceito
-        await notificacaoService.removerNotificacoesDoOrcamento(orcamentoId);
+        if (statusNovo === "aceito" && statusAnterior !== "aceito") {
+          // Gerar notificações quando orçamento é aceito
+          await notificacaoService.gerarNotificacoesParaOrcamento(orcamentoId);
+        } else if (statusAnterior === "aceito" && statusNovo !== "aceito") {
+          // Remover notificações quando orçamento deixa de ser aceito
+          await notificacaoService.removerNotificacoesDoOrcamento(orcamentoId);
+        }
+      } catch (error) {
+        logger.error(
+          "[NotificacaoService] Erro ao processar evento de mudança de status:",
+          { error }
+        );
+        // Não propaga o erro - EventBus já trata isso
       }
-    } catch (error) {
-      logger.error('[NotificacaoService] Erro ao processar evento de mudança de status:', { error });
-      // Não propaga o erro - EventBus já trata isso
     }
-  });
+  );
 }

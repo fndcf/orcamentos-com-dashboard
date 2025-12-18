@@ -45,21 +45,37 @@ describe('orcamentoService', () => {
     email: 'teste@email.com',
   };
 
-  const mockOrcamento = {
+  const mockOrcamentoCompleto = {
     id: 'o1',
     numero: 1,
     versao: 0,
-    tipo: 'simples' as const,
+    tipo: 'completo' as const,
     clienteId: 'c1',
     clienteNome: 'Empresa Teste',
     clienteCnpj: '12345678901234',
     status: 'aberto' as const,
     dataEmissao: new Date(),
     dataValidade: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    itens: [
-      { descricao: 'Serviço 1', quantidade: 1, unidade: 'Serv.', valorUnitario: 1000, valorTotal: 1000 },
+    servicoId: 's1',
+    servicoDescricao: 'Serviço de Manutenção',
+    itensCompleto: [
+      {
+        etapa: 'comercial' as const,
+        categoriaId: 'cat1',
+        categoriaNome: 'Extintor',
+        descricao: 'Extintor ABC 6kg',
+        unidade: 'UN',
+        quantidade: 10,
+        valorUnitarioMaoDeObra: 50,
+        valorUnitarioMaterial: 100,
+        valorTotalMaoDeObra: 500,
+        valorTotalMaterial: 1000,
+        valorTotal: 1500,
+      },
     ],
-    valorTotal: 1000,
+    valorTotalMaoDeObra: 500,
+    valorTotalMaterial: 1000,
+    valorTotal: 1500,
   };
 
   const mockConfiguracoes = {
@@ -78,396 +94,52 @@ describe('orcamentoService', () => {
 
   describe('listar', () => {
     it('deve listar todos os orçamentos', async () => {
-      (orcamentoRepository.findAll as jest.Mock).mockResolvedValue([mockOrcamento]);
+      (orcamentoRepository.findAll as jest.Mock).mockResolvedValue([mockOrcamentoCompleto]);
 
       const result = await orcamentoService.listar();
 
       expect(orcamentoRepository.findAll).toHaveBeenCalled();
-      expect(result).toEqual([mockOrcamento]);
+      expect(result).toEqual([mockOrcamentoCompleto]);
     });
   });
 
   describe('buscarPorId', () => {
     it('deve buscar orçamento por ID', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
 
       const result = await orcamentoService.buscarPorId('o1');
 
       expect(orcamentoRepository.findById).toHaveBeenCalledWith('o1');
-      expect(result).toEqual(mockOrcamento);
+      expect(result).toEqual(mockOrcamentoCompleto);
     });
   });
 
   describe('buscarPorCliente', () => {
     it('deve buscar orçamentos por cliente', async () => {
-      (orcamentoRepository.findByClienteId as jest.Mock).mockResolvedValue([mockOrcamento]);
+      (orcamentoRepository.findByClienteId as jest.Mock).mockResolvedValue([mockOrcamentoCompleto]);
 
       const result = await orcamentoService.buscarPorCliente('c1');
 
       expect(orcamentoRepository.findByClienteId).toHaveBeenCalledWith('c1');
-      expect(result).toEqual([mockOrcamento]);
+      expect(result).toEqual([mockOrcamentoCompleto]);
     });
   });
 
   describe('buscarPorStatus', () => {
     it('deve buscar orçamentos por status', async () => {
-      (orcamentoRepository.findByStatus as jest.Mock).mockResolvedValue([mockOrcamento]);
+      (orcamentoRepository.findByStatus as jest.Mock).mockResolvedValue([mockOrcamentoCompleto]);
 
       const result = await orcamentoService.buscarPorStatus('aberto');
 
       expect(orcamentoRepository.findByStatus).toHaveBeenCalledWith('aberto');
-      expect(result).toEqual([mockOrcamento]);
+      expect(result).toEqual([mockOrcamentoCompleto]);
     });
   });
 
   describe('criar', () => {
-    it('deve criar um novo orçamento simples', async () => {
+    it('deve criar um novo orçamento completo', async () => {
       (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
       (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(1);
-      (orcamentoRepository.create as jest.Mock).mockResolvedValue(mockOrcamento);
-
-      const data = {
-        tipo: 'simples' as const,
-        clienteId: 'c1',
-        itens: [{ descricao: 'Serviço 1', quantidade: 1, unidade: 'Serv.', valorUnitario: 1000, valorTotal: 1000 }],
-      };
-
-      const result = await orcamentoService.criar(data);
-
-      expect(clienteRepository.findById).toHaveBeenCalledWith('c1');
-      expect(orcamentoRepository.create).toHaveBeenCalled();
-      expect(result).toEqual(mockOrcamento);
-    });
-
-    it('deve lançar erro se cliente não existir', async () => {
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(null);
-
-      const data = {
-        tipo: 'simples' as const,
-        clienteId: 'inexistente',
-        itens: [{ descricao: 'Serviço 1', quantidade: 1, unidade: 'Serv.', valorUnitario: 1000, valorTotal: 1000 }],
-      };
-
-      await expect(orcamentoService.criar(data)).rejects.toThrow(NotFoundError);
-    });
-
-    it('deve lançar erro se não houver itens', async () => {
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
-
-      const data = {
-        tipo: 'simples' as const,
-        clienteId: 'c1',
-        itens: [],
-      };
-
-      await expect(orcamentoService.criar(data)).rejects.toThrow(ValidationError);
-    });
-
-    it('deve lançar erro se descrição do item for curta', async () => {
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
-
-      const data = {
-        tipo: 'simples' as const,
-        clienteId: 'c1',
-        itens: [{ descricao: 'AB', quantidade: 1, unidade: 'Serv.', valorUnitario: 1000, valorTotal: 1000 }],
-      };
-
-      await expect(orcamentoService.criar(data)).rejects.toThrow(ValidationError);
-    });
-
-    it('deve lançar erro se quantidade for zero ou negativa', async () => {
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
-
-      const data = {
-        tipo: 'simples' as const,
-        clienteId: 'c1',
-        itens: [{ descricao: 'Serviço Teste', quantidade: 0, unidade: 'Serv.', valorUnitario: 1000, valorTotal: 1000 }],
-      };
-
-      await expect(orcamentoService.criar(data)).rejects.toThrow(ValidationError);
-    });
-
-    it('deve lançar erro se valor unitário for negativo', async () => {
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
-
-      const data = {
-        tipo: 'simples' as const,
-        clienteId: 'c1',
-        itens: [{ descricao: 'Serviço Teste', quantidade: 1, unidade: 'Serv.', valorUnitario: -100, valorTotal: -100 }],
-      };
-
-      await expect(orcamentoService.criar(data)).rejects.toThrow(ValidationError);
-    });
-
-    it('deve criar orçamento com observações, consultor e contato', async () => {
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
-      (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(1);
-      (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o1' }));
-
-      const data = {
-        tipo: 'simples' as const,
-        clienteId: 'c1',
-        itens: [{ descricao: 'Serviço 1', quantidade: 1, unidade: 'Serv.', valorUnitario: 1000, valorTotal: 1000 }],
-        observacoes: 'Observação teste',
-        consultor: 'João',
-        contato: 'Maria',
-      };
-
-      await orcamentoService.criar(data);
-
-      expect(orcamentoRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          observacoes: 'Observação teste',
-          consultor: 'João',
-          contato: 'Maria',
-        })
-      );
-    });
-
-    it('deve usar dias de validade customizados', async () => {
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
-      (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(1);
-      (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o1' }));
-
-      const data = {
-        tipo: 'simples' as const,
-        clienteId: 'c1',
-        itens: [{ descricao: 'Serviço 1', quantidade: 1, unidade: 'Serv.', valorUnitario: 1000, valorTotal: 1000 }],
-        diasValidade: 60,
-      };
-
-      await orcamentoService.criar(data);
-
-      expect(orcamentoRepository.create).toHaveBeenCalled();
-    });
-  });
-
-  describe('atualizar', () => {
-    it('deve atualizar um orçamento aberto', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
-      (orcamentoRepository.update as jest.Mock).mockResolvedValue({ ...mockOrcamento, versao: 1 });
-
-      const result = await orcamentoService.atualizar('o1', {
-        observacoes: 'Nova observação',
-      });
-
-      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
-        versao: 1,
-        observacoes: 'Nova observação',
-      }));
-    });
-
-    it('deve lançar erro ao tentar atualizar orçamento não aberto', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamento, status: 'aceito' });
-
-      await expect(orcamentoService.atualizar('o1', { observacoes: 'teste' }))
-        .rejects.toThrow(ValidationError);
-    });
-
-    it('deve atualizar itens e recalcular total', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
-      (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...mockOrcamento, ...data }));
-
-      const novosItens = [
-        { descricao: 'Novo Serviço', quantidade: 2, unidade: 'Un.', valorUnitario: 500, valorTotal: 1000 },
-      ];
-
-      await orcamentoService.atualizar('o1', { itens: novosItens });
-
-      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
-        itens: expect.arrayContaining([
-          expect.objectContaining({ descricao: 'Novo Serviço', valorTotal: 1000 }),
-        ]),
-        valorTotal: 1000,
-      }));
-    });
-
-    it('deve lançar erro se novos itens forem vazios', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
-
-      await expect(orcamentoService.atualizar('o1', { itens: [] }))
-        .rejects.toThrow(ValidationError);
-    });
-
-    it('deve validar cada item ao atualizar', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
-
-      const itensInvalidos = [
-        { descricao: 'AB', quantidade: 1, unidade: 'Un.', valorUnitario: 100, valorTotal: 100 },
-      ];
-
-      await expect(orcamentoService.atualizar('o1', { itens: itensInvalidos }))
-        .rejects.toThrow(ValidationError);
-    });
-
-    it('deve atualizar data de validade', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
-      (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...mockOrcamento, ...data }));
-
-      const novaData = new Date('2025-01-01');
-
-      await orcamentoService.atualizar('o1', { dataValidade: novaData });
-
-      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
-        dataValidade: novaData,
-      }));
-    });
-  });
-
-  describe('atualizarStatus', () => {
-    it('deve atualizar status de aberto para aceito', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
-      (orcamentoRepository.updateStatus as jest.Mock).mockResolvedValue({ ...mockOrcamento, status: 'aceito' });
-
-      const result = await orcamentoService.atualizarStatus('o1', 'aceito');
-
-      expect(orcamentoRepository.updateStatus).toHaveBeenCalledWith('o1', 'aceito', expect.any(Date));
-    });
-
-    it('deve atualizar status de aberto para recusado', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
-      (orcamentoRepository.updateStatus as jest.Mock).mockResolvedValue({ ...mockOrcamento, status: 'recusado' });
-
-      await orcamentoService.atualizarStatus('o1', 'recusado');
-
-      expect(orcamentoRepository.updateStatus).toHaveBeenCalledWith('o1', 'recusado', undefined);
-    });
-
-    it('deve lançar erro para transição inválida', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamento, status: 'aceito' });
-
-      await expect(orcamentoService.atualizarStatus('o1', 'recusado'))
-        .rejects.toThrow(ValidationError);
-    });
-
-    it('deve permitir voltar de aceito para aberto', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamento, status: 'aceito' });
-      (orcamentoRepository.updateStatus as jest.Mock).mockResolvedValue({ ...mockOrcamento, status: 'aberto' });
-
-      await orcamentoService.atualizarStatus('o1', 'aberto');
-
-      expect(orcamentoRepository.updateStatus).toHaveBeenCalled();
-    });
-
-    it('deve permitir voltar de expirado para aberto', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamento, status: 'expirado' });
-      (orcamentoRepository.updateStatus as jest.Mock).mockResolvedValue({ ...mockOrcamento, status: 'aberto' });
-
-      await orcamentoService.atualizarStatus('o1', 'aberto');
-
-      expect(orcamentoRepository.updateStatus).toHaveBeenCalled();
-    });
-  });
-
-  describe('excluir', () => {
-    it('deve excluir um orçamento aberto', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
-      (orcamentoRepository.delete as jest.Mock).mockResolvedValue(undefined);
-
-      await orcamentoService.excluir('o1');
-
-      expect(orcamentoRepository.delete).toHaveBeenCalledWith('o1');
-    });
-
-    it('deve lançar erro ao tentar excluir orçamento aceito', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamento, status: 'aceito' });
-
-      await expect(orcamentoService.excluir('o1')).rejects.toThrow(ValidationError);
-    });
-
-    it('deve permitir excluir orçamento recusado', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamento, status: 'recusado' });
-      (orcamentoRepository.delete as jest.Mock).mockResolvedValue(undefined);
-
-      await orcamentoService.excluir('o1');
-
-      expect(orcamentoRepository.delete).toHaveBeenCalledWith('o1');
-    });
-  });
-
-  describe('duplicar', () => {
-    it('deve duplicar um orçamento', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
-      (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(2);
-      (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o2' }));
-
-      const result = await orcamentoService.duplicar('o1');
-
-      expect(result).toHaveProperty('numero', 2);
-      expect(result).toHaveProperty('status', 'aberto');
-      expect(result).toHaveProperty('versao', 0);
-    });
-
-    it('deve lançar erro se cliente não existir mais', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
-      (clienteRepository.findById as jest.Mock).mockRejectedValue(new Error('Cliente não encontrado'));
-
-      await expect(orcamentoService.duplicar('o1')).rejects.toThrow(ValidationError);
-    });
-
-    it('deve manter consultor, contato e observações ao duplicar', async () => {
-      const orcamentoCompleto = {
-        ...mockOrcamento,
-        consultor: 'João',
-        contato: 'Maria',
-        observacoes: 'Observação original',
-      };
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(orcamentoCompleto);
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
-      (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(2);
-      (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o2' }));
-
-      const result = await orcamentoService.duplicar('o1');
-
-      expect(orcamentoRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          consultor: 'João',
-          contato: 'Maria',
-          observacoes: 'Observação original',
-        })
-      );
-    });
-  });
-
-  describe('criar orçamento completo', () => {
-    const mockOrcamentoCompleto = {
-      id: 'o2',
-      numero: 2,
-      versao: 0,
-      tipo: 'completo' as const,
-      clienteId: 'c1',
-      clienteNome: 'Empresa Teste',
-      clienteCnpj: '12345678901234',
-      status: 'aberto' as const,
-      dataEmissao: new Date(),
-      dataValidade: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      servicoId: 's1',
-      servicoDescricao: 'Serviço de Manutenção',
-      itensCompleto: [
-        {
-          etapa: 'comercial' as const,
-          categoriaId: 'cat1',
-          categoriaNome: 'Extintor',
-          descricao: 'Extintor ABC 6kg',
-          unidade: 'UN',
-          quantidade: 10,
-          valorUnitarioMaoDeObra: 50,
-          valorUnitarioMaterial: 100,
-          valorTotalMaoDeObra: 500,
-          valorTotalMaterial: 1000,
-          valorTotal: 1500,
-        },
-      ],
-      itens: [],
-      valorTotalMaoDeObra: 500,
-      valorTotalMaterial: 1000,
-      valorTotal: 1500,
-    };
-
-    it('deve criar um orçamento completo', async () => {
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
-      (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(2);
       (orcamentoRepository.create as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
 
       const data = {
@@ -494,29 +166,18 @@ describe('orcamentoService', () => {
 
       const result = await orcamentoService.criar(data);
 
-      expect(result.tipo).toBe('completo');
+      expect(clienteRepository.findById).toHaveBeenCalledWith('c1');
       expect(orcamentoRepository.create).toHaveBeenCalled();
+      expect(result).toEqual(mockOrcamentoCompleto);
     });
 
-    it('deve lançar erro se orçamento completo não tiver itens', async () => {
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
+    it('deve lançar erro se cliente não existir', async () => {
+      (clienteRepository.findById as jest.Mock).mockResolvedValue(null);
 
       const data = {
         tipo: 'completo' as const,
-        clienteId: 'c1',
+        clienteId: 'inexistente',
         servicoId: 's1',
-        itensCompleto: [],
-      };
-
-      await expect(orcamentoService.criar(data)).rejects.toThrow(ValidationError);
-    });
-
-    it('deve lançar erro se orçamento completo não tiver serviço', async () => {
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
-
-      const data = {
-        tipo: 'completo' as const,
-        clienteId: 'c1',
         itensCompleto: [
           {
             etapa: 'comercial' as const,
@@ -534,37 +195,23 @@ describe('orcamentoService', () => {
         ],
       };
 
-      await expect(orcamentoService.criar(data)).rejects.toThrow(ValidationError);
+      await expect(orcamentoService.criar(data)).rejects.toThrow(NotFoundError);
     });
 
-    it('deve lançar erro se item completo não tiver categoria', async () => {
+    it('deve lançar erro se não houver itens', async () => {
       (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
 
       const data = {
         tipo: 'completo' as const,
         clienteId: 'c1',
         servicoId: 's1',
-        itensCompleto: [
-          {
-            etapa: 'comercial' as const,
-            categoriaId: '',
-            categoriaNome: 'Extintor',
-            descricao: 'Extintor ABC 6kg',
-            unidade: 'UN',
-            quantidade: 10,
-            valorUnitarioMaoDeObra: 50,
-            valorUnitarioMaterial: 100,
-            valorTotalMaoDeObra: 500,
-            valorTotalMaterial: 1000,
-            valorTotal: 1500,
-          },
-        ],
+        itensCompleto: [],
       };
 
       await expect(orcamentoService.criar(data)).rejects.toThrow(ValidationError);
     });
 
-    it('deve lançar erro se item completo tiver descrição curta', async () => {
+    it('deve lançar erro se descrição do item for curta', async () => {
       (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
 
       const data = {
@@ -591,7 +238,7 @@ describe('orcamentoService', () => {
       await expect(orcamentoService.criar(data)).rejects.toThrow(ValidationError);
     });
 
-    it('deve lançar erro se item completo tiver quantidade zero', async () => {
+    it('deve lançar erro se quantidade for zero ou negativa', async () => {
       (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
 
       const data = {
@@ -618,7 +265,132 @@ describe('orcamentoService', () => {
       await expect(orcamentoService.criar(data)).rejects.toThrow(ValidationError);
     });
 
-    it('deve criar orçamento completo com limitações e prazos', async () => {
+    it('deve criar orçamento com observações, consultor e contato', async () => {
+      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
+      (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(1);
+      (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o1' }));
+
+      const data = {
+        tipo: 'completo' as const,
+        clienteId: 'c1',
+        servicoId: 's1',
+        itensCompleto: [
+          {
+            etapa: 'comercial' as const,
+            categoriaId: 'cat1',
+            categoriaNome: 'Extintor',
+            descricao: 'Extintor ABC 6kg',
+            unidade: 'UN',
+            quantidade: 10,
+            valorUnitarioMaoDeObra: 50,
+            valorUnitarioMaterial: 100,
+            valorTotalMaoDeObra: 500,
+            valorTotalMaterial: 1000,
+            valorTotal: 1500,
+          },
+        ],
+        observacoes: 'Observação teste',
+        consultor: 'João',
+        contato: 'Maria',
+      };
+
+      await orcamentoService.criar(data);
+
+      expect(orcamentoRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          observacoes: 'Observação teste',
+          consultor: 'João',
+          contato: 'Maria',
+        })
+      );
+    });
+
+    it('deve usar dias de validade customizados', async () => {
+      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
+      (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(1);
+      (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o1' }));
+
+      const data = {
+        tipo: 'completo' as const,
+        clienteId: 'c1',
+        servicoId: 's1',
+        itensCompleto: [
+          {
+            etapa: 'comercial' as const,
+            categoriaId: 'cat1',
+            categoriaNome: 'Extintor',
+            descricao: 'Extintor ABC 6kg',
+            unidade: 'UN',
+            quantidade: 10,
+            valorUnitarioMaoDeObra: 50,
+            valorUnitarioMaterial: 100,
+            valorTotalMaoDeObra: 500,
+            valorTotalMaterial: 1000,
+            valorTotal: 1500,
+          },
+        ],
+        diasValidade: 60,
+      };
+
+      await orcamentoService.criar(data);
+
+      expect(orcamentoRepository.create).toHaveBeenCalled();
+    });
+
+    it('deve lançar erro se orçamento não tiver serviço', async () => {
+      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
+
+      const data = {
+        tipo: 'completo' as const,
+        clienteId: 'c1',
+        itensCompleto: [
+          {
+            etapa: 'comercial' as const,
+            categoriaId: 'cat1',
+            categoriaNome: 'Extintor',
+            descricao: 'Extintor ABC 6kg',
+            unidade: 'UN',
+            quantidade: 10,
+            valorUnitarioMaoDeObra: 50,
+            valorUnitarioMaterial: 100,
+            valorTotalMaoDeObra: 500,
+            valorTotalMaterial: 1000,
+            valorTotal: 1500,
+          },
+        ],
+      };
+
+      await expect(orcamentoService.criar(data)).rejects.toThrow(ValidationError);
+    });
+
+    it('deve lançar erro se item não tiver categoria', async () => {
+      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
+
+      const data = {
+        tipo: 'completo' as const,
+        clienteId: 'c1',
+        servicoId: 's1',
+        itensCompleto: [
+          {
+            etapa: 'comercial' as const,
+            categoriaId: '',
+            categoriaNome: 'Extintor',
+            descricao: 'Extintor ABC 6kg',
+            unidade: 'UN',
+            quantidade: 10,
+            valorUnitarioMaoDeObra: 50,
+            valorUnitarioMaterial: 100,
+            valorTotalMaoDeObra: 500,
+            valorTotalMaterial: 1000,
+            valorTotal: 1500,
+          },
+        ],
+      };
+
+      await expect(orcamentoService.criar(data)).rejects.toThrow(ValidationError);
+    });
+
+    it('deve criar orçamento com limitações e prazos', async () => {
       (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
       (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(2);
       (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o2' }));
@@ -664,39 +436,29 @@ describe('orcamentoService', () => {
     });
   });
 
-  describe('atualizar orçamento completo', () => {
-    const mockOrcamentoCompleto = {
-      id: 'o2',
-      numero: 2,
-      versao: 0,
-      tipo: 'completo' as const,
-      clienteId: 'c1',
-      clienteNome: 'Empresa Teste',
-      clienteCnpj: '12345678901234',
-      status: 'aberto' as const,
-      dataEmissao: new Date(),
-      dataValidade: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      servicoId: 's1',
-      itens: [],
-      itensCompleto: [
-        {
-          etapa: 'comercial' as const,
-          categoriaId: 'cat1',
-          categoriaNome: 'Extintor',
-          descricao: 'Extintor ABC 6kg',
-          unidade: 'UN',
-          quantidade: 10,
-          valorUnitarioMaoDeObra: 50,
-          valorUnitarioMaterial: 100,
-          valorTotalMaoDeObra: 500,
-          valorTotalMaterial: 1000,
-          valorTotal: 1500,
-        },
-      ],
-      valorTotal: 1500,
-    };
+  describe('atualizar', () => {
+    it('deve atualizar um orçamento aberto', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+      (orcamentoRepository.update as jest.Mock).mockResolvedValue({ ...mockOrcamentoCompleto, versao: 1 });
 
-    it('deve atualizar itens de orçamento completo', async () => {
+      const result = await orcamentoService.atualizar('o1', {
+        observacoes: 'Nova observação',
+      });
+
+      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
+        versao: 1,
+        observacoes: 'Nova observação',
+      }));
+    });
+
+    it('deve lançar erro ao tentar atualizar orçamento não aberto', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamentoCompleto, status: 'aceito' });
+
+      await expect(orcamentoService.atualizar('o1', { observacoes: 'teste' }))
+        .rejects.toThrow(ValidationError);
+    });
+
+    it('deve atualizar itens e recalcular total', async () => {
       (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
       (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...mockOrcamentoCompleto, ...data }));
 
@@ -716,9 +478,9 @@ describe('orcamentoService', () => {
         },
       ];
 
-      await orcamentoService.atualizar('o2', { itensCompleto: novosItens });
+      await orcamentoService.atualizar('o1', { itensCompleto: novosItens });
 
-      expect(orcamentoRepository.update).toHaveBeenCalledWith('o2', expect.objectContaining({
+      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
         itensCompleto: expect.arrayContaining([
           expect.objectContaining({
             descricao: 'Mangueira de Incêndio',
@@ -733,17 +495,53 @@ describe('orcamentoService', () => {
       }));
     });
 
-    it('deve lançar erro se itens completos forem vazios na atualização', async () => {
+    it('deve lançar erro se novos itens forem vazios', async () => {
       (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
 
-      await expect(orcamentoService.atualizar('o2', { itensCompleto: [] }))
+      await expect(orcamentoService.atualizar('o1', { itensCompleto: [] }))
         .rejects.toThrow(ValidationError);
     });
 
-    it('deve lançar erro se item completo não tiver categoria na atualização', async () => {
+    it('deve validar cada item ao atualizar', async () => {
       (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
 
-      await expect(orcamentoService.atualizar('o2', {
+      const itensInvalidos = [
+        {
+          etapa: 'comercial' as const,
+          categoriaId: 'cat1',
+          categoriaNome: 'Extintor',
+          descricao: 'AB',
+          unidade: 'UN',
+          quantidade: 1,
+          valorUnitarioMaoDeObra: 50,
+          valorUnitarioMaterial: 100,
+          valorTotalMaoDeObra: 50,
+          valorTotalMaterial: 100,
+          valorTotal: 150,
+        },
+      ];
+
+      await expect(orcamentoService.atualizar('o1', { itensCompleto: itensInvalidos }))
+        .rejects.toThrow(ValidationError);
+    });
+
+    it('deve atualizar data de validade', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+      (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...mockOrcamentoCompleto, ...data }));
+
+      const novaData = new Date('2025-01-01');
+
+      await orcamentoService.atualizar('o1', { dataValidade: novaData });
+
+      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
+        dataValidade: novaData,
+      }));
+    });
+
+    it('deve lançar erro se item não tiver categoria na atualização', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+
+      await expect(orcamentoService.atualizar('o1', {
         itensCompleto: [
           {
             etapa: 'comercial' as const,
@@ -762,32 +560,10 @@ describe('orcamentoService', () => {
       })).rejects.toThrow(ValidationError);
     });
 
-    it('deve lançar erro se item completo tiver descrição curta na atualização', async () => {
+    it('deve lançar erro se item tiver quantidade zero na atualização', async () => {
       (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
 
-      await expect(orcamentoService.atualizar('o2', {
-        itensCompleto: [
-          {
-            etapa: 'comercial' as const,
-            categoriaId: 'cat1',
-            categoriaNome: 'Teste',
-            descricao: 'AB',
-            unidade: 'UN',
-            quantidade: 1,
-            valorUnitarioMaoDeObra: 10,
-            valorUnitarioMaterial: 20,
-            valorTotalMaoDeObra: 10,
-            valorTotalMaterial: 20,
-            valorTotal: 30,
-          },
-        ],
-      })).rejects.toThrow(ValidationError);
-    });
-
-    it('deve lançar erro se item completo tiver quantidade zero na atualização', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
-
-      await expect(orcamentoService.atualizar('o2', {
+      await expect(orcamentoService.atualizar('o1', {
         itensCompleto: [
           {
             etapa: 'comercial' as const,
@@ -806,11 +582,11 @@ describe('orcamentoService', () => {
       })).rejects.toThrow(ValidationError);
     });
 
-    it('deve atualizar campos opcionais do orçamento completo', async () => {
+    it('deve atualizar campos opcionais do orçamento', async () => {
       (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
       (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...mockOrcamentoCompleto, ...data }));
 
-      await orcamentoService.atualizar('o2', {
+      await orcamentoService.atualizar('o1', {
         servicoId: 's2',
         servicoDescricao: 'Novo Serviço',
         limitacoesSelecionadas: ['lim1'],
@@ -820,7 +596,7 @@ describe('orcamentoService', () => {
         parcelamentoTexto: '  texto com espaços  ',
       });
 
-      expect(orcamentoRepository.update).toHaveBeenCalledWith('o2', expect.objectContaining({
+      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
         servicoId: 's2',
         servicoDescricao: 'Novo Serviço',
         limitacoesSelecionadas: ['lim1'],
@@ -832,53 +608,137 @@ describe('orcamentoService', () => {
     });
   });
 
-  describe('duplicar orçamento completo', () => {
-    const mockOrcamentoCompleto = {
-      id: 'o2',
-      numero: 2,
-      versao: 0,
-      tipo: 'completo' as const,
-      clienteId: 'c1',
-      clienteNome: 'Empresa Teste',
-      clienteCnpj: '12345678901234',
-      status: 'aceito' as const,
-      dataEmissao: new Date(),
-      dataValidade: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      servicoId: 's1',
-      servicoDescricao: 'Serviço Original',
-      itens: [],
-      itensCompleto: [
-        {
-          etapa: 'comercial' as const,
-          categoriaId: 'cat1',
-          categoriaNome: 'Extintor',
-          descricao: 'Extintor ABC 6kg',
-          unidade: 'UN',
-          quantidade: 10,
-          valorUnitarioMaoDeObra: 50,
-          valorUnitarioMaterial: 100,
-          valorTotalMaoDeObra: 500,
-          valorTotalMaterial: 1000,
-          valorTotal: 1500,
-        },
-      ],
-      limitacoesSelecionadas: ['lim1'],
-      prazoExecucaoServicos: 30,
-      prazoVistoriaBombeiros: 15,
-      condicaoPagamento: 'parcelado' as const,
-      parcelamentoTexto: '3x',
-      valorTotalMaoDeObra: 500,
-      valorTotalMaterial: 1000,
-      valorTotal: 1500,
-    };
-
-    it('deve duplicar orçamento completo mantendo todos os campos', async () => {
+  describe('atualizarStatus', () => {
+    it('deve atualizar status de aberto para aceito', async () => {
       (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+      (orcamentoRepository.updateStatus as jest.Mock).mockResolvedValue({ ...mockOrcamentoCompleto, status: 'aceito' });
+
+      const result = await orcamentoService.atualizarStatus('o1', 'aceito');
+
+      expect(orcamentoRepository.updateStatus).toHaveBeenCalledWith('o1', 'aceito', expect.any(Date));
+    });
+
+    it('deve atualizar status de aberto para recusado', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+      (orcamentoRepository.updateStatus as jest.Mock).mockResolvedValue({ ...mockOrcamentoCompleto, status: 'recusado' });
+
+      await orcamentoService.atualizarStatus('o1', 'recusado');
+
+      expect(orcamentoRepository.updateStatus).toHaveBeenCalledWith('o1', 'recusado', undefined);
+    });
+
+    it('deve lançar erro para transição inválida', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamentoCompleto, status: 'aceito' });
+
+      await expect(orcamentoService.atualizarStatus('o1', 'recusado'))
+        .rejects.toThrow(ValidationError);
+    });
+
+    it('deve permitir voltar de aceito para aberto', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamentoCompleto, status: 'aceito' });
+      (orcamentoRepository.updateStatus as jest.Mock).mockResolvedValue({ ...mockOrcamentoCompleto, status: 'aberto' });
+
+      await orcamentoService.atualizarStatus('o1', 'aberto');
+
+      expect(orcamentoRepository.updateStatus).toHaveBeenCalled();
+    });
+
+    it('deve permitir voltar de expirado para aberto', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamentoCompleto, status: 'expirado' });
+      (orcamentoRepository.updateStatus as jest.Mock).mockResolvedValue({ ...mockOrcamentoCompleto, status: 'aberto' });
+
+      await orcamentoService.atualizarStatus('o1', 'aberto');
+
+      expect(orcamentoRepository.updateStatus).toHaveBeenCalled();
+    });
+  });
+
+  describe('excluir', () => {
+    it('deve excluir um orçamento aberto', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+      (orcamentoRepository.delete as jest.Mock).mockResolvedValue(undefined);
+
+      await orcamentoService.excluir('o1');
+
+      expect(orcamentoRepository.delete).toHaveBeenCalledWith('o1');
+    });
+
+    it('deve lançar erro ao tentar excluir orçamento aceito', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamentoCompleto, status: 'aceito' });
+
+      await expect(orcamentoService.excluir('o1')).rejects.toThrow(ValidationError);
+    });
+
+    it('deve permitir excluir orçamento recusado', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamentoCompleto, status: 'recusado' });
+      (orcamentoRepository.delete as jest.Mock).mockResolvedValue(undefined);
+
+      await orcamentoService.excluir('o1');
+
+      expect(orcamentoRepository.delete).toHaveBeenCalledWith('o1');
+    });
+  });
+
+  describe('duplicar', () => {
+    it('deve duplicar um orçamento', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
+      (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(2);
+      (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o2' }));
+
+      const result = await orcamentoService.duplicar('o1');
+
+      expect(result).toHaveProperty('numero', 2);
+      expect(result).toHaveProperty('status', 'aberto');
+      expect(result).toHaveProperty('versao', 0);
+    });
+
+    it('deve lançar erro se cliente não existir mais', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+      (clienteRepository.findById as jest.Mock).mockRejectedValue(new Error('Cliente não encontrado'));
+
+      await expect(orcamentoService.duplicar('o1')).rejects.toThrow(ValidationError);
+    });
+
+    it('deve manter consultor, contato e observações ao duplicar', async () => {
+      const orcamentoComDados = {
+        ...mockOrcamentoCompleto,
+        consultor: 'João',
+        contato: 'Maria',
+        observacoes: 'Observação original',
+      };
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(orcamentoComDados);
+      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
+      (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(2);
+      (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o2' }));
+
+      const result = await orcamentoService.duplicar('o1');
+
+      expect(orcamentoRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          consultor: 'João',
+          contato: 'Maria',
+          observacoes: 'Observação original',
+        })
+      );
+    });
+
+    it('deve duplicar orçamento mantendo todos os campos', async () => {
+      const orcamentoCompleto = {
+        ...mockOrcamentoCompleto,
+        status: 'aceito' as const,
+        limitacoesSelecionadas: ['lim1'],
+        prazoExecucaoServicos: 30,
+        prazoVistoriaBombeiros: 15,
+        condicaoPagamento: 'parcelado' as const,
+        parcelamentoTexto: '3x',
+      };
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(orcamentoCompleto);
       (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
       (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(3);
       (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o3' }));
 
-      await orcamentoService.duplicar('o2');
+      await orcamentoService.duplicar('o1');
 
       expect(orcamentoRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -887,7 +747,7 @@ describe('orcamentoService', () => {
           versao: 0,
           numero: 3,
           servicoId: 's1',
-          servicoDescricao: 'Serviço Original',
+          servicoDescricao: 'Serviço de Manutenção',
           itensCompleto: mockOrcamentoCompleto.itensCompleto,
           limitacoesSelecionadas: ['lim1'],
           prazoExecucaoServicos: 30,
@@ -901,36 +761,6 @@ describe('orcamentoService', () => {
     });
   });
 
-  describe('validações de itens simples adicionais', () => {
-    it('deve lançar erro se quantidade for negativa', async () => {
-      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
-
-      const data = {
-        tipo: 'simples' as const,
-        clienteId: 'c1',
-        itens: [{ descricao: 'Serviço Teste', quantidade: -1, unidade: 'Serv.', valorUnitario: 1000, valorTotal: 1000 }],
-      };
-
-      await expect(orcamentoService.criar(data)).rejects.toThrow(ValidationError);
-    });
-
-    it('deve lançar erro na atualização se quantidade for zero', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
-
-      await expect(orcamentoService.atualizar('o1', {
-        itens: [{ descricao: 'Serviço Teste', quantidade: 0, unidade: 'Un.', valorUnitario: 100, valorTotal: 100 }],
-      })).rejects.toThrow(ValidationError);
-    });
-
-    it('deve lançar erro na atualização se valor unitário for negativo', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamento);
-
-      await expect(orcamentoService.atualizar('o1', {
-        itens: [{ descricao: 'Serviço Teste', quantidade: 1, unidade: 'Un.', valorUnitario: -100, valorTotal: -100 }],
-      })).rejects.toThrow(ValidationError);
-    });
-  });
-
   describe('cliente com CPF', () => {
     it('deve detectar pessoa física por CPF', async () => {
       const clientePF = { ...mockCliente, cnpj: '12345678901' };
@@ -939,9 +769,24 @@ describe('orcamentoService', () => {
       (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o1' }));
 
       const data = {
-        tipo: 'simples' as const,
+        tipo: 'completo' as const,
         clienteId: 'c1',
-        itens: [{ descricao: 'Serviço 1', quantidade: 1, unidade: 'Serv.', valorUnitario: 1000, valorTotal: 1000 }],
+        servicoId: 's1',
+        itensCompleto: [
+          {
+            etapa: 'comercial' as const,
+            categoriaId: 'cat1',
+            categoriaNome: 'Extintor',
+            descricao: 'Extintor ABC 6kg',
+            unidade: 'UN',
+            quantidade: 10,
+            valorUnitarioMaoDeObra: 50,
+            valorUnitarioMaterial: 100,
+            valorTotalMaoDeObra: 500,
+            valorTotalMaterial: 1000,
+            valorTotal: 1500,
+          },
+        ],
       };
 
       await orcamentoService.criar(data);
@@ -969,7 +814,7 @@ describe('orcamentoService', () => {
   describe('verificarExpirados', () => {
     it('deve marcar orçamentos expirados', async () => {
       const orcamentoExpirado = {
-        ...mockOrcamento,
+        ...mockOrcamentoCompleto,
         dataValidade: new Date(Date.now() - 24 * 60 * 60 * 1000), // ontem
       };
       (orcamentoRepository.findByStatus as jest.Mock).mockResolvedValue([orcamentoExpirado]);
@@ -983,7 +828,7 @@ describe('orcamentoService', () => {
 
     it('não deve marcar orçamentos válidos como expirados', async () => {
       const orcamentoValido = {
-        ...mockOrcamento,
+        ...mockOrcamentoCompleto,
         dataValidade: new Date(Date.now() + 24 * 60 * 60 * 1000), // amanhã
       };
       (orcamentoRepository.findByStatus as jest.Mock).mockResolvedValue([orcamentoValido]);

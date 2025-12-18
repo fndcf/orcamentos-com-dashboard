@@ -1,7 +1,7 @@
 import { orcamentoRepository } from '../repositories/orcamentoRepository';
 import { clienteRepository } from '../repositories/clienteRepository';
 import { configuracoesGeraisRepository } from '../repositories/configuracoesGeraisRepository';
-import { Orcamento, OrcamentoItem, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, TipoPessoa, ParcelamentoDados } from '../models';
+import { Orcamento, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, TipoPessoa, ParcelamentoDados } from '../models';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { eventBus, OrcamentoEvents } from '../events';
 
@@ -14,9 +14,7 @@ function detectarTipoPessoa(documento: string): TipoPessoa {
 interface CriarOrcamentoDTO {
   tipo: OrcamentoTipo;
   clienteId: string;
-  // Campos para orçamento simples
-  itens?: OrcamentoItem[];
-  // Campos para orçamento completo
+  // Campos do orçamento completo
   servicoId?: string;
   servicoDescricao?: string;
   itensCompleto?: OrcamentoItemCompleto[];
@@ -35,9 +33,7 @@ interface CriarOrcamentoDTO {
 }
 
 interface AtualizarOrcamentoDTO {
-  // Campos para orçamento simples
-  itens?: OrcamentoItem[];
-  // Campos para orçamento completo
+  // Campos do orçamento completo
   servicoId?: string;
   servicoDescricao?: string;
   itensCompleto?: OrcamentoItemCompleto[];
@@ -77,8 +73,6 @@ export const orcamentoService = {
       throw new NotFoundError('Cliente não encontrado');
     }
 
-    const tipo = data.tipo || 'simples';
-
     // Obter próximo número
     const numero = await orcamentoRepository.getNextNumero();
 
@@ -92,11 +86,47 @@ export const orcamentoService = {
     const dataValidade = new Date();
     dataValidade.setDate(dataValidade.getDate() + diasValidade);
 
+    // Validar itens completos
+    if (!data.itensCompleto || data.itensCompleto.length === 0) {
+      throw new ValidationError('O orçamento deve ter pelo menos um item');
+    }
+
+    // Validar serviço
+    if (!data.servicoId) {
+      throw new ValidationError('O orçamento deve ter um serviço selecionado');
+    }
+
+    // Validar cada item completo
+    for (const item of data.itensCompleto) {
+      if (!item.categoriaId) {
+        throw new ValidationError('Cada item deve ter uma categoria');
+      }
+      if (!item.descricao || item.descricao.trim().length < 3) {
+        throw new ValidationError('Descrição do item deve ter pelo menos 3 caracteres');
+      }
+      if (item.quantidade <= 0) {
+        throw new ValidationError('Quantidade deve ser maior que zero');
+      }
+    }
+
+    // Calcular valores dos itens completos
+    const itensCalculados = data.itensCompleto.map(item => ({
+      ...item,
+      descricao: item.descricao.trim(),
+      valorTotalMaoDeObra: item.quantidade * item.valorUnitarioMaoDeObra,
+      valorTotalMaterial: item.quantidade * item.valorUnitarioMaterial,
+      valorTotal: item.quantidade * (item.valorUnitarioMaoDeObra + item.valorUnitarioMaterial),
+    }));
+
+    const valorTotalMaoDeObra = itensCalculados.reduce((acc, item) => acc + item.valorTotalMaoDeObra, 0);
+    const valorTotalMaterial = itensCalculados.reduce((acc, item) => acc + item.valorTotalMaterial, 0);
+    const valorTotal = valorTotalMaoDeObra + valorTotalMaterial;
+
     // Base do orçamento
     const orcamento: Omit<Orcamento, 'id' | 'createdAt'> = {
       numero,
       versao: 0,
-      tipo,
+      tipo: 'completo',
       clienteId: data.clienteId,
       clienteNome: cliente.razaoSocial,
       clienteCnpj: cliente.cnpj || '',
@@ -104,8 +134,11 @@ export const orcamentoService = {
       status: 'aberto',
       dataEmissao,
       dataValidade,
-      itens: [],
-      valorTotal: 0,
+      servicoId: data.servicoId,
+      itensCompleto: itensCalculados,
+      valorTotalMaoDeObra,
+      valorTotalMaterial,
+      valorTotal,
     };
 
     // Adicionar dados do cliente (Firestore não aceita undefined)
@@ -125,96 +158,17 @@ export const orcamentoService = {
       orcamento.observacoes = data.observacoes.trim();
     }
 
-    if (tipo === 'simples') {
-      // Validar itens simples
-      if (!data.itens || data.itens.length === 0) {
-        throw new ValidationError('O orçamento deve ter pelo menos um item');
-      }
-
-      // Validar cada item
-      for (const item of data.itens) {
-        if (!item.descricao || item.descricao.trim().length < 3) {
-          throw new ValidationError('Descrição do item deve ter pelo menos 3 caracteres');
-        }
-        if (item.quantidade <= 0) {
-          throw new ValidationError('Quantidade deve ser maior que zero');
-        }
-        if (item.valorUnitario < 0) {
-          throw new ValidationError('Valor unitário não pode ser negativo');
-        }
-      }
-
-      // Calcular valores dos itens e total
-      const itensCalculados = data.itens.map(item => ({
-        ...item,
-        descricao: item.descricao.trim(),
-        valorTotal: item.quantidade * item.valorUnitario,
-      }));
-
-      orcamento.itens = itensCalculados;
-      orcamento.valorTotal = itensCalculados.reduce((acc, item) => acc + item.valorTotal, 0);
-
-      // Campos opcionais do orçamento simples (limitações)
-      if (data.limitacoesSelecionadas && data.limitacoesSelecionadas.length > 0) {
-        orcamento.limitacoesSelecionadas = data.limitacoesSelecionadas;
-      }
-
-    } else {
-      // Orçamento completo
-      if (!data.itensCompleto || data.itensCompleto.length === 0) {
-        throw new ValidationError('O orçamento completo deve ter pelo menos um item');
-      }
-
-      // Validar serviço
-      if (!data.servicoId) {
-        throw new ValidationError('O orçamento completo deve ter um serviço selecionado');
-      }
-
-      // Validar cada item completo
-      for (const item of data.itensCompleto) {
-        if (!item.categoriaId) {
-          throw new ValidationError('Cada item deve ter uma categoria');
-        }
-        if (!item.descricao || item.descricao.trim().length < 3) {
-          throw new ValidationError('Descrição do item deve ter pelo menos 3 caracteres');
-        }
-        if (item.quantidade <= 0) {
-          throw new ValidationError('Quantidade deve ser maior que zero');
-        }
-      }
-
-      // Calcular valores dos itens completos
-      const itensCalculados = data.itensCompleto.map(item => ({
-        ...item,
-        descricao: item.descricao.trim(),
-        valorTotalMaoDeObra: item.quantidade * item.valorUnitarioMaoDeObra,
-        valorTotalMaterial: item.quantidade * item.valorUnitarioMaterial,
-        valorTotal: item.quantidade * (item.valorUnitarioMaoDeObra + item.valorUnitarioMaterial),
-      }));
-
-      const valorTotalMaoDeObra = itensCalculados.reduce((acc, item) => acc + item.valorTotalMaoDeObra, 0);
-      const valorTotalMaterial = itensCalculados.reduce((acc, item) => acc + item.valorTotalMaterial, 0);
-      const valorTotal = valorTotalMaoDeObra + valorTotalMaterial;
-
-      // Campos do orçamento completo
-      orcamento.servicoId = data.servicoId;
-      if (data.servicoDescricao) orcamento.servicoDescricao = data.servicoDescricao;
-      orcamento.itensCompleto = itensCalculados;
-      orcamento.valorTotalMaoDeObra = valorTotalMaoDeObra;
-      orcamento.valorTotalMaterial = valorTotalMaterial;
-      orcamento.valorTotal = valorTotal;
-
-      // Campos opcionais do orçamento completo
-      if (data.limitacoesSelecionadas && data.limitacoesSelecionadas.length > 0) {
-        orcamento.limitacoesSelecionadas = data.limitacoesSelecionadas;
-      }
-      if (data.prazoExecucaoServicos) orcamento.prazoExecucaoServicos = data.prazoExecucaoServicos;
-      if (data.prazoVistoriaBombeiros) orcamento.prazoVistoriaBombeiros = data.prazoVistoriaBombeiros;
-      if (data.condicaoPagamento) orcamento.condicaoPagamento = data.condicaoPagamento;
-      if (data.parcelamentoTexto?.trim()) orcamento.parcelamentoTexto = data.parcelamentoTexto.trim();
-      if (data.parcelamentoDados) orcamento.parcelamentoDados = data.parcelamentoDados;
-      if (data.mostrarValoresDetalhados !== undefined) orcamento.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
+    // Campos opcionais do orçamento
+    if (data.servicoDescricao) orcamento.servicoDescricao = data.servicoDescricao;
+    if (data.limitacoesSelecionadas && data.limitacoesSelecionadas.length > 0) {
+      orcamento.limitacoesSelecionadas = data.limitacoesSelecionadas;
     }
+    if (data.prazoExecucaoServicos) orcamento.prazoExecucaoServicos = data.prazoExecucaoServicos;
+    if (data.prazoVistoriaBombeiros) orcamento.prazoVistoriaBombeiros = data.prazoVistoriaBombeiros;
+    if (data.condicaoPagamento) orcamento.condicaoPagamento = data.condicaoPagamento;
+    if (data.parcelamentoTexto?.trim()) orcamento.parcelamentoTexto = data.parcelamentoTexto.trim();
+    if (data.parcelamentoDados) orcamento.parcelamentoDados = data.parcelamentoDados;
+    if (data.mostrarValoresDetalhados !== undefined) orcamento.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
 
     return orcamentoRepository.create(orcamento);
   },
@@ -232,40 +186,10 @@ export const orcamentoService = {
       versao: (orcamento.versao || 0) + 1,
     };
 
-    // Atualização para orçamento simples
-    if (orcamento.tipo === 'simples' && data.itens) {
-      if (data.itens.length === 0) {
-        throw new ValidationError('O orçamento deve ter pelo menos um item');
-      }
-
-      // Validar cada item
-      for (const item of data.itens) {
-        if (!item.descricao || item.descricao.trim().length < 3) {
-          throw new ValidationError('Descrição do item deve ter pelo menos 3 caracteres');
-        }
-        if (item.quantidade <= 0) {
-          throw new ValidationError('Quantidade deve ser maior que zero');
-        }
-        if (item.valorUnitario < 0) {
-          throw new ValidationError('Valor unitário não pode ser negativo');
-        }
-      }
-
-      // Calcular valores
-      const itensCalculados = data.itens.map(item => ({
-        ...item,
-        descricao: item.descricao.trim(),
-        valorTotal: item.quantidade * item.valorUnitario,
-      }));
-
-      updateData.itens = itensCalculados;
-      updateData.valorTotal = itensCalculados.reduce((acc, item) => acc + item.valorTotal, 0);
-    }
-
-    // Atualização para orçamento completo
-    if (orcamento.tipo === 'completo' && data.itensCompleto) {
+    // Atualização dos itens
+    if (data.itensCompleto) {
       if (data.itensCompleto.length === 0) {
-        throw new ValidationError('O orçamento completo deve ter pelo menos um item');
+        throw new ValidationError('O orçamento deve ter pelo menos um item');
       }
 
       // Validar cada item completo
@@ -300,7 +224,7 @@ export const orcamentoService = {
       updateData.valorTotal = valorTotal;
     }
 
-    // Campos opcionais do orçamento completo
+    // Campos opcionais do orçamento
     if (data.servicoId !== undefined) updateData.servicoId = data.servicoId;
     if (data.servicoDescricao !== undefined) updateData.servicoDescricao = data.servicoDescricao;
     if (data.limitacoesSelecionadas !== undefined) updateData.limitacoesSelecionadas = data.limitacoesSelecionadas;
@@ -395,7 +319,7 @@ export const orcamentoService = {
     const novoOrcamento: Omit<Orcamento, 'id' | 'createdAt'> = {
       numero,
       versao: 0,
-      tipo: orcamentoOriginal.tipo || 'simples',
+      tipo: 'completo',
       clienteId: orcamentoOriginal.clienteId,
       clienteNome: cliente.razaoSocial,
       clienteCnpj: cliente.cnpj || '',
@@ -403,7 +327,6 @@ export const orcamentoService = {
       status: 'aberto',
       dataEmissao,
       dataValidade,
-      itens: orcamentoOriginal.itens || [],
       valorTotal: orcamentoOriginal.valorTotal,
     };
 
@@ -420,21 +343,19 @@ export const orcamentoService = {
     if (orcamentoOriginal.contato) novoOrcamento.contato = orcamentoOriginal.contato;
     if (orcamentoOriginal.observacoes) novoOrcamento.observacoes = orcamentoOriginal.observacoes;
 
-    // Campos específicos para orçamento completo
-    if (orcamentoOriginal.tipo === 'completo') {
-      if (orcamentoOriginal.servicoId) novoOrcamento.servicoId = orcamentoOriginal.servicoId;
-      if (orcamentoOriginal.servicoDescricao) novoOrcamento.servicoDescricao = orcamentoOriginal.servicoDescricao;
-      if (orcamentoOriginal.itensCompleto) novoOrcamento.itensCompleto = orcamentoOriginal.itensCompleto;
-      if (orcamentoOriginal.limitacoesSelecionadas) novoOrcamento.limitacoesSelecionadas = orcamentoOriginal.limitacoesSelecionadas;
-      if (orcamentoOriginal.prazoExecucaoServicos) novoOrcamento.prazoExecucaoServicos = orcamentoOriginal.prazoExecucaoServicos;
-      if (orcamentoOriginal.prazoVistoriaBombeiros) novoOrcamento.prazoVistoriaBombeiros = orcamentoOriginal.prazoVistoriaBombeiros;
-      if (orcamentoOriginal.condicaoPagamento) novoOrcamento.condicaoPagamento = orcamentoOriginal.condicaoPagamento;
-      if (orcamentoOriginal.parcelamentoTexto) novoOrcamento.parcelamentoTexto = orcamentoOriginal.parcelamentoTexto;
-      if (orcamentoOriginal.parcelamentoDados) novoOrcamento.parcelamentoDados = orcamentoOriginal.parcelamentoDados;
-      if (orcamentoOriginal.mostrarValoresDetalhados !== undefined) novoOrcamento.mostrarValoresDetalhados = orcamentoOriginal.mostrarValoresDetalhados;
-      if (orcamentoOriginal.valorTotalMaoDeObra) novoOrcamento.valorTotalMaoDeObra = orcamentoOriginal.valorTotalMaoDeObra;
-      if (orcamentoOriginal.valorTotalMaterial) novoOrcamento.valorTotalMaterial = orcamentoOriginal.valorTotalMaterial;
-    }
+    // Campos do orçamento
+    if (orcamentoOriginal.servicoId) novoOrcamento.servicoId = orcamentoOriginal.servicoId;
+    if (orcamentoOriginal.servicoDescricao) novoOrcamento.servicoDescricao = orcamentoOriginal.servicoDescricao;
+    if (orcamentoOriginal.itensCompleto) novoOrcamento.itensCompleto = orcamentoOriginal.itensCompleto;
+    if (orcamentoOriginal.limitacoesSelecionadas) novoOrcamento.limitacoesSelecionadas = orcamentoOriginal.limitacoesSelecionadas;
+    if (orcamentoOriginal.prazoExecucaoServicos) novoOrcamento.prazoExecucaoServicos = orcamentoOriginal.prazoExecucaoServicos;
+    if (orcamentoOriginal.prazoVistoriaBombeiros) novoOrcamento.prazoVistoriaBombeiros = orcamentoOriginal.prazoVistoriaBombeiros;
+    if (orcamentoOriginal.condicaoPagamento) novoOrcamento.condicaoPagamento = orcamentoOriginal.condicaoPagamento;
+    if (orcamentoOriginal.parcelamentoTexto) novoOrcamento.parcelamentoTexto = orcamentoOriginal.parcelamentoTexto;
+    if (orcamentoOriginal.parcelamentoDados) novoOrcamento.parcelamentoDados = orcamentoOriginal.parcelamentoDados;
+    if (orcamentoOriginal.mostrarValoresDetalhados !== undefined) novoOrcamento.mostrarValoresDetalhados = orcamentoOriginal.mostrarValoresDetalhados;
+    if (orcamentoOriginal.valorTotalMaoDeObra) novoOrcamento.valorTotalMaoDeObra = orcamentoOriginal.valorTotalMaoDeObra;
+    if (orcamentoOriginal.valorTotalMaterial) novoOrcamento.valorTotalMaterial = orcamentoOriginal.valorTotalMaterial;
 
     return orcamentoRepository.create(novoOrcamento);
   },

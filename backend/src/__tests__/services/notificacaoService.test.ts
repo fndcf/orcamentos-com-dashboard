@@ -33,7 +33,7 @@ describe('notificacaoService', () => {
     id: 'orc1',
     numero: 1,
     versao: 0,
-    tipo: 'simples',
+    tipo: 'completo',
     clienteId: 'cli1',
     clienteNome: 'Cliente Teste',
     clienteCnpj: '12345678901234',
@@ -41,9 +41,33 @@ describe('notificacaoService', () => {
     dataEmissao: new Date('2025-01-01'),
     dataValidade: new Date('2025-02-01'),
     dataAceite: new Date('2025-01-15'),
-    itens: [
-      { descricao: 'Extintor ABC 6kg', quantidade: 10, unidade: 'UN', valorUnitario: 100, valorTotal: 1000 },
-      { descricao: 'Mangueira de incêndio', quantidade: 5, unidade: 'M', valorUnitario: 200, valorTotal: 1000 },
+    itensCompleto: [
+      {
+        etapa: 'comercial',
+        categoriaId: 'cat1',
+        categoriaNome: 'Extintores',
+        descricao: 'Extintor ABC 6kg',
+        quantidade: 10,
+        unidade: 'UN',
+        valorUnitarioMaoDeObra: 50,
+        valorUnitarioMaterial: 50,
+        valorTotalMaoDeObra: 500,
+        valorTotalMaterial: 500,
+        valorTotal: 1000,
+      },
+      {
+        etapa: 'comercial',
+        categoriaId: 'cat2',
+        categoriaNome: 'Mangueiras',
+        descricao: 'Mangueira de incêndio',
+        quantidade: 5,
+        unidade: 'M',
+        valorUnitarioMaoDeObra: 100,
+        valorUnitarioMaterial: 100,
+        valorTotalMaoDeObra: 500,
+        valorTotalMaterial: 500,
+        valorTotal: 1000,
+      },
     ],
     valorTotal: 2000,
     createdAt: new Date(),
@@ -275,8 +299,6 @@ describe('notificacaoService', () => {
     it('deve processar itens do orçamento completo', async () => {
       const orcamentoCompleto: Orcamento = {
         ...mockOrcamento,
-        tipo: 'completo',
-        itens: [],
         itensCompleto: [
           {
             etapa: 'comercial',
@@ -317,8 +339,20 @@ describe('notificacaoService', () => {
     it('deve ignorar itens sem descrição', async () => {
       const orcamentoSemDescricao: Orcamento = {
         ...mockOrcamento,
-        itens: [
-          { descricao: '', quantidade: 10, unidade: 'UN', valorUnitario: 100, valorTotal: 1000 },
+        itensCompleto: [
+          {
+            etapa: 'comercial',
+            categoriaId: 'cat1',
+            categoriaNome: 'Extintores',
+            descricao: '',
+            quantidade: 10,
+            unidade: 'UN',
+            valorUnitarioMaoDeObra: 50,
+            valorUnitarioMaterial: 50,
+            valorTotalMaoDeObra: 500,
+            valorTotalMaterial: 500,
+            valorTotal: 1000,
+          },
         ],
       };
       (palavraChaveRepository.findAtivas as jest.Mock).mockResolvedValue([mockPalavraChave]);
@@ -331,7 +365,21 @@ describe('notificacaoService', () => {
     it('deve fazer match case-insensitive de palavras-chave', async () => {
       const orcamentoMaiusculo: Orcamento = {
         ...mockOrcamento,
-        itens: [{ descricao: 'EXTINTOR ABC 6KG', quantidade: 10, unidade: 'UN', valorUnitario: 100, valorTotal: 1000 }],
+        itensCompleto: [
+          {
+            etapa: 'comercial',
+            categoriaId: 'cat1',
+            categoriaNome: 'Extintores',
+            descricao: 'EXTINTOR ABC 6KG',
+            quantidade: 10,
+            unidade: 'UN',
+            valorUnitarioMaoDeObra: 50,
+            valorUnitarioMaterial: 50,
+            valorTotalMaoDeObra: 500,
+            valorTotalMaterial: 500,
+            valorTotal: 1000,
+          },
+        ],
       };
       (palavraChaveRepository.findAtivas as jest.Mock).mockResolvedValue([mockPalavraChave]);
       (notificacaoRepository.exists as jest.Mock).mockResolvedValue(false);
@@ -441,7 +489,7 @@ describe('inicializarEventHandlers', () => {
     id: 'orc1',
     numero: 1,
     versao: 0,
-    tipo: 'simples',
+    tipo: 'completo',
     clienteId: 'cli1',
     clienteNome: 'Cliente Teste',
     clienteCnpj: '12345678901234',
@@ -449,8 +497,20 @@ describe('inicializarEventHandlers', () => {
     dataEmissao: new Date('2025-01-01'),
     dataValidade: new Date('2025-02-01'),
     dataAceite: new Date('2025-01-15'),
-    itens: [
-      { descricao: 'Extintor ABC 6kg', quantidade: 10, unidade: 'UN', valorUnitario: 100, valorTotal: 1000 },
+    itensCompleto: [
+      {
+        etapa: 'comercial',
+        categoriaId: 'cat1',
+        categoriaNome: 'Extintores',
+        descricao: 'Extintor ABC 6kg',
+        quantidade: 10,
+        unidade: 'UN',
+        valorUnitarioMaoDeObra: 50,
+        valorUnitarioMaterial: 50,
+        valorTotalMaoDeObra: 500,
+        valorTotalMaterial: 500,
+        valorTotal: 1000,
+      },
     ],
     valorTotal: 1000,
     createdAt: new Date(),

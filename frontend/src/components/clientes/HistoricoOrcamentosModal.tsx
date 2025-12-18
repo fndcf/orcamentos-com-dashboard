@@ -313,7 +313,7 @@ export function HistoricoOrcamentosModal({
                     Validade: {formatDate(orcamento.dataValidade)}
                   </span>
                   <span className="itens">
-                    {orcamento.itens.length} {orcamento.itens.length === 1 ? 'item' : 'itens'}
+                    {(orcamento.itensCompleto?.length || 0)} {(orcamento.itensCompleto?.length || 0) === 1 ? 'item' : 'itens'}
                   </span>
                 </OrcamentoInfo>
                 <OrcamentoRight>
