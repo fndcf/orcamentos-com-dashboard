@@ -23,9 +23,10 @@ interface CriarOrcamentoDTO {
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
   prazoVistoriaBombeiros?: number;
-  condicaoPagamento?: 'a_combinar' | 'parcelado';
+  condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
+  mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;
   diasValidade?: number;
@@ -43,9 +44,10 @@ interface AtualizarOrcamentoDTO {
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
   prazoVistoriaBombeiros?: number;
-  condicaoPagamento?: 'a_combinar' | 'parcelado';
+  condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
+  mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;
   dataValidade?: Date;
@@ -211,6 +213,7 @@ export const orcamentoService = {
       if (data.condicaoPagamento) orcamento.condicaoPagamento = data.condicaoPagamento;
       if (data.parcelamentoTexto?.trim()) orcamento.parcelamentoTexto = data.parcelamentoTexto.trim();
       if (data.parcelamentoDados) orcamento.parcelamentoDados = data.parcelamentoDados;
+      if (data.mostrarValoresDetalhados !== undefined) orcamento.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
     }
 
     return orcamentoRepository.create(orcamento);
@@ -306,6 +309,7 @@ export const orcamentoService = {
     if (data.condicaoPagamento !== undefined) updateData.condicaoPagamento = data.condicaoPagamento;
     if (data.parcelamentoTexto !== undefined) updateData.parcelamentoTexto = data.parcelamentoTexto?.trim() || undefined;
     if (data.parcelamentoDados !== undefined) updateData.parcelamentoDados = data.parcelamentoDados;
+    if (data.mostrarValoresDetalhados !== undefined) updateData.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
 
     if (data.observacoes !== undefined) {
       const obs = data.observacoes?.trim();
@@ -427,6 +431,7 @@ export const orcamentoService = {
       if (orcamentoOriginal.condicaoPagamento) novoOrcamento.condicaoPagamento = orcamentoOriginal.condicaoPagamento;
       if (orcamentoOriginal.parcelamentoTexto) novoOrcamento.parcelamentoTexto = orcamentoOriginal.parcelamentoTexto;
       if (orcamentoOriginal.parcelamentoDados) novoOrcamento.parcelamentoDados = orcamentoOriginal.parcelamentoDados;
+      if (orcamentoOriginal.mostrarValoresDetalhados !== undefined) novoOrcamento.mostrarValoresDetalhados = orcamentoOriginal.mostrarValoresDetalhados;
       if (orcamentoOriginal.valorTotalMaoDeObra) novoOrcamento.valorTotalMaoDeObra = orcamentoOriginal.valorTotalMaoDeObra;
       if (orcamentoOriginal.valorTotalMaterial) novoOrcamento.valorTotalMaterial = orcamentoOriginal.valorTotalMaterial;
     }

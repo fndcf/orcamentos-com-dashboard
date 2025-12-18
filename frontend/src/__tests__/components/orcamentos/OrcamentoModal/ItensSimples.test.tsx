@@ -19,8 +19,8 @@ const createWrapper = () => {
 };
 
 const mockCategorias: CategoriaItem[] = [
-  { id: 'cat1', nome: 'Bomba de Incêndio', ativo: true, ordem: 1 },
-  { id: 'cat2', nome: 'Sistema de Hidrantes', ativo: true, ordem: 2 },
+  { id: 'cat1', nome: 'Bomba de Incêndio', ativo: true, ordem: 1, createdAt: new Date() },
+  { id: 'cat2', nome: 'Sistema de Hidrantes', ativo: true, ordem: 2, createdAt: new Date() },
 ];
 
 const mockItensPredefinidos = [

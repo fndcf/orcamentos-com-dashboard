@@ -14,8 +14,9 @@ interface CriarOrcamentoDTO {
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
   prazoVistoriaBombeiros?: number;
-  condicaoPagamento?: 'a_combinar' | 'parcelado';
+  condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
+  mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;
   diasValidade?: number;
@@ -33,8 +34,9 @@ interface AtualizarOrcamentoDTO {
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
   prazoVistoriaBombeiros?: number;
-  condicaoPagamento?: 'a_combinar' | 'parcelado';
+  condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
+  mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;
   dataValidade?: Date;

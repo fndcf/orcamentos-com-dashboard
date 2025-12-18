@@ -143,18 +143,18 @@ describe('NotificacaoDropdown', () => {
     expect(screen.queryByText('0')).not.toBeInTheDocument();
   });
 
-  it('deve mostrar ícone vermelho quando houver vencidas', () => {
+  it('deve sempre mostrar ícone de sino, mesmo quando houver vencidas', () => {
     vi.mocked(useNotificacaoResumo).mockReturnValue({
       data: { ...mockResumo, vencidas: 2 },
     } as any);
 
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
 
-    // Ícone vermelho para vencidas
-    expect(screen.getByText('🔴')).toBeInTheDocument();
+    // Sempre mostra sino, o badge muda de cor para vermelho
+    expect(screen.getByText('🔔')).toBeInTheDocument();
   });
 
-  it('deve mostrar ícone normal quando não houver vencidas', () => {
+  it('deve mostrar ícone de sino quando não houver vencidas', () => {
     vi.mocked(useNotificacaoResumo).mockReturnValue({
       data: { ...mockResumo, vencidas: 0 },
     } as any);

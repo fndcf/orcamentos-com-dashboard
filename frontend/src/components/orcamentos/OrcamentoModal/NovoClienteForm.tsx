@@ -175,11 +175,10 @@ export function NovoClienteForm({ onClienteCriado }: NovoClienteFormProps) {
       <CheckboxRow>
         <input
           type="checkbox"
-          id="tipoPessoaInline"
           checked={isPessoaFisica}
           onChange={handleTipoPessoaChange}
         />
-        <label htmlFor="tipoPessoaInline">Pessoa Física (CPF)</label>
+        <span>Pessoa Física (CPF)</span>
       </CheckboxRow>
 
       <DocumentRow>

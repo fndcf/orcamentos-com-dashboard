@@ -283,7 +283,7 @@ export function NotificacaoDropdown() {
   return (
     <Container ref={dropdownRef}>
       <IconButton onClick={() => setIsOpen(!isOpen)} title="Notificações">
-        {hasVencidas ? "🔴" : "🔔"}
+        🔔
         {ativas > 0 && (
           <Badge $hasVencidas={hasVencidas}>
             {ativas > 99 ? "99+" : ativas}

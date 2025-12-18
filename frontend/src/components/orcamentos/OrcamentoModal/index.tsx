@@ -43,6 +43,7 @@ import {
   TipoLocked,
   ButtonGroup,
   CompletoSection,
+  CheckboxOption,
 } from "./styles";
 
 interface OrcamentoModalProps {
@@ -112,10 +113,11 @@ export function OrcamentoModal({
   const [prazoExecucaoServicos, setPrazoExecucaoServicos] = useState(20);
   const [prazoVistoriaBombeiros, setPrazoVistoriaBombeiros] = useState(30);
   const [condicaoPagamento, setCondicaoPagamento] = useState<
-    "a_combinar" | "parcelado"
+    "a_vista" | "a_combinar" | "parcelado"
   >("a_combinar");
   const [parcelamentoTexto, setParcelamentoTexto] = useState("");
   const [parcelamentoDados, setParcelamentoDados] = useState<ParcelamentoDados | undefined>(undefined);
+  const [mostrarValoresDetalhados, setMostrarValoresDetalhados] = useState(true);
 
   // Estados comuns
   const [observacoes, setObservacoes] = useState("");
@@ -165,6 +167,7 @@ export function OrcamentoModal({
           setCondicaoPagamento(orcamento.condicaoPagamento || "a_combinar");
           setParcelamentoTexto(orcamento.parcelamentoTexto || "");
           setParcelamentoDados(orcamento.parcelamentoDados);
+          setMostrarValoresDetalhados(orcamento.mostrarValoresDetalhados !== false);
           setItens([{ ...emptyItem }]); // reset simples
         } else {
           setItens(
@@ -189,6 +192,7 @@ export function OrcamentoModal({
           setCondicaoPagamento("a_combinar");
           setParcelamentoTexto("");
           setParcelamentoDados(undefined);
+          setMostrarValoresDetalhados(true);
         }
 
         // Buscar cliente selecionado
@@ -227,6 +231,7 @@ export function OrcamentoModal({
           setCondicaoPagamento(duplicarDe.condicaoPagamento || "a_combinar");
           setParcelamentoTexto(duplicarDe.parcelamentoTexto || "");
           setParcelamentoDados(duplicarDe.parcelamentoDados);
+          setMostrarValoresDetalhados(duplicarDe.mostrarValoresDetalhados !== false);
           setItens([{ ...emptyItem }]);
         } else {
           setItens(
@@ -252,6 +257,7 @@ export function OrcamentoModal({
           setCondicaoPagamento("a_combinar");
           setParcelamentoTexto("");
           setParcelamentoDados(undefined);
+          setMostrarValoresDetalhados(true);
         }
 
         // Buscar cliente selecionado
@@ -272,6 +278,7 @@ export function OrcamentoModal({
         setCondicaoPagamento("a_combinar");
         setParcelamentoTexto("");
         setParcelamentoDados(undefined);
+        setMostrarValoresDetalhados(true);
         setObservacoes("");
         setConsultor("");
         setContato("");
@@ -645,6 +652,7 @@ export function OrcamentoModal({
           condicaoPagamento === "parcelado"
             ? parcelamentoDados
             : undefined,
+        mostrarValoresDetalhados,
         observacoes: observacoes.trim() || undefined,
         consultor: consultor.trim() || undefined,
         contato: contato.trim() || undefined,
@@ -821,6 +829,20 @@ export function OrcamentoModal({
               onServicoChange={setServicoId}
             />
 
+            {/* Checkbox para mostrar valores detalhados no PDF */}
+            <CompletoSection>
+              <CheckboxOption>
+                <input
+                  type="checkbox"
+                  checked={mostrarValoresDetalhados}
+                  onChange={(e) => setMostrarValoresDetalhados(e.target.checked)}
+                />
+                <span>
+                  Mostrar valores detalhados (Mão de Obra e Material) na proposta
+                </span>
+              </CheckboxOption>
+            </CompletoSection>
+
             <ItensCompleto
               itens={itensCompleto}
               categorias={categoriasAtivas}
@@ -837,6 +859,19 @@ export function OrcamentoModal({
               onToggle={handleLimitacaoToggle}
               onToggleAll={handleLimitacoesToggleAll}
             />
+
+            {/* Campo de observações adicionais para orçamento completo */}
+            <CompletoSection>
+              <h4>Observações Adicionais</h4>
+              <InputGroup>
+                <TextArea
+                  placeholder="Digite observações adicionais que não estão nos itens acima..."
+                  value={observacoes}
+                  onChange={(e) => setObservacoes(e.target.value)}
+                  rows={3}
+                />
+              </InputGroup>
+            </CompletoSection>
 
             <PrazosSection
               prazoExecucao={prazoExecucaoServicos}

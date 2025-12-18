@@ -33,22 +33,34 @@ const DocumentRow = styled.div`
   }
 `;
 
-const CheckboxRow = styled.div`
+const CheckboxRow = styled.label`
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  background: var(--background);
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.03);
+  }
 
   input[type="checkbox"] {
     width: 18px;
     height: 18px;
+    margin-top: 1px;
+    accent-color: var(--primary);
+    flex-shrink: 0;
     cursor: pointer;
   }
 
-  label {
+  span {
     font-size: 0.9rem;
-    color: var(--text-secondary);
-    cursor: pointer;
+    color: var(--text-primary);
+    line-height: 1.4;
   }
 `;
 
@@ -220,11 +232,10 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
         <CheckboxRow>
           <input
             type="checkbox"
-            id="tipoPessoa"
             checked={isPessoaFisica}
             onChange={handleTipoPessoaChange}
           />
-          <label htmlFor="tipoPessoa">Pessoa Física (CPF)</label>
+          <span>Pessoa Física (CPF)</span>
         </CheckboxRow>
 
         <DocumentRow>

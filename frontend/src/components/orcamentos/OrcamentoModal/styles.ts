@@ -83,22 +83,34 @@ export const DocumentRow = styled.div`
   }
 `;
 
-export const CheckboxRow = styled.div`
+export const CheckboxRow = styled.label`
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  background: var(--background);
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.03);
+  }
 
   input[type="checkbox"] {
     width: 18px;
     height: 18px;
+    margin-top: 1px;
+    accent-color: var(--primary);
+    flex-shrink: 0;
     cursor: pointer;
   }
 
-  label {
+  span {
     font-size: 0.9rem;
-    color: var(--text-secondary);
-    cursor: pointer;
+    color: var(--text-primary);
+    line-height: 1.4;
   }
 `;
 
@@ -788,5 +800,35 @@ export const ParcelamentoDetalhe = styled.div`
 
   .valor {
     font-weight: 500;
+  }
+`;
+
+export const CheckboxOption = styled.label`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  background: var(--background);
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.03);
+  }
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--primary);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  span {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.4;
   }
 `;

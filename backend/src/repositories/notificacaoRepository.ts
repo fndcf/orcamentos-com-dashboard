@@ -83,10 +83,10 @@ export const notificacaoRepository = {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
+    // Busca todas as notificações vencidas, independente se foram lidas ou não
     const snapshot = await db
       .collection(COLLECTION)
       .where('dataVencimento', '<', hoje)
-      .where('lida', '==', false)
       .orderBy('dataVencimento', 'asc')
       .get();
 

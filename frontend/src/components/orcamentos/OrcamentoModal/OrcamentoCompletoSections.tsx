@@ -245,9 +245,9 @@ interface ParcelaInfo {
 }
 
 interface CondicaoPagamentoSectionProps {
-  condicao: "a_combinar" | "parcelado";
+  condicao: "a_vista" | "a_combinar" | "parcelado";
   parcelamentoTexto: string;
-  onCondicaoChange: (condicao: "a_combinar" | "parcelado") => void;
+  onCondicaoChange: (condicao: "a_vista" | "a_combinar" | "parcelado") => void;
   onParcelamentoTextoChange: (texto: string) => void;
   onParcelamentoDadosChange: (dados: ParcelamentoDados | undefined) => void;
   valorTotal: number;
@@ -383,6 +383,15 @@ export function CondicaoPagamentoFormSection({
     <CompletoSection>
       <h4> Preços e Condições de Pagamento</h4>
       <CondicaoPagamentoSection>
+        <CondicaoOption $selected={condicao === "a_vista"}>
+          <input
+            type="radio"
+            name="condicaoPagamento"
+            checked={condicao === "a_vista"}
+            onChange={() => onCondicaoChange("a_vista")}
+          />
+          <span>À vista</span>
+        </CondicaoOption>
         <CondicaoOption $selected={condicao === "a_combinar"}>
           <input
             type="radio"

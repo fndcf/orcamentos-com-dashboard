@@ -99,9 +99,10 @@ export interface Orcamento {
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number; // Dias úteis para execução dos serviços
   prazoVistoriaBombeiros?: number; // Dias para vistoria do Corpo de Bombeiros
-  condicaoPagamento?: 'a_combinar' | 'parcelado';
+  condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados; // Dados estruturados do parcelamento para o PDF
+  mostrarValoresDetalhados?: boolean; // Se true, mostra tabela de MdO/Material no PDF; se false, só valor total
   // Totais
   valorTotal: number;
   valorTotalMaoDeObra?: number;
