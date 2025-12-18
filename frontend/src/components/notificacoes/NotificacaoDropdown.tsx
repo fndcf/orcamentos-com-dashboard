@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import {
   useNotificacaoResumo,
-  useNotificacoesAtivas,
+  useNotificacoesAtivasPaginadas,
   useMarcarNotificacaoComoLida,
   useMarcarTodasNotificacoesComoLidas,
 } from "../../hooks/useNotificacoes";
@@ -182,6 +182,33 @@ const EmptyState = styled.div`
   color: var(--text-light);
 `;
 
+const LoadMoreButton = styled.button`
+  width: 100%;
+  padding: 12px;
+  background: var(--background);
+  border: none;
+  color: var(--primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(255, 107, 53, 0.1);
+  }
+
+  &:disabled {
+    color: var(--text-light);
+    cursor: not-allowed;
+  }
+`;
+
+const LoadingMore = styled.div`
+  padding: 12px;
+  text-align: center;
+  color: var(--text-light);
+  font-size: 0.85rem;
+`;
+
 const DropdownFooter = styled.div`
   padding: 12px 16px;
   border-top: 1px solid var(--border);
@@ -230,13 +257,25 @@ function diasParaVencimento(data: Date | string): string {
 export function NotificacaoDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const { data: resumo } = useNotificacaoResumo();
-  // Usar notificações ativas (vencidas + próximas 10 dias) em vez de todas não lidas
-  const { data: notificacoes, isLoading, isError, refetch } = useNotificacoesAtivas(10);
+  // Usar notificações ativas paginadas (10 por página)
+  const {
+    data: paginatedData,
+    isLoading,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useNotificacoesAtivasPaginadas(10, 10);
   const marcarLida = useMarcarNotificacaoComoLida();
   const marcarTodasLidas = useMarcarTodasNotificacoesComoLidas();
+
+  // Flatten das páginas para obter todas as notificações carregadas
+  const notificacoes = paginatedData?.pages.flatMap((page) => page.items) || [];
 
   // Refetch quando o dropdown é aberto
   useEffect(() => {
@@ -244,6 +283,17 @@ export function NotificacaoDropdown() {
       refetch();
     }
   }, [isOpen, refetch]);
+
+  // Infinite scroll - carregar mais quando chegar no final da lista
+  const handleScroll = useCallback(() => {
+    if (!listRef.current || !hasNextPage || isFetchingNextPage) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = listRef.current;
+    // Carregar mais quando estiver a 50px do final
+    if (scrollHeight - scrollTop - clientHeight < 50) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -302,41 +352,51 @@ export function NotificacaoDropdown() {
           </MarkAllButton>
         </DropdownHeader>
 
-        <NotificacaoList>
+        <NotificacaoList ref={listRef} onScroll={handleScroll}>
           {isLoading ? (
             <EmptyState>Carregando...</EmptyState>
           ) : isError ? (
             <EmptyState>Erro ao carregar notificações</EmptyState>
           ) : notificacoes && notificacoes.length > 0 ? (
-            notificacoes.slice(0, 5).map((notificacao) => {
-              const vencida = isVencida(notificacao.dataVencimento);
-              return (
-                <NotificacaoItem
-                  key={notificacao.id}
-                  $lida={notificacao.lida}
-                  $vencida={vencida}
-                  onClick={() => handleNotificacaoClick(notificacao)}
-                >
-                  <NotificacaoHeader>
-                    <NotificacaoCliente>
-                      {notificacao.clienteNome} - Orç. #
-                      {notificacao.orcamentoNumero}
-                    </NotificacaoCliente>
-                    <NotificacaoData $vencida={vencida}>
-                      {diasParaVencimento(notificacao.dataVencimento)}
-                    </NotificacaoData>
-                  </NotificacaoHeader>
-                  <NotificacaoDescricao>
-                    {notificacao.itemDescricao.length > 80
-                      ? `${notificacao.itemDescricao.substring(0, 80)}...`
-                      : notificacao.itemDescricao}
-                  </NotificacaoDescricao>
-                  <NotificacaoPalavraChave>
-                    {notificacao.palavraChave}
-                  </NotificacaoPalavraChave>
-                </NotificacaoItem>
-              );
-            })
+            <>
+              {notificacoes.map((notificacao) => {
+                const vencida = isVencida(notificacao.dataVencimento);
+                return (
+                  <NotificacaoItem
+                    key={notificacao.id}
+                    $lida={notificacao.lida}
+                    $vencida={vencida}
+                    onClick={() => handleNotificacaoClick(notificacao)}
+                  >
+                    <NotificacaoHeader>
+                      <NotificacaoCliente>
+                        {notificacao.clienteNome} - Orç. #
+                        {notificacao.orcamentoNumero}
+                      </NotificacaoCliente>
+                      <NotificacaoData $vencida={vencida}>
+                        {diasParaVencimento(notificacao.dataVencimento)}
+                      </NotificacaoData>
+                    </NotificacaoHeader>
+                    <NotificacaoDescricao>
+                      {notificacao.itemDescricao.length > 80
+                        ? `${notificacao.itemDescricao.substring(0, 80)}...`
+                        : notificacao.itemDescricao}
+                    </NotificacaoDescricao>
+                    <NotificacaoPalavraChave>
+                      {notificacao.palavraChave}
+                    </NotificacaoPalavraChave>
+                  </NotificacaoItem>
+                );
+              })}
+              {isFetchingNextPage && (
+                <LoadingMore>Carregando mais...</LoadingMore>
+              )}
+              {hasNextPage && !isFetchingNextPage && (
+                <LoadMoreButton onClick={() => fetchNextPage()}>
+                  Carregar mais notificações
+                </LoadMoreButton>
+              )}
+            </>
           ) : (
             <EmptyState>Nenhuma notificação pendente</EmptyState>
           )}

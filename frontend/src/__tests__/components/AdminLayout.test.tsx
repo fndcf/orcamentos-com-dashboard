@@ -47,6 +47,18 @@ vi.mock('../../hooks/useNotificacoes', () => ({
     isError: false,
     refetch: vi.fn(),
   })),
+  useNotificacoesAtivasPaginadas: vi.fn(() => ({
+    data: {
+      pages: [{ items: [], total: 0, hasMore: false, cursor: undefined }],
+      pageParams: [undefined],
+    },
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+    fetchNextPage: vi.fn(),
+    hasNextPage: false,
+    isFetchingNextPage: false,
+  })),
   useMarcarComoLida: vi.fn(() => ({
     mutateAsync: vi.fn(),
     isLoading: false,

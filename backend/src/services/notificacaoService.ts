@@ -1,7 +1,7 @@
 import { notificacaoRepository } from "../repositories/notificacaoRepository";
 import { orcamentoRepository } from "../repositories/orcamentoRepository";
 import { palavraChaveRepository } from "../repositories/palavraChaveRepository";
-import { Notificacao, Orcamento } from "../models";
+import { Notificacao, Orcamento, PaginatedResponse } from "../models";
 import { NotFoundError } from "../utils/errors";
 import {
   eventBus,
@@ -29,6 +29,24 @@ export const notificacaoService = {
 
   async listarAtivas(diasAntecedencia: number = 60): Promise<Notificacao[]> {
     return notificacaoRepository.findAtivas(diasAntecedencia);
+  },
+
+  // ========== MÉTODOS PAGINADOS ==========
+
+  async listarTodasPaginado(pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    return notificacaoRepository.findAllPaginated(pageSize, cursor);
+  },
+
+  async listarNaoLidasPaginado(pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    return notificacaoRepository.findNaoLidasPaginated(pageSize, cursor);
+  },
+
+  async listarVencidasPaginado(pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    return notificacaoRepository.findVencidasPaginated(pageSize, cursor);
+  },
+
+  async listarAtivasPaginado(diasAntecedencia: number = 60, pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    return notificacaoRepository.findAtivasPaginated(diasAntecedencia, pageSize, cursor);
   },
 
   async buscarPorId(id: string): Promise<Notificacao> {

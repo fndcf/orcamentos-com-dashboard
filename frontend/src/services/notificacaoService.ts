@@ -1,5 +1,5 @@
 import api from './api';
-import { Notificacao } from '../types';
+import { Notificacao, PaginatedResponse } from '../types';
 
 export interface NotificacaoResumo {
   total: number;
@@ -10,28 +10,8 @@ export interface NotificacaoResumo {
 }
 
 export const notificacaoService = {
-  async listar(): Promise<Notificacao[]> {
-    const response = await api.get('/notificacoes');
-    return response.data;
-  },
-
-  async listarNaoLidas(): Promise<Notificacao[]> {
-    const response = await api.get('/notificacoes/nao-lidas');
-    return response.data;
-  },
-
   async listarProximas(dias: number = 30): Promise<Notificacao[]> {
     const response = await api.get(`/notificacoes/proximas?dias=${dias}`);
-    return response.data;
-  },
-
-  async listarVencidas(): Promise<Notificacao[]> {
-    const response = await api.get('/notificacoes/vencidas');
-    return response.data;
-  },
-
-  async listarAtivas(dias: number = 60): Promise<Notificacao[]> {
-    const response = await api.get(`/notificacoes/ativas?dias=${dias}`);
     return response.data;
   },
 
@@ -66,6 +46,41 @@ export const notificacaoService = {
 
   async processarTodos(): Promise<{ processados: number; notificacoesCriadas: number }> {
     const response = await api.post('/notificacoes/processar-todos');
+    return response.data;
+  },
+
+  // ========== MÉTODOS PAGINADOS ==========
+
+  async listarPaginado(pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    const params = new URLSearchParams();
+    params.append('pageSize', pageSize.toString());
+    if (cursor) params.append('cursor', cursor);
+    const response = await api.get(`/notificacoes/paginado?${params.toString()}`);
+    return response.data;
+  },
+
+  async listarNaoLidasPaginado(pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    const params = new URLSearchParams();
+    params.append('pageSize', pageSize.toString());
+    if (cursor) params.append('cursor', cursor);
+    const response = await api.get(`/notificacoes/nao-lidas/paginado?${params.toString()}`);
+    return response.data;
+  },
+
+  async listarVencidasPaginado(pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    const params = new URLSearchParams();
+    params.append('pageSize', pageSize.toString());
+    if (cursor) params.append('cursor', cursor);
+    const response = await api.get(`/notificacoes/vencidas/paginado?${params.toString()}`);
+    return response.data;
+  },
+
+  async listarAtivasPaginado(dias: number = 60, pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    const params = new URLSearchParams();
+    params.append('dias', dias.toString());
+    params.append('pageSize', pageSize.toString());
+    if (cursor) params.append('cursor', cursor);
+    const response = await api.get(`/notificacoes/ativas/paginado?${params.toString()}`);
     return response.data;
   },
 };

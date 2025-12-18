@@ -28,6 +28,20 @@ router.get('/vencidas', notificacaoController.listarVencidas);
 // GET /api/notificacoes/ativas - Listar ativas (vencidas + próximas, não lidas) (opcional: ?dias=60)
 router.get('/ativas', notificacaoController.listarAtivas);
 
+// ========== ROTAS PAGINADAS ==========
+
+// GET /api/notificacoes/paginado - Listar todas paginado (?pageSize=10&cursor=xxx)
+router.get('/paginado', notificacaoController.listarPaginado);
+
+// GET /api/notificacoes/nao-lidas/paginado - Listar não lidas paginado
+router.get('/nao-lidas/paginado', notificacaoController.listarNaoLidasPaginado);
+
+// GET /api/notificacoes/vencidas/paginado - Listar vencidas paginado
+router.get('/vencidas/paginado', notificacaoController.listarVencidasPaginado);
+
+// GET /api/notificacoes/ativas/paginado - Listar ativas paginado (?dias=60&pageSize=10&cursor=xxx)
+router.get('/ativas/paginado', notificacaoController.listarAtivasPaginado);
+
 // PATCH /api/notificacoes/marcar-todas-lidas - Marcar todas como lidas (antes de /:id)
 router.patch('/marcar-todas-lidas', notificacaoController.marcarTodasComoLidas);
 

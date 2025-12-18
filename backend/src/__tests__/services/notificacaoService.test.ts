@@ -482,6 +482,135 @@ describe('notificacaoService', () => {
       });
     });
   });
+
+  // ========== TESTES DOS MÉTODOS PAGINADOS ==========
+
+  describe('listarTodasPaginado', () => {
+    const mockPaginatedResponse = {
+      items: [mockNotificacao, { ...mockNotificacao, id: '2' }],
+      total: 25,
+      hasMore: true,
+      cursor: 'bmV4dEN1cnNvcg==',
+    };
+
+    it('deve retornar notificações paginadas com valores padrão', async () => {
+      (notificacaoRepository.findAllPaginated as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      const resultado = await notificacaoService.listarTodasPaginado();
+
+      expect(notificacaoRepository.findAllPaginated).toHaveBeenCalledWith(10, undefined);
+      expect(resultado).toEqual(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações paginadas com pageSize específico', async () => {
+      (notificacaoRepository.findAllPaginated as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      const resultado = await notificacaoService.listarTodasPaginado(20);
+
+      expect(notificacaoRepository.findAllPaginated).toHaveBeenCalledWith(20, undefined);
+      expect(resultado).toEqual(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações paginadas com cursor', async () => {
+      const responseComCursor = { ...mockPaginatedResponse, hasMore: false, cursor: undefined };
+      (notificacaoRepository.findAllPaginated as jest.Mock).mockResolvedValue(responseComCursor);
+
+      const resultado = await notificacaoService.listarTodasPaginado(10, 'abc123');
+
+      expect(notificacaoRepository.findAllPaginated).toHaveBeenCalledWith(10, 'abc123');
+      expect(resultado.hasMore).toBe(false);
+    });
+  });
+
+  describe('listarNaoLidasPaginado', () => {
+    const mockPaginatedResponse = {
+      items: [mockNotificacao],
+      total: 10,
+      hasMore: true,
+      cursor: 'bmV4dEN1cnNvcg==',
+    };
+
+    it('deve retornar notificações não lidas paginadas', async () => {
+      (notificacaoRepository.findNaoLidasPaginated as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      const resultado = await notificacaoService.listarNaoLidasPaginado();
+
+      expect(notificacaoRepository.findNaoLidasPaginated).toHaveBeenCalledWith(10, undefined);
+      expect(resultado).toEqual(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações não lidas paginadas com parâmetros', async () => {
+      (notificacaoRepository.findNaoLidasPaginated as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      const resultado = await notificacaoService.listarNaoLidasPaginado(5, 'cursor123');
+
+      expect(notificacaoRepository.findNaoLidasPaginated).toHaveBeenCalledWith(5, 'cursor123');
+      expect(resultado).toEqual(mockPaginatedResponse);
+    });
+  });
+
+  describe('listarVencidasPaginado', () => {
+    const mockPaginatedResponse = {
+      items: [mockNotificacao],
+      total: 5,
+      hasMore: false,
+      cursor: undefined,
+    };
+
+    it('deve retornar notificações vencidas paginadas', async () => {
+      (notificacaoRepository.findVencidasPaginated as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      const resultado = await notificacaoService.listarVencidasPaginado();
+
+      expect(notificacaoRepository.findVencidasPaginated).toHaveBeenCalledWith(10, undefined);
+      expect(resultado).toEqual(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações vencidas paginadas com parâmetros', async () => {
+      (notificacaoRepository.findVencidasPaginated as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      const resultado = await notificacaoService.listarVencidasPaginado(15, 'cursorXYZ');
+
+      expect(notificacaoRepository.findVencidasPaginated).toHaveBeenCalledWith(15, 'cursorXYZ');
+      expect(resultado).toEqual(mockPaginatedResponse);
+    });
+  });
+
+  describe('listarAtivasPaginado', () => {
+    const mockPaginatedResponse = {
+      items: [mockNotificacao, { ...mockNotificacao, id: '2' }],
+      total: 15,
+      hasMore: true,
+      cursor: 'YXRpdmFzQ3Vyc29y',
+    };
+
+    it('deve retornar notificações ativas paginadas com valores padrão', async () => {
+      (notificacaoRepository.findAtivasPaginated as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      const resultado = await notificacaoService.listarAtivasPaginado();
+
+      expect(notificacaoRepository.findAtivasPaginated).toHaveBeenCalledWith(60, 10, undefined);
+      expect(resultado).toEqual(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações ativas paginadas com dias específico', async () => {
+      (notificacaoRepository.findAtivasPaginated as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      const resultado = await notificacaoService.listarAtivasPaginado(30);
+
+      expect(notificacaoRepository.findAtivasPaginated).toHaveBeenCalledWith(30, 10, undefined);
+      expect(resultado).toEqual(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações ativas paginadas com todos os parâmetros', async () => {
+      (notificacaoRepository.findAtivasPaginated as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      const resultado = await notificacaoService.listarAtivasPaginado(45, 20, 'myCursor');
+
+      expect(notificacaoRepository.findAtivasPaginated).toHaveBeenCalledWith(45, 20, 'myCursor');
+      expect(resultado).toEqual(mockPaginatedResponse);
+    });
+  });
 });
 
 describe('inicializarEventHandlers', () => {

@@ -1,44 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from 'react-query';
 import { notificacaoService, NotificacaoResumo } from '../services/notificacaoService';
-import { Notificacao } from '../types';
+import { Notificacao, PaginatedResponse } from '../types';
 import { logger } from '../utils/logger';
-
-export function useNotificacoes() {
-  return useQuery<Notificacao[]>('notificacoes', notificacaoService.listar);
-}
-
-export function useNotificacoesNaoLidas() {
-  return useQuery<Notificacao[]>('notificacoesNaoLidas', notificacaoService.listarNaoLidas, {
-    refetchInterval: 60000, // Atualiza a cada 1 minuto (sincronizado com o resumo)
-    retry: 3, // Tenta 3 vezes em caso de erro
-    onError: (error) => {
-      logger.error('Erro ao buscar notificações não lidas', { error });
-    },
-  });
-}
 
 export function useNotificacoesProximas(dias: number = 30) {
   return useQuery<Notificacao[]>(
     ['notificacoesProximas', dias],
     () => notificacaoService.listarProximas(dias)
-  );
-}
-
-export function useNotificacoesVencidas() {
-  return useQuery<Notificacao[]>('notificacoesVencidas', notificacaoService.listarVencidas);
-}
-
-export function useNotificacoesAtivas(dias: number = 60) {
-  return useQuery<Notificacao[]>(
-    ['notificacoesAtivas', dias],
-    () => notificacaoService.listarAtivas(dias),
-    {
-      refetchInterval: 60000, // Atualiza a cada 1 minuto
-      retry: 3,
-      onError: (error) => {
-        logger.error('Erro ao buscar notificações ativas', { error });
-      },
-    }
   );
 }
 
@@ -53,12 +21,12 @@ export function useMarcarNotificacaoComoLida() {
 
   return useMutation((id: string) => notificacaoService.marcarComoLida(id), {
     onSuccess: () => {
-      queryClient.invalidateQueries('notificacoes');
-      queryClient.invalidateQueries('notificacoesNaoLidas');
       queryClient.invalidateQueries('notificacoesProximas');
-      queryClient.invalidateQueries('notificacoesVencidas');
-      queryClient.invalidateQueries('notificacoesAtivas');
       queryClient.invalidateQueries('notificacaoResumo');
+      queryClient.invalidateQueries('notificacoesPaginadas');
+      queryClient.invalidateQueries('notificacoesNaoLidasPaginadas');
+      queryClient.invalidateQueries('notificacoesVencidasPaginadas');
+      queryClient.invalidateQueries('notificacoesAtivasPaginadas');
     },
   });
 }
@@ -68,12 +36,12 @@ export function useMarcarTodasNotificacoesComoLidas() {
 
   return useMutation(() => notificacaoService.marcarTodasComoLidas(), {
     onSuccess: () => {
-      queryClient.invalidateQueries('notificacoes');
-      queryClient.invalidateQueries('notificacoesNaoLidas');
       queryClient.invalidateQueries('notificacoesProximas');
-      queryClient.invalidateQueries('notificacoesVencidas');
-      queryClient.invalidateQueries('notificacoesAtivas');
       queryClient.invalidateQueries('notificacaoResumo');
+      queryClient.invalidateQueries('notificacoesPaginadas');
+      queryClient.invalidateQueries('notificacoesNaoLidasPaginadas');
+      queryClient.invalidateQueries('notificacoesVencidasPaginadas');
+      queryClient.invalidateQueries('notificacoesAtivasPaginadas');
     },
   });
 }
@@ -83,12 +51,12 @@ export function useExcluirNotificacao() {
 
   return useMutation((id: string) => notificacaoService.excluir(id), {
     onSuccess: () => {
-      queryClient.invalidateQueries('notificacoes');
-      queryClient.invalidateQueries('notificacoesNaoLidas');
       queryClient.invalidateQueries('notificacoesProximas');
-      queryClient.invalidateQueries('notificacoesVencidas');
-      queryClient.invalidateQueries('notificacoesAtivas');
       queryClient.invalidateQueries('notificacaoResumo');
+      queryClient.invalidateQueries('notificacoesPaginadas');
+      queryClient.invalidateQueries('notificacoesNaoLidasPaginadas');
+      queryClient.invalidateQueries('notificacoesVencidasPaginadas');
+      queryClient.invalidateQueries('notificacoesAtivasPaginadas');
     },
   });
 }
@@ -98,12 +66,12 @@ export function useGerarNotificacoesOrcamento() {
 
   return useMutation((orcamentoId: string) => notificacaoService.gerarParaOrcamento(orcamentoId), {
     onSuccess: () => {
-      queryClient.invalidateQueries('notificacoes');
-      queryClient.invalidateQueries('notificacoesNaoLidas');
       queryClient.invalidateQueries('notificacoesProximas');
-      queryClient.invalidateQueries('notificacoesVencidas');
-      queryClient.invalidateQueries('notificacoesAtivas');
       queryClient.invalidateQueries('notificacaoResumo');
+      queryClient.invalidateQueries('notificacoesPaginadas');
+      queryClient.invalidateQueries('notificacoesNaoLidasPaginadas');
+      queryClient.invalidateQueries('notificacoesVencidasPaginadas');
+      queryClient.invalidateQueries('notificacoesAtivasPaginadas');
     },
   });
 }
@@ -113,12 +81,68 @@ export function useProcessarTodasNotificacoes() {
 
   return useMutation(() => notificacaoService.processarTodos(), {
     onSuccess: () => {
-      queryClient.invalidateQueries('notificacoes');
-      queryClient.invalidateQueries('notificacoesNaoLidas');
       queryClient.invalidateQueries('notificacoesProximas');
-      queryClient.invalidateQueries('notificacoesVencidas');
-      queryClient.invalidateQueries('notificacoesAtivas');
       queryClient.invalidateQueries('notificacaoResumo');
+      queryClient.invalidateQueries('notificacoesPaginadas');
+      queryClient.invalidateQueries('notificacoesNaoLidasPaginadas');
+      queryClient.invalidateQueries('notificacoesVencidasPaginadas');
+      queryClient.invalidateQueries('notificacoesAtivasPaginadas');
     },
   });
+}
+
+// ========== HOOKS PAGINADOS ==========
+
+export function useNotificacoesPaginadas(pageSize: number = 10) {
+  return useInfiniteQuery<PaginatedResponse<Notificacao>>(
+    ['notificacoesPaginadas', pageSize],
+    ({ pageParam }) => notificacaoService.listarPaginado(pageSize, pageParam),
+    {
+      getNextPageParam: (lastPage) => lastPage.cursor,
+      onError: (error) => {
+        logger.error('Erro ao buscar notificações paginadas', { error });
+      },
+    }
+  );
+}
+
+export function useNotificacoesNaoLidasPaginadas(pageSize: number = 10) {
+  return useInfiniteQuery<PaginatedResponse<Notificacao>>(
+    ['notificacoesNaoLidasPaginadas', pageSize],
+    ({ pageParam }) => notificacaoService.listarNaoLidasPaginado(pageSize, pageParam),
+    {
+      getNextPageParam: (lastPage) => lastPage.cursor,
+      refetchInterval: 60000,
+      onError: (error) => {
+        logger.error('Erro ao buscar notificações não lidas paginadas', { error });
+      },
+    }
+  );
+}
+
+export function useNotificacoesVencidasPaginadas(pageSize: number = 10) {
+  return useInfiniteQuery<PaginatedResponse<Notificacao>>(
+    ['notificacoesVencidasPaginadas', pageSize],
+    ({ pageParam }) => notificacaoService.listarVencidasPaginado(pageSize, pageParam),
+    {
+      getNextPageParam: (lastPage) => lastPage.cursor,
+      onError: (error) => {
+        logger.error('Erro ao buscar notificações vencidas paginadas', { error });
+      },
+    }
+  );
+}
+
+export function useNotificacoesAtivasPaginadas(dias: number = 60, pageSize: number = 10) {
+  return useInfiniteQuery<PaginatedResponse<Notificacao>>(
+    ['notificacoesAtivasPaginadas', dias, pageSize],
+    ({ pageParam }) => notificacaoService.listarAtivasPaginado(dias, pageSize, pageParam),
+    {
+      getNextPageParam: (lastPage) => lastPage.cursor,
+      refetchInterval: 60000,
+      onError: (error) => {
+        logger.error('Erro ao buscar notificações ativas paginadas', { error });
+      },
+    }
+  );
 }

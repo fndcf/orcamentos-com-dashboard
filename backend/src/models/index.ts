@@ -194,3 +194,11 @@ export interface Usuario {
   nome: string;
   createdAt: Date;
 }
+
+// Interface genérica para resposta paginada
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  hasMore: boolean;
+  cursor?: string;
+}

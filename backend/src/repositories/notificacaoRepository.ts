@@ -1,7 +1,19 @@
 import { db } from '../config/firebase';
-import { Notificacao } from '../models';
+import { Notificacao, PaginatedResponse } from '../models';
 
 const COLLECTION = 'notificacoes';
+
+// Helper para mapear documento do Firestore para Notificacao
+const mapDocToNotificacao = (doc: FirebaseFirestore.DocumentSnapshot): Notificacao => ({
+  id: doc.id,
+  ...doc.data(),
+  dataVencimento: doc.data()?.dataVencimento?.toDate(),
+  createdAt: doc.data()?.createdAt?.toDate(),
+} as Notificacao);
+
+// Helper para codificar/decodificar cursor
+const encodeCursor = (id: string): string => Buffer.from(id).toString('base64');
+const decodeCursor = (cursor: string): string => Buffer.from(cursor, 'base64').toString();
 
 export const notificacaoRepository = {
   async findAll(): Promise<Notificacao[]> {
@@ -229,5 +241,150 @@ export const notificacaoRepository = {
       dataVencimento: doc.data().dataVencimento?.toDate(),
       createdAt: doc.data().createdAt?.toDate(),
     })) as Notificacao[];
+  },
+
+  // ========== MÉTODOS PAGINADOS ==========
+
+  async findAllPaginated(pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    let query = db
+      .collection(COLLECTION)
+      .orderBy('dataVencimento', 'asc');
+
+    if (cursor) {
+      const cursorDoc = await db.collection(COLLECTION).doc(decodeCursor(cursor)).get();
+      if (cursorDoc.exists) {
+        query = query.startAfter(cursorDoc);
+      }
+    }
+
+    const snapshot = await query.limit(pageSize + 1).get();
+    const hasMore = snapshot.docs.length > pageSize;
+    const items = snapshot.docs.slice(0, pageSize).map(mapDocToNotificacao);
+
+    const nextCursor = hasMore && items.length > 0
+      ? encodeCursor(items[items.length - 1].id!)
+      : undefined;
+
+    const countSnapshot = await db.collection(COLLECTION).count().get();
+
+    return {
+      items,
+      total: countSnapshot.data().count,
+      hasMore,
+      cursor: nextCursor,
+    };
+  },
+
+  async findNaoLidasPaginated(pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    let query = db
+      .collection(COLLECTION)
+      .where('lida', '==', false)
+      .orderBy('dataVencimento', 'asc');
+
+    if (cursor) {
+      const cursorDoc = await db.collection(COLLECTION).doc(decodeCursor(cursor)).get();
+      if (cursorDoc.exists) {
+        query = query.startAfter(cursorDoc);
+      }
+    }
+
+    const snapshot = await query.limit(pageSize + 1).get();
+    const hasMore = snapshot.docs.length > pageSize;
+    const items = snapshot.docs.slice(0, pageSize).map(mapDocToNotificacao);
+
+    const nextCursor = hasMore && items.length > 0
+      ? encodeCursor(items[items.length - 1].id!)
+      : undefined;
+
+    const countSnapshot = await db
+      .collection(COLLECTION)
+      .where('lida', '==', false)
+      .count()
+      .get();
+
+    return {
+      items,
+      total: countSnapshot.data().count,
+      hasMore,
+      cursor: nextCursor,
+    };
+  },
+
+  async findVencidasPaginated(pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    let query = db
+      .collection(COLLECTION)
+      .where('dataVencimento', '<', hoje)
+      .orderBy('dataVencimento', 'asc');
+
+    if (cursor) {
+      const cursorDoc = await db.collection(COLLECTION).doc(decodeCursor(cursor)).get();
+      if (cursorDoc.exists) {
+        query = query.startAfter(cursorDoc);
+      }
+    }
+
+    const snapshot = await query.limit(pageSize + 1).get();
+    const hasMore = snapshot.docs.length > pageSize;
+    const items = snapshot.docs.slice(0, pageSize).map(mapDocToNotificacao);
+
+    const nextCursor = hasMore && items.length > 0
+      ? encodeCursor(items[items.length - 1].id!)
+      : undefined;
+
+    const countSnapshot = await db
+      .collection(COLLECTION)
+      .where('dataVencimento', '<', hoje)
+      .count()
+      .get();
+
+    return {
+      items,
+      total: countSnapshot.data().count,
+      hasMore,
+      cursor: nextCursor,
+    };
+  },
+
+  async findAtivasPaginated(diasAntecedencia: number = 60, pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    const limite = new Date();
+    limite.setDate(limite.getDate() + diasAntecedencia);
+
+    let query = db
+      .collection(COLLECTION)
+      .where('lida', '==', false)
+      .where('dataVencimento', '<=', limite)
+      .orderBy('dataVencimento', 'asc');
+
+    if (cursor) {
+      const cursorDoc = await db.collection(COLLECTION).doc(decodeCursor(cursor)).get();
+      if (cursorDoc.exists) {
+        query = query.startAfter(cursorDoc);
+      }
+    }
+
+    const snapshot = await query.limit(pageSize + 1).get();
+    const hasMore = snapshot.docs.length > pageSize;
+    const items = snapshot.docs.slice(0, pageSize).map(mapDocToNotificacao);
+
+    const nextCursor = hasMore && items.length > 0
+      ? encodeCursor(items[items.length - 1].id!)
+      : undefined;
+
+    const countSnapshot = await db
+      .collection(COLLECTION)
+      .where('lida', '==', false)
+      .where('dataVencimento', '<=', limite)
+      .count()
+      .get();
+
+    return {
+      items,
+      total: countSnapshot.data().count,
+      hasMore,
+      cursor: nextCursor,
+    };
   },
 };

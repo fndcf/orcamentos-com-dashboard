@@ -2,35 +2,35 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import {
-  useNotificacoes,
-  useNotificacoesNaoLidas,
   useNotificacoesProximas,
-  useNotificacoesVencidas,
-  useNotificacoesAtivas,
   useNotificacaoResumo,
   useMarcarNotificacaoComoLida,
   useMarcarTodasNotificacoesComoLidas,
   useExcluirNotificacao,
   useGerarNotificacoesOrcamento,
   useProcessarTodasNotificacoes,
+  useNotificacoesPaginadas,
+  useNotificacoesNaoLidasPaginadas,
+  useNotificacoesVencidasPaginadas,
+  useNotificacoesAtivasPaginadas,
 } from '../../hooks/useNotificacoes';
 import { notificacaoService } from '../../services/notificacaoService';
-import { Notificacao } from '../../types';
+import { Notificacao, PaginatedResponse } from '../../types';
 
 // Mock do service
 vi.mock('../../services/notificacaoService', () => ({
   notificacaoService: {
-    listar: vi.fn(),
-    listarNaoLidas: vi.fn(),
     listarProximas: vi.fn(),
-    listarVencidas: vi.fn(),
-    listarAtivas: vi.fn(),
     obterResumo: vi.fn(),
     marcarComoLida: vi.fn(),
     marcarTodasComoLidas: vi.fn(),
     excluir: vi.fn(),
     gerarParaOrcamento: vi.fn(),
     processarTodos: vi.fn(),
+    listarPaginado: vi.fn(),
+    listarNaoLidasPaginado: vi.fn(),
+    listarVencidasPaginado: vi.fn(),
+    listarAtivasPaginado: vi.fn(),
   },
 }));
 
@@ -87,61 +87,6 @@ describe('useNotificacoes hooks', () => {
     vi.clearAllMocks();
   });
 
-  describe('useNotificacoes', () => {
-    it('deve retornar lista de notificações', async () => {
-      vi.mocked(notificacaoService.listar).mockResolvedValue(mockNotificacoes);
-
-      const { result } = renderHook(() => useNotificacoes(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(result.current.data).toEqual(mockNotificacoes);
-      expect(notificacaoService.listar).toHaveBeenCalled();
-    });
-
-    it('deve retornar isLoading enquanto carrega', () => {
-      vi.mocked(notificacaoService.listar).mockImplementation(
-        () => new Promise(() => {})
-      );
-
-      const { result } = renderHook(() => useNotificacoes(), {
-        wrapper: createWrapper(),
-      });
-
-      expect(result.current.isLoading).toBe(true);
-    });
-
-    it('deve retornar erro quando falhar', async () => {
-      const error = new Error('Erro ao listar');
-      vi.mocked(notificacaoService.listar).mockRejectedValue(error);
-
-      const { result } = renderHook(() => useNotificacoes(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => expect(result.current.isError).toBe(true));
-      expect(result.current.error).toBeDefined();
-    });
-  });
-
-  describe('useNotificacoesNaoLidas', () => {
-    it('deve retornar lista de notificações não lidas', async () => {
-      const naoLidas = mockNotificacoes.filter((n) => !n.lida);
-      vi.mocked(notificacaoService.listarNaoLidas).mockResolvedValue(naoLidas);
-
-      const { result } = renderHook(() => useNotificacoesNaoLidas(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(result.current.data).toEqual(naoLidas);
-      expect(notificacaoService.listarNaoLidas).toHaveBeenCalled();
-    });
-  });
-
   describe('useNotificacoesProximas', () => {
     it('deve retornar lista de notificações próximas com dias padrão', async () => {
       vi.mocked(notificacaoService.listarProximas).mockResolvedValue(mockNotificacoes);
@@ -167,49 +112,6 @@ describe('useNotificacoes hooks', () => {
 
       expect(notificacaoService.listarProximas).toHaveBeenCalledWith(15);
     });
-  });
-
-  describe('useNotificacoesVencidas', () => {
-    it('deve retornar lista de notificações vencidas', async () => {
-      vi.mocked(notificacaoService.listarVencidas).mockResolvedValue(mockNotificacoes);
-
-      const { result } = renderHook(() => useNotificacoesVencidas(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(result.current.data).toEqual(mockNotificacoes);
-      expect(notificacaoService.listarVencidas).toHaveBeenCalled();
-    });
-  });
-
-  describe('useNotificacoesAtivas', () => {
-    it('deve retornar lista de notificações ativas com dias padrão', async () => {
-      vi.mocked(notificacaoService.listarAtivas).mockResolvedValue(mockNotificacoes);
-
-      const { result } = renderHook(() => useNotificacoesAtivas(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(result.current.data).toEqual(mockNotificacoes);
-      expect(notificacaoService.listarAtivas).toHaveBeenCalledWith(60);
-    });
-
-    it('deve retornar lista de notificações ativas com dias customizado', async () => {
-      vi.mocked(notificacaoService.listarAtivas).mockResolvedValue(mockNotificacoes);
-
-      const { result } = renderHook(() => useNotificacoesAtivas(90), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(notificacaoService.listarAtivas).toHaveBeenCalledWith(90);
-    });
-
   });
 
   describe('useNotificacaoResumo', () => {
@@ -358,6 +260,186 @@ describe('useNotificacoes hooks', () => {
       });
 
       await expect(result.current.mutateAsync()).rejects.toThrow('Erro ao processar notificações');
+    });
+  });
+
+  // ========== TESTES PARA HOOKS PAGINADOS ==========
+
+  describe('useNotificacoesPaginadas', () => {
+    const mockPaginatedResponse: PaginatedResponse<Notificacao> = {
+      items: mockNotificacoes,
+      total: 10,
+      hasMore: true,
+      cursor: 'next-cursor',
+    };
+
+    it('deve retornar primeira página de notificações', async () => {
+      vi.mocked(notificacaoService.listarPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesPaginadas(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.pages[0]).toEqual(mockPaginatedResponse);
+      expect(notificacaoService.listarPaginado).toHaveBeenCalledWith(10, undefined);
+    });
+
+    it('deve usar pageSize customizado', async () => {
+      vi.mocked(notificacaoService.listarPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesPaginadas(20), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(notificacaoService.listarPaginado).toHaveBeenCalledWith(20, undefined);
+    });
+
+    it('deve indicar que há mais páginas', async () => {
+      vi.mocked(notificacaoService.listarPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesPaginadas(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.hasNextPage).toBe(true);
+    });
+
+    it('deve indicar quando não há mais páginas', async () => {
+      const lastPageResponse: PaginatedResponse<Notificacao> = {
+        items: mockNotificacoes,
+        total: 2,
+        hasMore: false,
+        cursor: undefined,
+      };
+      vi.mocked(notificacaoService.listarPaginado).mockResolvedValue(lastPageResponse);
+
+      const { result } = renderHook(() => useNotificacoesPaginadas(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.hasNextPage).toBe(false);
+    });
+  });
+
+  describe('useNotificacoesNaoLidasPaginadas', () => {
+    const mockPaginatedResponse: PaginatedResponse<Notificacao> = {
+      items: mockNotificacoes.filter(n => !n.lida),
+      total: 5,
+      hasMore: false,
+      cursor: undefined,
+    };
+
+    it('deve retornar notificações não lidas paginadas', async () => {
+      vi.mocked(notificacaoService.listarNaoLidasPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesNaoLidasPaginadas(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.pages[0]).toEqual(mockPaginatedResponse);
+      expect(notificacaoService.listarNaoLidasPaginado).toHaveBeenCalledWith(10, undefined);
+    });
+
+    it('deve usar pageSize customizado', async () => {
+      vi.mocked(notificacaoService.listarNaoLidasPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesNaoLidasPaginadas(15), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(notificacaoService.listarNaoLidasPaginado).toHaveBeenCalledWith(15, undefined);
+    });
+  });
+
+  describe('useNotificacoesVencidasPaginadas', () => {
+    const mockPaginatedResponse: PaginatedResponse<Notificacao> = {
+      items: mockNotificacoes,
+      total: 8,
+      hasMore: true,
+      cursor: 'vencidas-cursor',
+    };
+
+    it('deve retornar notificações vencidas paginadas', async () => {
+      vi.mocked(notificacaoService.listarVencidasPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesVencidasPaginadas(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.pages[0]).toEqual(mockPaginatedResponse);
+      expect(notificacaoService.listarVencidasPaginado).toHaveBeenCalledWith(10, undefined);
+    });
+
+    it('deve usar pageSize customizado', async () => {
+      vi.mocked(notificacaoService.listarVencidasPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesVencidasPaginadas(25), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(notificacaoService.listarVencidasPaginado).toHaveBeenCalledWith(25, undefined);
+    });
+  });
+
+  describe('useNotificacoesAtivasPaginadas', () => {
+    const mockPaginatedResponse: PaginatedResponse<Notificacao> = {
+      items: mockNotificacoes,
+      total: 15,
+      hasMore: true,
+      cursor: 'ativas-cursor',
+    };
+
+    it('deve retornar notificações ativas paginadas com valores padrão', async () => {
+      vi.mocked(notificacaoService.listarAtivasPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesAtivasPaginadas(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.pages[0]).toEqual(mockPaginatedResponse);
+      expect(notificacaoService.listarAtivasPaginado).toHaveBeenCalledWith(60, 10, undefined);
+    });
+
+    it('deve usar dias e pageSize customizados', async () => {
+      vi.mocked(notificacaoService.listarAtivasPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesAtivasPaginadas(30, 20), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(notificacaoService.listarAtivasPaginado).toHaveBeenCalledWith(30, 20, undefined);
+    });
+
+    it('deve indicar que há mais páginas', async () => {
+      vi.mocked(notificacaoService.listarAtivasPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesAtivasPaginadas(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.hasNextPage).toBe(true);
     });
   });
 });

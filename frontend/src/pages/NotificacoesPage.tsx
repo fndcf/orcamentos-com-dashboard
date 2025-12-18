@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { Button, Card } from "../components/ui";
 import {
-  useNotificacoes,
-  useNotificacoesVencidas,
+  useNotificacoesPaginadas,
+  useNotificacoesVencidasPaginadas,
   useNotificacoesProximas,
   useMarcarNotificacaoComoLida,
   useMarcarTodasNotificacoesComoLidas,
@@ -232,6 +232,38 @@ const EmptyIcon = styled.div`
   margin-bottom: 16px;
 `;
 
+const LoadMoreContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+`;
+
+const LoadMoreButton = styled.button`
+  padding: 12px 24px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--primary-dark);
+  }
+
+  &:disabled {
+    background: var(--border);
+    cursor: not-allowed;
+  }
+`;
+
+const LoadingMore = styled.div`
+  text-align: center;
+  padding: 20px;
+  color: var(--text-secondary);
+`;
+
 type TabType = "todas" | "vencidas" | "proximas";
 
 function formatarData(data: Date | string): string {
@@ -271,11 +303,29 @@ function diasParaVencimento(data: Date | string): string {
 export function NotificacoesPage() {
   const [activeTab, setActiveTab] = useState<TabType>("todas");
   const navigate = useNavigate();
+  const listRef = useRef<HTMLDivElement>(null);
 
   const { data: resumo } = useNotificacaoResumo();
-  const { data: todas, isLoading: loadingTodas } = useNotificacoes();
-  const { data: vencidas, isLoading: loadingVencidas } =
-    useNotificacoesVencidas();
+
+  // Hook paginado para todas as notificações
+  const {
+    data: todasPaginado,
+    isLoading: loadingTodas,
+    fetchNextPage: fetchNextTodas,
+    hasNextPage: hasNextTodas,
+    isFetchingNextPage: isFetchingTodas,
+  } = useNotificacoesPaginadas(20);
+
+  // Hook paginado para vencidas
+  const {
+    data: vencidasPaginado,
+    isLoading: loadingVencidas,
+    fetchNextPage: fetchNextVencidas,
+    hasNextPage: hasNextVencidas,
+    isFetchingNextPage: isFetchingVencidas,
+  } = useNotificacoesVencidasPaginadas(20);
+
+  // Hook não paginado para próximas (geralmente menor volume)
   const { data: proximas, isLoading: loadingProximas } =
     useNotificacoesProximas(30);
 
@@ -283,19 +333,77 @@ export function NotificacoesPage() {
   const marcarTodasLidas = useMarcarTodasNotificacoesComoLidas();
   const excluir = useExcluirNotificacao();
 
+  // Flatten das páginas
+  const todas = todasPaginado?.pages.flatMap((page) => page.items) || [];
+  const vencidas = vencidasPaginado?.pages.flatMap((page) => page.items) || [];
+
   const getNotificacoes = (): Notificacao[] => {
     switch (activeTab) {
       case "vencidas":
-        return vencidas || [];
+        return vencidas;
       case "proximas":
         return proximas || [];
       default:
-        return todas || [];
+        return todas;
     }
   };
 
+  const getHasNextPage = (): boolean => {
+    switch (activeTab) {
+      case "vencidas":
+        return hasNextVencidas || false;
+      case "proximas":
+        return false; // Não paginado
+      default:
+        return hasNextTodas || false;
+    }
+  };
+
+  const getIsFetchingNext = (): boolean => {
+    switch (activeTab) {
+      case "vencidas":
+        return isFetchingVencidas;
+      case "proximas":
+        return false;
+      default:
+        return isFetchingTodas;
+    }
+  };
+
+  const handleFetchNextPage = () => {
+    switch (activeTab) {
+      case "vencidas":
+        fetchNextVencidas();
+        break;
+      case "proximas":
+        break; // Não paginado
+      default:
+        fetchNextTodas();
+    }
+  };
+
+  // Infinite scroll - carregar mais quando chegar no final da lista
+  const handleScroll = useCallback(() => {
+    if (!listRef.current || !getHasNextPage() || getIsFetchingNext()) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = listRef.current;
+    if (scrollHeight - scrollTop - clientHeight < 100) {
+      handleFetchNextPage();
+    }
+  }, [activeTab, hasNextTodas, hasNextVencidas, isFetchingTodas, isFetchingVencidas]);
+
+  useEffect(() => {
+    const listElement = listRef.current;
+    if (listElement) {
+      listElement.addEventListener("scroll", handleScroll);
+      return () => listElement.removeEventListener("scroll", handleScroll);
+    }
+  }, [handleScroll]);
+
   const isLoading = loadingTodas || loadingVencidas || loadingProximas;
   const notificacoes = getNotificacoes();
+  const hasNextPage = getHasNextPage();
+  const isFetchingNext = getIsFetchingNext();
 
   const handleNotificacaoClick = (notificacao: Notificacao) => {
     if (!notificacao.lida) {
@@ -359,13 +467,13 @@ export function NotificacoesPage() {
           $active={activeTab === "todas"}
           onClick={() => setActiveTab("todas")}
         >
-          Todas ({todas?.length || 0})
+          Todas ({todasPaginado?.pages[0]?.total || todas.length})
         </Tab>
         <Tab
           $active={activeTab === "vencidas"}
           onClick={() => setActiveTab("vencidas")}
         >
-          Vencidas ({vencidas?.length || 0})
+          Vencidas ({vencidasPaginado?.pages[0]?.total || vencidas.length})
         </Tab>
         <Tab
           $active={activeTab === "proximas"}
@@ -383,62 +491,76 @@ export function NotificacoesPage() {
           <p>Nenhuma notificação encontrada</p>
         </EmptyState>
       ) : (
-        <NotificacaoList>
-          {notificacoes.map((notificacao) => {
-            const vencida = isVencida(notificacao.dataVencimento);
-            return (
-              <NotificacaoCard
-                key={notificacao.id}
-                $lida={notificacao.lida}
-                $vencida={vencida}
-                onClick={() => handleNotificacaoClick(notificacao)}
-              >
-                <NotificacaoHeader>
-                  <NotificacaoInfo>
-                    <NotificacaoCliente>
-                      {notificacao.clienteNome}
-                    </NotificacaoCliente>
-                    <NotificacaoOrcamento>
-                      Orcamento #{notificacao.orcamentoNumero}
-                    </NotificacaoOrcamento>
-                  </NotificacaoInfo>
-                  <NotificacaoMeta>
-                    <NotificacaoData $vencida={vencida}>
-                      {diasParaVencimento(notificacao.dataVencimento)}
-                    </NotificacaoData>
-                    <NotificacaoData>
-                      {formatarData(notificacao.dataVencimento)}
-                    </NotificacaoData>
-                  </NotificacaoMeta>
-                </NotificacaoHeader>
+        <>
+          <NotificacaoList ref={listRef}>
+            {notificacoes.map((notificacao) => {
+              const vencida = isVencida(notificacao.dataVencimento);
+              return (
+                <NotificacaoCard
+                  key={notificacao.id}
+                  $lida={notificacao.lida}
+                  $vencida={vencida}
+                  onClick={() => handleNotificacaoClick(notificacao)}
+                >
+                  <NotificacaoHeader>
+                    <NotificacaoInfo>
+                      <NotificacaoCliente>
+                        {notificacao.clienteNome}
+                      </NotificacaoCliente>
+                      <NotificacaoOrcamento>
+                        Orcamento #{notificacao.orcamentoNumero}
+                      </NotificacaoOrcamento>
+                    </NotificacaoInfo>
+                    <NotificacaoMeta>
+                      <NotificacaoData $vencida={vencida}>
+                        {diasParaVencimento(notificacao.dataVencimento)}
+                      </NotificacaoData>
+                      <NotificacaoData>
+                        {formatarData(notificacao.dataVencimento)}
+                      </NotificacaoData>
+                    </NotificacaoMeta>
+                  </NotificacaoHeader>
 
-                <NotificacaoDescricao>
-                  {notificacao.itemDescricao}
-                </NotificacaoDescricao>
+                  <NotificacaoDescricao>
+                    {notificacao.itemDescricao}
+                  </NotificacaoDescricao>
 
-                <NotificacaoFooter>
-                  <PalavraChaveTag>{notificacao.palavraChave}</PalavraChaveTag>
-                  <ActionButtons>
-                    {!notificacao.lida && (
+                  <NotificacaoFooter>
+                    <PalavraChaveTag>{notificacao.palavraChave}</PalavraChaveTag>
+                    <ActionButtons>
+                      {!notificacao.lida && (
+                        <SmallButton
+                          $variant="ghost"
+                          onClick={(e) => handleMarcarLida(e, notificacao)}
+                        >
+                          Marcar como lida
+                        </SmallButton>
+                      )}
                       <SmallButton
-                        $variant="ghost"
-                        onClick={(e) => handleMarcarLida(e, notificacao)}
+                        $variant="danger"
+                        onClick={(e) => handleExcluir(e, notificacao.id!)}
                       >
-                        Marcar como lida
+                        Excluir
                       </SmallButton>
-                    )}
-                    <SmallButton
-                      $variant="danger"
-                      onClick={(e) => handleExcluir(e, notificacao.id!)}
-                    >
-                      Excluir
-                    </SmallButton>
-                  </ActionButtons>
-                </NotificacaoFooter>
-              </NotificacaoCard>
-            );
-          })}
-        </NotificacaoList>
+                    </ActionButtons>
+                  </NotificacaoFooter>
+                </NotificacaoCard>
+              );
+            })}
+          </NotificacaoList>
+
+          {isFetchingNext && (
+            <LoadingMore>Carregando mais notificações...</LoadingMore>
+          )}
+
+          {hasNextPage && !isFetchingNext && (
+            <LoadMoreContainer>
+              <LoadMoreButton onClick={handleFetchNextPage}>
+                Carregar mais notificações
+              </LoadMoreButton>
+            </LoadMoreContainer>
+          )}
+        </>
       )}
       {/* Footer */}
       <Footer />

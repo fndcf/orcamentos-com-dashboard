@@ -222,6 +222,14 @@ export interface BrasilAPICNPJ {
   email: string;
 }
 
+// Interface genérica para resposta paginada
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  hasMore: boolean;
+  cursor?: string;
+}
+
 // Interface para dados de salvamento do Orçamento
 export interface OrcamentoSaveData {
   tipo: OrcamentoTipo;

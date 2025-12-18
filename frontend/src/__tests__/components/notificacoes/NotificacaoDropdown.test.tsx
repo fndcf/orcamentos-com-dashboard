@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { NotificacaoDropdown } from '../../../components/notificacoes/NotificacaoDropdown';
 import {
   useNotificacaoResumo,
-  useNotificacoesAtivas,
+  useNotificacoesAtivasPaginadas,
   useMarcarNotificacaoComoLida,
   useMarcarTodasNotificacoesComoLidas,
 } from '../../../hooks/useNotificacoes';
@@ -23,7 +23,7 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('../../../hooks/useNotificacoes', () => ({
   useNotificacaoResumo: vi.fn(),
-  useNotificacoesAtivas: vi.fn(),
+  useNotificacoesAtivasPaginadas: vi.fn(),
   useMarcarNotificacaoComoLida: vi.fn(),
   useMarcarTodasNotificacoesComoLidas: vi.fn(),
 }));
@@ -89,22 +89,33 @@ const mockResumo = {
 const mockMarcarLida = { mutate: vi.fn(), isLoading: false };
 const mockMarcarTodasLidas = { mutate: vi.fn(), isLoading: false };
 const mockRefetch = vi.fn();
+const mockFetchNextPage = vi.fn();
+
+// Helper para criar resposta paginada
+const createPaginatedResponse = (items: typeof mockNotificacoes, hasMore = false) => ({
+  pages: [{ items, total: items.length, hasMore, cursor: hasMore ? 'next-cursor' : undefined }],
+  pageParams: [undefined],
+});
 
 describe('NotificacaoDropdown', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockReset();
     mockRefetch.mockReset();
+    mockFetchNextPage.mockReset();
 
     vi.mocked(useNotificacaoResumo).mockReturnValue({
       data: mockResumo,
     } as any);
 
-    vi.mocked(useNotificacoesAtivas).mockReturnValue({
-      data: mockNotificacoes,
+    vi.mocked(useNotificacoesAtivasPaginadas).mockReturnValue({
+      data: createPaginatedResponse(mockNotificacoes),
       isLoading: false,
       isError: false,
       refetch: mockRefetch,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: false,
+      isFetchingNextPage: false,
     } as any);
 
     vi.mocked(useMarcarNotificacaoComoLida).mockReturnValue(mockMarcarLida as any);
@@ -204,11 +215,14 @@ describe('NotificacaoDropdown', () => {
   });
 
   it('deve mostrar estado vazio quando não houver notificações', () => {
-    vi.mocked(useNotificacoesAtivas).mockReturnValue({
-      data: [],
+    vi.mocked(useNotificacoesAtivasPaginadas).mockReturnValue({
+      data: createPaginatedResponse([]),
       isLoading: false,
       isError: false,
       refetch: mockRefetch,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: false,
+      isFetchingNextPage: false,
     } as any);
 
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
@@ -219,11 +233,14 @@ describe('NotificacaoDropdown', () => {
   });
 
   it('deve mostrar estado de carregamento', () => {
-    vi.mocked(useNotificacoesAtivas).mockReturnValue({
+    vi.mocked(useNotificacoesAtivasPaginadas).mockReturnValue({
       data: undefined,
       isLoading: true,
       isError: false,
       refetch: mockRefetch,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: false,
+      isFetchingNextPage: false,
     } as any);
 
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
@@ -234,11 +251,14 @@ describe('NotificacaoDropdown', () => {
   });
 
   it('deve mostrar estado de erro', () => {
-    vi.mocked(useNotificacoesAtivas).mockReturnValue({
+    vi.mocked(useNotificacoesAtivasPaginadas).mockReturnValue({
       data: undefined,
       isLoading: false,
       isError: true,
       refetch: mockRefetch,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: false,
+      isFetchingNextPage: false,
     } as any);
 
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
@@ -359,7 +379,7 @@ describe('NotificacaoDropdown', () => {
     });
   });
 
-  it('deve mostrar no máximo 5 notificações no dropdown', () => {
+  it('deve mostrar todas as notificações da página carregada', () => {
     const manyNotifications = Array.from({ length: 10 }, (_, i) => ({
       id: `${i + 1}`,
       orcamentoId: `orc-${i + 1}`,
@@ -373,21 +393,62 @@ describe('NotificacaoDropdown', () => {
       createdAt: new Date(),
     }));
 
-    vi.mocked(useNotificacoesAtivas).mockReturnValue({
-      data: manyNotifications,
+    vi.mocked(useNotificacoesAtivasPaginadas).mockReturnValue({
+      data: createPaginatedResponse(manyNotifications, true),
       isLoading: false,
       isError: false,
       refetch: mockRefetch,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: true,
+      isFetchingNextPage: false,
     } as any);
 
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
 
     fireEvent.click(screen.getByTitle('Notificações'));
 
-    // Deve mostrar apenas 5 notificações
+    // Com paginação, mostra todas as notificações carregadas na página
     expect(screen.getByText(/Cliente 1 - Orç. #1000/)).toBeInTheDocument();
-    expect(screen.getByText(/Cliente 5 - Orç. #1004/)).toBeInTheDocument();
-    expect(screen.queryByText(/Cliente 6 - Orç. #1005/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Cliente 10 - Orç. #1009/)).toBeInTheDocument();
+    // Deve mostrar botão de carregar mais quando há mais páginas
+    expect(screen.getByText('Carregar mais notificações')).toBeInTheDocument();
+  });
+
+  it('deve mostrar indicador de carregando mais ao buscar próxima página', () => {
+    vi.mocked(useNotificacoesAtivasPaginadas).mockReturnValue({
+      data: createPaginatedResponse(mockNotificacoes, true),
+      isLoading: false,
+      isError: false,
+      refetch: mockRefetch,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: true,
+      isFetchingNextPage: true,
+    } as any);
+
+    render(<NotificacaoDropdown />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByTitle('Notificações'));
+
+    expect(screen.getByText('Carregando mais...')).toBeInTheDocument();
+  });
+
+  it('deve chamar fetchNextPage ao clicar em carregar mais', () => {
+    vi.mocked(useNotificacoesAtivasPaginadas).mockReturnValue({
+      data: createPaginatedResponse(mockNotificacoes, true),
+      isLoading: false,
+      isError: false,
+      refetch: mockRefetch,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: true,
+      isFetchingNextPage: false,
+    } as any);
+
+    render(<NotificacaoDropdown />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByTitle('Notificações'));
+    fireEvent.click(screen.getByText('Carregar mais notificações'));
+
+    expect(mockFetchNextPage).toHaveBeenCalled();
   });
 
   it('deve chamar refetch quando dropdown é aberto', async () => {

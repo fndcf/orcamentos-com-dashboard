@@ -4,8 +4,8 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { NotificacoesPage } from '../../pages/NotificacoesPage';
 import {
-  useNotificacoes,
-  useNotificacoesVencidas,
+  useNotificacoesPaginadas,
+  useNotificacoesVencidasPaginadas,
   useNotificacoesProximas,
   useMarcarNotificacaoComoLida,
   useMarcarTodasNotificacoesComoLidas,
@@ -25,8 +25,8 @@ vi.mock('react-router-dom', async () => {
 });
 
 vi.mock('../../hooks/useNotificacoes', () => ({
-  useNotificacoes: vi.fn(),
-  useNotificacoesVencidas: vi.fn(),
+  useNotificacoesPaginadas: vi.fn(),
+  useNotificacoesVencidasPaginadas: vi.fn(),
   useNotificacoesProximas: vi.fn(),
   useMarcarNotificacaoComoLida: vi.fn(),
   useMarcarTodasNotificacoesComoLidas: vi.fn(),
@@ -112,11 +112,19 @@ const mockResumo = {
 const mockMarcarLida = { mutate: vi.fn(), isLoading: false };
 const mockMarcarTodasLidas = { mutate: vi.fn(), isLoading: false };
 const mockExcluir = { mutate: vi.fn(), isLoading: false };
+const mockFetchNextPage = vi.fn();
+
+// Helper para criar resposta paginada
+const createPaginatedResponse = <T,>(items: T[], total?: number, hasMore = false) => ({
+  pages: [{ items, total: total ?? items.length, hasMore, cursor: hasMore ? 'next-cursor' : undefined }],
+  pageParams: [undefined],
+});
 
 describe('NotificacoesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockReset();
+    mockFetchNextPage.mockReset();
 
     // Mock window.confirm
     vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -125,14 +133,20 @@ describe('NotificacoesPage', () => {
       data: mockResumo,
     } as any);
 
-    vi.mocked(useNotificacoes).mockReturnValue({
-      data: mockNotificacoesTodas,
+    vi.mocked(useNotificacoesPaginadas).mockReturnValue({
+      data: createPaginatedResponse(mockNotificacoesTodas),
       isLoading: false,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: false,
+      isFetchingNextPage: false,
     } as any);
 
-    vi.mocked(useNotificacoesVencidas).mockReturnValue({
-      data: mockNotificacoesVencidas,
+    vi.mocked(useNotificacoesVencidasPaginadas).mockReturnValue({
+      data: createPaginatedResponse(mockNotificacoesVencidas),
       isLoading: false,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: false,
+      isFetchingNextPage: false,
     } as any);
 
     vi.mocked(useNotificacoesProximas).mockReturnValue({
@@ -201,13 +215,19 @@ describe('NotificacoesPage', () => {
     });
 
     it('deve mostrar estado vazio quando não houver notificações', () => {
-      vi.mocked(useNotificacoes).mockReturnValue({
-        data: [],
+      vi.mocked(useNotificacoesPaginadas).mockReturnValue({
+        data: createPaginatedResponse([]),
         isLoading: false,
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: false,
+        isFetchingNextPage: false,
       } as any);
-      vi.mocked(useNotificacoesVencidas).mockReturnValue({
-        data: [],
+      vi.mocked(useNotificacoesVencidasPaginadas).mockReturnValue({
+        data: createPaginatedResponse([]),
         isLoading: false,
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: false,
+        isFetchingNextPage: false,
       } as any);
       vi.mocked(useNotificacoesProximas).mockReturnValue({
         data: [],
@@ -220,9 +240,12 @@ describe('NotificacoesPage', () => {
     });
 
     it('deve mostrar loading quando carregando', () => {
-      vi.mocked(useNotificacoes).mockReturnValue({
+      vi.mocked(useNotificacoesPaginadas).mockReturnValue({
         data: undefined,
         isLoading: true,
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: false,
+        isFetchingNextPage: false,
       } as any);
 
       render(<NotificacoesPage />, { wrapper: createWrapper() });
@@ -392,13 +415,19 @@ describe('NotificacoesPage', () => {
     });
 
     it('deve renderizar corretamente sem dados', () => {
-      vi.mocked(useNotificacoes).mockReturnValue({
+      vi.mocked(useNotificacoesPaginadas).mockReturnValue({
         data: undefined,
         isLoading: false,
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: false,
+        isFetchingNextPage: false,
       } as any);
-      vi.mocked(useNotificacoesVencidas).mockReturnValue({
+      vi.mocked(useNotificacoesVencidasPaginadas).mockReturnValue({
         data: undefined,
         isLoading: false,
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: false,
+        isFetchingNextPage: false,
       } as any);
       vi.mocked(useNotificacoesProximas).mockReturnValue({
         data: undefined,
@@ -408,6 +437,66 @@ describe('NotificacoesPage', () => {
       render(<NotificacoesPage />, { wrapper: createWrapper() });
 
       expect(screen.getByText('Nenhuma notificação encontrada')).toBeInTheDocument();
+    });
+  });
+
+  describe('Paginação', () => {
+    it('deve mostrar botão de carregar mais quando houver mais páginas', () => {
+      vi.mocked(useNotificacoesPaginadas).mockReturnValue({
+        data: createPaginatedResponse(mockNotificacoesTodas, 10, true),
+        isLoading: false,
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: true,
+        isFetchingNextPage: false,
+      } as any);
+
+      render(<NotificacoesPage />, { wrapper: createWrapper() });
+
+      expect(screen.getByText('Carregar mais notificações')).toBeInTheDocument();
+    });
+
+    it('deve chamar fetchNextPage ao clicar em carregar mais', () => {
+      vi.mocked(useNotificacoesPaginadas).mockReturnValue({
+        data: createPaginatedResponse(mockNotificacoesTodas, 10, true),
+        isLoading: false,
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: true,
+        isFetchingNextPage: false,
+      } as any);
+
+      render(<NotificacoesPage />, { wrapper: createWrapper() });
+
+      fireEvent.click(screen.getByText('Carregar mais notificações'));
+
+      expect(mockFetchNextPage).toHaveBeenCalled();
+    });
+
+    it('deve mostrar indicador de carregando mais', () => {
+      vi.mocked(useNotificacoesPaginadas).mockReturnValue({
+        data: createPaginatedResponse(mockNotificacoesTodas, 10, true),
+        isLoading: false,
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: true,
+        isFetchingNextPage: true,
+      } as any);
+
+      render(<NotificacoesPage />, { wrapper: createWrapper() });
+
+      expect(screen.getByText('Carregando mais notificações...')).toBeInTheDocument();
+    });
+
+    it('não deve mostrar botão de carregar mais quando não houver mais páginas', () => {
+      vi.mocked(useNotificacoesPaginadas).mockReturnValue({
+        data: createPaginatedResponse(mockNotificacoesTodas),
+        isLoading: false,
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: false,
+        isFetchingNextPage: false,
+      } as any);
+
+      render(<NotificacoesPage />, { wrapper: createWrapper() });
+
+      expect(screen.queryByText('Carregar mais notificações')).not.toBeInTheDocument();
     });
   });
 });
