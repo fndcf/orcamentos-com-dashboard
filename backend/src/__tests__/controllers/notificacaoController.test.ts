@@ -201,6 +201,154 @@ describe('notificacaoController', () => {
     });
   });
 
+  describe('listarPaginado', () => {
+    const mockPaginatedResponse = {
+      items: [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }],
+      total: 50,
+      hasMore: true,
+      cursor: 'cGFnaW5hZG9DdXJzb3I=',
+    };
+
+    it('deve retornar notificações paginadas com valores padrão', async () => {
+      (notificacaoService.listarTodasPaginado as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      await notificacaoController.listarPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(notificacaoService.listarTodasPaginado).toHaveBeenCalledWith(10, undefined);
+      expect(jsonMock).toHaveBeenCalledWith(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações paginadas com parâmetros', async () => {
+      mockReq.query = { pageSize: '20', cursor: 'myCursor' };
+      (notificacaoService.listarTodasPaginado as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      await notificacaoController.listarPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(notificacaoService.listarTodasPaginado).toHaveBeenCalledWith(20, 'myCursor');
+      expect(jsonMock).toHaveBeenCalledWith(mockPaginatedResponse);
+    });
+
+    it('deve chamar next com erro quando falhar', async () => {
+      const error = new Error('Erro no banco');
+      (notificacaoService.listarTodasPaginado as jest.Mock).mockRejectedValue(error);
+
+      await notificacaoController.listarPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('listarNaoLidasPaginado', () => {
+    const mockPaginatedResponse = {
+      items: [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }],
+      total: 30,
+      hasMore: true,
+      cursor: 'bmFvTGlkYXNDdXJzb3I=',
+    };
+
+    it('deve retornar notificações não lidas paginadas com valores padrão', async () => {
+      (notificacaoService.listarNaoLidasPaginado as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      await notificacaoController.listarNaoLidasPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(notificacaoService.listarNaoLidasPaginado).toHaveBeenCalledWith(10, undefined);
+      expect(jsonMock).toHaveBeenCalledWith(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações não lidas paginadas com parâmetros', async () => {
+      mockReq.query = { pageSize: '15', cursor: 'myCursor' };
+      (notificacaoService.listarNaoLidasPaginado as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      await notificacaoController.listarNaoLidasPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(notificacaoService.listarNaoLidasPaginado).toHaveBeenCalledWith(15, 'myCursor');
+      expect(jsonMock).toHaveBeenCalledWith(mockPaginatedResponse);
+    });
+
+    it('deve chamar next com erro quando falhar', async () => {
+      const error = new Error('Erro no banco');
+      (notificacaoService.listarNaoLidasPaginado as jest.Mock).mockRejectedValue(error);
+
+      await notificacaoController.listarNaoLidasPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('listarVencidasPaginado', () => {
+    const mockPaginatedResponse = {
+      items: [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }],
+      total: 15,
+      hasMore: false,
+      cursor: undefined,
+    };
+
+    it('deve retornar notificações vencidas paginadas com valores padrão', async () => {
+      (notificacaoService.listarVencidasPaginado as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      await notificacaoController.listarVencidasPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(notificacaoService.listarVencidasPaginado).toHaveBeenCalledWith(10, undefined);
+      expect(jsonMock).toHaveBeenCalledWith(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações vencidas paginadas com parâmetros', async () => {
+      mockReq.query = { pageSize: '25', cursor: 'myCursor' };
+      (notificacaoService.listarVencidasPaginado as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      await notificacaoController.listarVencidasPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(notificacaoService.listarVencidasPaginado).toHaveBeenCalledWith(25, 'myCursor');
+      expect(jsonMock).toHaveBeenCalledWith(mockPaginatedResponse);
+    });
+
+    it('deve chamar next com erro quando falhar', async () => {
+      const error = new Error('Erro no banco');
+      (notificacaoService.listarVencidasPaginado as jest.Mock).mockRejectedValue(error);
+
+      await notificacaoController.listarVencidasPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('listarAtivasPaginado', () => {
+    const mockPaginatedResponse = {
+      items: [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }],
+      total: 40,
+      hasMore: true,
+      cursor: 'YXRpdmFzQ3Vyc29y',
+    };
+
+    it('deve retornar notificações ativas paginadas com valores padrão', async () => {
+      (notificacaoService.listarAtivasPaginado as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      await notificacaoController.listarAtivasPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(notificacaoService.listarAtivasPaginado).toHaveBeenCalledWith(60, 10, undefined);
+      expect(jsonMock).toHaveBeenCalledWith(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações ativas paginadas com parâmetros', async () => {
+      mockReq.query = { dias: '45', pageSize: '30', cursor: 'myCursor' };
+      (notificacaoService.listarAtivasPaginado as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      await notificacaoController.listarAtivasPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(notificacaoService.listarAtivasPaginado).toHaveBeenCalledWith(45, 30, 'myCursor');
+      expect(jsonMock).toHaveBeenCalledWith(mockPaginatedResponse);
+    });
+
+    it('deve chamar next com erro quando falhar', async () => {
+      const error = new Error('Erro no banco');
+      (notificacaoService.listarAtivasPaginado as jest.Mock).mockRejectedValue(error);
+
+      await notificacaoController.listarAtivasPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+  });
+
   describe('listarProximasPaginado', () => {
     const mockPaginatedResponse = {
       items: [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }],
