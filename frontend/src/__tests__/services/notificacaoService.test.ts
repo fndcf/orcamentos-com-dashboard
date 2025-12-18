@@ -36,26 +36,6 @@ describe('notificacaoService', () => {
     vi.clearAllMocks();
   });
 
-  describe('listarProximas', () => {
-    it('deve listar notificações próximas com dias padrão', async () => {
-      vi.mocked(api.get).mockResolvedValue({ data: [mockNotificacao] });
-
-      const result = await notificacaoService.listarProximas();
-
-      expect(api.get).toHaveBeenCalledWith('/notificacoes/proximas?dias=30');
-      expect(result).toEqual([mockNotificacao]);
-    });
-
-    it('deve listar notificações próximas com dias customizado', async () => {
-      vi.mocked(api.get).mockResolvedValue({ data: [mockNotificacao] });
-
-      const result = await notificacaoService.listarProximas(15);
-
-      expect(api.get).toHaveBeenCalledWith('/notificacoes/proximas?dias=15');
-      expect(result).toEqual([mockNotificacao]);
-    });
-  });
-
   describe('obterResumo', () => {
     it('deve obter resumo de notificações', async () => {
       vi.mocked(api.get).mockResolvedValue({ data: mockResumo });
@@ -257,6 +237,42 @@ describe('notificacaoService', () => {
       const result = await notificacaoService.listarAtivasPaginado(60, 10, 'ativas-cursor');
 
       expect(api.get).toHaveBeenCalledWith('/notificacoes/ativas/paginado?dias=60&pageSize=10&cursor=ativas-cursor');
+      expect(result).toEqual(mockPaginatedResponse);
+    });
+  });
+
+  describe('listarProximasPaginado', () => {
+    const mockPaginatedResponse = {
+      items: [mockNotificacao],
+      total: 22,
+      hasMore: true,
+      cursor: 'proximas-cursor',
+    };
+
+    it('deve listar notificações próximas paginadas com valores padrão', async () => {
+      vi.mocked(api.get).mockResolvedValue({ data: mockPaginatedResponse });
+
+      const result = await notificacaoService.listarProximasPaginado();
+
+      expect(api.get).toHaveBeenCalledWith('/notificacoes/proximas/paginado?dias=30&pageSize=10');
+      expect(result).toEqual(mockPaginatedResponse);
+    });
+
+    it('deve listar notificações próximas paginadas com dias e pageSize customizados', async () => {
+      vi.mocked(api.get).mockResolvedValue({ data: mockPaginatedResponse });
+
+      const result = await notificacaoService.listarProximasPaginado(15, 20);
+
+      expect(api.get).toHaveBeenCalledWith('/notificacoes/proximas/paginado?dias=15&pageSize=20');
+      expect(result).toEqual(mockPaginatedResponse);
+    });
+
+    it('deve listar notificações próximas paginadas com cursor', async () => {
+      vi.mocked(api.get).mockResolvedValue({ data: mockPaginatedResponse });
+
+      const result = await notificacaoService.listarProximasPaginado(30, 10, 'proximas-cursor');
+
+      expect(api.get).toHaveBeenCalledWith('/notificacoes/proximas/paginado?dias=30&pageSize=10&cursor=proximas-cursor');
       expect(result).toEqual(mockPaginatedResponse);
     });
   });

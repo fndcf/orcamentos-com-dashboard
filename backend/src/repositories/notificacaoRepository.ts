@@ -387,4 +387,45 @@ export const notificacaoRepository = {
       cursor: nextCursor,
     };
   },
+
+  async findProximasPaginated(dias: number = 30, pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    const hoje = new Date();
+    const limite = new Date();
+    limite.setDate(limite.getDate() + dias);
+
+    let query = db
+      .collection(COLLECTION)
+      .where('dataVencimento', '>=', hoje)
+      .where('dataVencimento', '<=', limite)
+      .orderBy('dataVencimento', 'asc');
+
+    if (cursor) {
+      const cursorDoc = await db.collection(COLLECTION).doc(decodeCursor(cursor)).get();
+      if (cursorDoc.exists) {
+        query = query.startAfter(cursorDoc);
+      }
+    }
+
+    const snapshot = await query.limit(pageSize + 1).get();
+    const hasMore = snapshot.docs.length > pageSize;
+    const items = snapshot.docs.slice(0, pageSize).map(mapDocToNotificacao);
+
+    const nextCursor = hasMore && items.length > 0
+      ? encodeCursor(items[items.length - 1].id!)
+      : undefined;
+
+    const countSnapshot = await db
+      .collection(COLLECTION)
+      .where('dataVencimento', '>=', hoje)
+      .where('dataVencimento', '<=', limite)
+      .count()
+      .get();
+
+    return {
+      items,
+      total: countSnapshot.data().count,
+      hasMore,
+      cursor: nextCursor,
+    };
+  },
 };

@@ -34,133 +34,6 @@ describe('notificacaoController', () => {
     jest.clearAllMocks();
   });
 
-  describe('listar', () => {
-    it('deve retornar lista de notificações com sucesso', async () => {
-      const notificacoes = [
-        { id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false },
-        { id: '2', orcamentoId: 'orc2', tipo: 'vencimento', lida: true },
-      ];
-      (notificacaoService.listarTodas as jest.Mock).mockResolvedValue(notificacoes);
-
-      await notificacaoController.listar(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(jsonMock).toHaveBeenCalledWith(notificacoes);
-    });
-
-    it('deve chamar next com erro quando falhar', async () => {
-      const error = new Error('Erro no banco');
-      (notificacaoService.listarTodas as jest.Mock).mockRejectedValue(error);
-
-      await notificacaoController.listar(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(error);
-    });
-  });
-
-  describe('listarNaoLidas', () => {
-    it('deve retornar lista de notificações não lidas com sucesso', async () => {
-      const notificacoes = [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }];
-      (notificacaoService.listarNaoLidas as jest.Mock).mockResolvedValue(notificacoes);
-
-      await notificacaoController.listarNaoLidas(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(jsonMock).toHaveBeenCalledWith(notificacoes);
-    });
-
-    it('deve chamar next com erro quando falhar', async () => {
-      const error = new Error('Erro no banco');
-      (notificacaoService.listarNaoLidas as jest.Mock).mockRejectedValue(error);
-
-      await notificacaoController.listarNaoLidas(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(error);
-    });
-  });
-
-  describe('listarProximas', () => {
-    it('deve retornar lista de notificações próximas com dias padrão', async () => {
-      const notificacoes = [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }];
-      (notificacaoService.listarProximas as jest.Mock).mockResolvedValue(notificacoes);
-
-      await notificacaoController.listarProximas(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(notificacaoService.listarProximas).toHaveBeenCalledWith(30);
-      expect(jsonMock).toHaveBeenCalledWith(notificacoes);
-    });
-
-    it('deve retornar lista de notificações próximas com dias especificado', async () => {
-      mockReq.query = { dias: '15' };
-      const notificacoes = [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }];
-      (notificacaoService.listarProximas as jest.Mock).mockResolvedValue(notificacoes);
-
-      await notificacaoController.listarProximas(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(notificacaoService.listarProximas).toHaveBeenCalledWith(15);
-      expect(jsonMock).toHaveBeenCalledWith(notificacoes);
-    });
-
-    it('deve chamar next com erro quando falhar', async () => {
-      const error = new Error('Erro no banco');
-      (notificacaoService.listarProximas as jest.Mock).mockRejectedValue(error);
-
-      await notificacaoController.listarProximas(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(error);
-    });
-  });
-
-  describe('listarVencidas', () => {
-    it('deve retornar lista de notificações vencidas com sucesso', async () => {
-      const notificacoes = [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }];
-      (notificacaoService.listarVencidas as jest.Mock).mockResolvedValue(notificacoes);
-
-      await notificacaoController.listarVencidas(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(jsonMock).toHaveBeenCalledWith(notificacoes);
-    });
-
-    it('deve chamar next com erro quando falhar', async () => {
-      const error = new Error('Erro no banco');
-      (notificacaoService.listarVencidas as jest.Mock).mockRejectedValue(error);
-
-      await notificacaoController.listarVencidas(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(error);
-    });
-  });
-
-  describe('listarAtivas', () => {
-    it('deve retornar lista de notificações ativas com dias padrão', async () => {
-      const notificacoes = [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }];
-      (notificacaoService.listarAtivas as jest.Mock).mockResolvedValue(notificacoes);
-
-      await notificacaoController.listarAtivas(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(notificacaoService.listarAtivas).toHaveBeenCalledWith(60);
-      expect(jsonMock).toHaveBeenCalledWith(notificacoes);
-    });
-
-    it('deve retornar lista de notificações ativas com dias especificado', async () => {
-      mockReq.query = { dias: '10' };
-      const notificacoes = [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }];
-      (notificacaoService.listarAtivas as jest.Mock).mockResolvedValue(notificacoes);
-
-      await notificacaoController.listarAtivas(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(notificacaoService.listarAtivas).toHaveBeenCalledWith(10);
-      expect(jsonMock).toHaveBeenCalledWith(notificacoes);
-    });
-
-    it('deve chamar next com erro quando falhar', async () => {
-      const error = new Error('Erro no banco');
-      (notificacaoService.listarAtivas as jest.Mock).mockRejectedValue(error);
-
-      await notificacaoController.listarAtivas(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(error);
-    });
-  });
-
   describe('buscarPorId', () => {
     it('deve retornar notificação por ID com sucesso', async () => {
       const notificacao = { id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false };
@@ -323,6 +196,43 @@ describe('notificacaoController', () => {
       (notificacaoService.contarNaoLidas as jest.Mock).mockRejectedValue(error);
 
       await notificacaoController.contarNaoLidas(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('listarProximasPaginado', () => {
+    const mockPaginatedResponse = {
+      items: [{ id: '1', orcamentoId: 'orc1', tipo: 'vencimento', lida: false }],
+      total: 22,
+      hasMore: true,
+      cursor: 'cHJveGltYXNDdXJzb3I=',
+    };
+
+    it('deve retornar notificações próximas paginadas com valores padrão', async () => {
+      (notificacaoService.listarProximasPaginado as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      await notificacaoController.listarProximasPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(notificacaoService.listarProximasPaginado).toHaveBeenCalledWith(30, 10, undefined);
+      expect(jsonMock).toHaveBeenCalledWith(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações próximas paginadas com parâmetros', async () => {
+      mockReq.query = { dias: '15', pageSize: '20', cursor: 'myCursor' };
+      (notificacaoService.listarProximasPaginado as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      await notificacaoController.listarProximasPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(notificacaoService.listarProximasPaginado).toHaveBeenCalledWith(15, 20, 'myCursor');
+      expect(jsonMock).toHaveBeenCalledWith(mockPaginatedResponse);
+    });
+
+    it('deve chamar next com erro quando falhar', async () => {
+      const error = new Error('Erro no banco');
+      (notificacaoService.listarProximasPaginado as jest.Mock).mockRejectedValue(error);
+
+      await notificacaoController.listarProximasPaginado(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalledWith(error);
     });

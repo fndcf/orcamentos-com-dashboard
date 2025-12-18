@@ -11,26 +11,6 @@ import {
 import { logger } from "../utils/logger";
 
 export const notificacaoService = {
-  async listarTodas(): Promise<Notificacao[]> {
-    return notificacaoRepository.findAll();
-  },
-
-  async listarNaoLidas(): Promise<Notificacao[]> {
-    return notificacaoRepository.findNaoLidas();
-  },
-
-  async listarProximas(dias: number = 30): Promise<Notificacao[]> {
-    return notificacaoRepository.findProximas(dias);
-  },
-
-  async listarVencidas(): Promise<Notificacao[]> {
-    return notificacaoRepository.findVencidas();
-  },
-
-  async listarAtivas(diasAntecedencia: number = 60): Promise<Notificacao[]> {
-    return notificacaoRepository.findAtivas(diasAntecedencia);
-  },
-
   // ========== MÉTODOS PAGINADOS ==========
 
   async listarTodasPaginado(pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
@@ -47,6 +27,10 @@ export const notificacaoService = {
 
   async listarAtivasPaginado(diasAntecedencia: number = 60, pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
     return notificacaoRepository.findAtivasPaginated(diasAntecedencia, pageSize, cursor);
+  },
+
+  async listarProximasPaginado(dias: number = 30, pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    return notificacaoRepository.findProximasPaginated(dias, pageSize, cursor);
   },
 
   async buscarPorId(id: string): Promise<Notificacao> {

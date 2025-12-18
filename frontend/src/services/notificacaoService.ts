@@ -10,11 +10,6 @@ export interface NotificacaoResumo {
 }
 
 export const notificacaoService = {
-  async listarProximas(dias: number = 30): Promise<Notificacao[]> {
-    const response = await api.get(`/notificacoes/proximas?dias=${dias}`);
-    return response.data;
-  },
-
   async obterResumo(): Promise<NotificacaoResumo> {
     const response = await api.get('/notificacoes/resumo');
     return response.data;
@@ -81,6 +76,15 @@ export const notificacaoService = {
     params.append('pageSize', pageSize.toString());
     if (cursor) params.append('cursor', cursor);
     const response = await api.get(`/notificacoes/ativas/paginado?${params.toString()}`);
+    return response.data;
+  },
+
+  async listarProximasPaginado(dias: number = 30, pageSize: number = 10, cursor?: string): Promise<PaginatedResponse<Notificacao>> {
+    const params = new URLSearchParams();
+    params.append('dias', dias.toString());
+    params.append('pageSize', pageSize.toString());
+    if (cursor) params.append('cursor', cursor);
+    const response = await api.get(`/notificacoes/proximas/paginado?${params.toString()}`);
     return response.data;
   },
 };

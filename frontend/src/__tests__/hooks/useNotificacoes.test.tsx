@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import {
-  useNotificacoesProximas,
   useNotificacaoResumo,
   useMarcarNotificacaoComoLida,
   useMarcarTodasNotificacoesComoLidas,
@@ -13,6 +12,7 @@ import {
   useNotificacoesNaoLidasPaginadas,
   useNotificacoesVencidasPaginadas,
   useNotificacoesAtivasPaginadas,
+  useNotificacoesProximasPaginadas,
 } from '../../hooks/useNotificacoes';
 import { notificacaoService } from '../../services/notificacaoService';
 import { Notificacao, PaginatedResponse } from '../../types';
@@ -20,7 +20,6 @@ import { Notificacao, PaginatedResponse } from '../../types';
 // Mock do service
 vi.mock('../../services/notificacaoService', () => ({
   notificacaoService: {
-    listarProximas: vi.fn(),
     obterResumo: vi.fn(),
     marcarComoLida: vi.fn(),
     marcarTodasComoLidas: vi.fn(),
@@ -31,6 +30,7 @@ vi.mock('../../services/notificacaoService', () => ({
     listarNaoLidasPaginado: vi.fn(),
     listarVencidasPaginado: vi.fn(),
     listarAtivasPaginado: vi.fn(),
+    listarProximasPaginado: vi.fn(),
   },
 }));
 
@@ -85,33 +85,6 @@ const mockResumo = {
 describe('useNotificacoes hooks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  describe('useNotificacoesProximas', () => {
-    it('deve retornar lista de notificações próximas com dias padrão', async () => {
-      vi.mocked(notificacaoService.listarProximas).mockResolvedValue(mockNotificacoes);
-
-      const { result } = renderHook(() => useNotificacoesProximas(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(result.current.data).toEqual(mockNotificacoes);
-      expect(notificacaoService.listarProximas).toHaveBeenCalledWith(30);
-    });
-
-    it('deve retornar lista de notificações próximas com dias customizado', async () => {
-      vi.mocked(notificacaoService.listarProximas).mockResolvedValue(mockNotificacoes);
-
-      const { result } = renderHook(() => useNotificacoesProximas(15), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(notificacaoService.listarProximas).toHaveBeenCalledWith(15);
-    });
   });
 
   describe('useNotificacaoResumo', () => {
@@ -434,6 +407,52 @@ describe('useNotificacoes hooks', () => {
       vi.mocked(notificacaoService.listarAtivasPaginado).mockResolvedValue(mockPaginatedResponse);
 
       const { result } = renderHook(() => useNotificacoesAtivasPaginadas(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.hasNextPage).toBe(true);
+    });
+  });
+
+  describe('useNotificacoesProximasPaginadas', () => {
+    const mockPaginatedResponse: PaginatedResponse<Notificacao> = {
+      items: mockNotificacoes,
+      total: 22,
+      hasMore: true,
+      cursor: 'proximas-cursor',
+    };
+
+    it('deve retornar notificações próximas paginadas com valores padrão', async () => {
+      vi.mocked(notificacaoService.listarProximasPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesProximasPaginadas(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.pages[0]).toEqual(mockPaginatedResponse);
+      expect(notificacaoService.listarProximasPaginado).toHaveBeenCalledWith(30, 10, undefined);
+    });
+
+    it('deve usar dias e pageSize customizados', async () => {
+      vi.mocked(notificacaoService.listarProximasPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesProximasPaginadas(15, 20), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(notificacaoService.listarProximasPaginado).toHaveBeenCalledWith(15, 20, undefined);
+    });
+
+    it('deve indicar que há mais páginas', async () => {
+      vi.mocked(notificacaoService.listarProximasPaginado).mockResolvedValue(mockPaginatedResponse);
+
+      const { result } = renderHook(() => useNotificacoesProximasPaginadas(), {
         wrapper: createWrapper(),
       });
 

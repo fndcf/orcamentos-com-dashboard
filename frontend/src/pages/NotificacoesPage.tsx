@@ -5,7 +5,7 @@ import { Button, Card } from "../components/ui";
 import {
   useNotificacoesPaginadas,
   useNotificacoesVencidasPaginadas,
-  useNotificacoesProximas,
+  useNotificacoesProximasPaginadas,
   useMarcarNotificacaoComoLida,
   useMarcarTodasNotificacoesComoLidas,
   useExcluirNotificacao,
@@ -325,9 +325,14 @@ export function NotificacoesPage() {
     isFetchingNextPage: isFetchingVencidas,
   } = useNotificacoesVencidasPaginadas(20);
 
-  // Hook não paginado para próximas (geralmente menor volume)
-  const { data: proximas, isLoading: loadingProximas } =
-    useNotificacoesProximas(30);
+  // Hook paginado para próximas
+  const {
+    data: proximasPaginado,
+    isLoading: loadingProximas,
+    fetchNextPage: fetchNextProximas,
+    hasNextPage: hasNextProximas,
+    isFetchingNextPage: isFetchingProximas,
+  } = useNotificacoesProximasPaginadas(30, 20);
 
   const marcarLida = useMarcarNotificacaoComoLida();
   const marcarTodasLidas = useMarcarTodasNotificacoesComoLidas();
@@ -336,13 +341,14 @@ export function NotificacoesPage() {
   // Flatten das páginas
   const todas = todasPaginado?.pages.flatMap((page) => page.items) || [];
   const vencidas = vencidasPaginado?.pages.flatMap((page) => page.items) || [];
+  const proximas = proximasPaginado?.pages.flatMap((page) => page.items) || [];
 
   const getNotificacoes = (): Notificacao[] => {
     switch (activeTab) {
       case "vencidas":
         return vencidas;
       case "proximas":
-        return proximas || [];
+        return proximas;
       default:
         return todas;
     }
@@ -353,7 +359,7 @@ export function NotificacoesPage() {
       case "vencidas":
         return hasNextVencidas || false;
       case "proximas":
-        return false; // Não paginado
+        return hasNextProximas || false;
       default:
         return hasNextTodas || false;
     }
@@ -364,7 +370,7 @@ export function NotificacoesPage() {
       case "vencidas":
         return isFetchingVencidas;
       case "proximas":
-        return false;
+        return isFetchingProximas;
       default:
         return isFetchingTodas;
     }
@@ -376,7 +382,8 @@ export function NotificacoesPage() {
         fetchNextVencidas();
         break;
       case "proximas":
-        break; // Não paginado
+        fetchNextProximas();
+        break;
       default:
         fetchNextTodas();
     }
@@ -390,7 +397,7 @@ export function NotificacoesPage() {
     if (scrollHeight - scrollTop - clientHeight < 100) {
       handleFetchNextPage();
     }
-  }, [activeTab, hasNextTodas, hasNextVencidas, isFetchingTodas, isFetchingVencidas]);
+  }, [activeTab, hasNextTodas, hasNextVencidas, hasNextProximas, isFetchingTodas, isFetchingVencidas, isFetchingProximas]);
 
   useEffect(() => {
     const listElement = listRef.current;
@@ -479,7 +486,7 @@ export function NotificacoesPage() {
           $active={activeTab === "proximas"}
           onClick={() => setActiveTab("proximas")}
         >
-          Próximas a Vencer ({proximas?.length || 0})
+          Próximas a Vencer ({proximasPaginado?.pages[0]?.total || proximas.length})
         </Tab>
       </TabsContainer>
 

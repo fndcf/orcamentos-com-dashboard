@@ -6,7 +6,7 @@ import { NotificacoesPage } from '../../pages/NotificacoesPage';
 import {
   useNotificacoesPaginadas,
   useNotificacoesVencidasPaginadas,
-  useNotificacoesProximas,
+  useNotificacoesProximasPaginadas,
   useMarcarNotificacaoComoLida,
   useMarcarTodasNotificacoesComoLidas,
   useExcluirNotificacao,
@@ -27,7 +27,7 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../../hooks/useNotificacoes', () => ({
   useNotificacoesPaginadas: vi.fn(),
   useNotificacoesVencidasPaginadas: vi.fn(),
-  useNotificacoesProximas: vi.fn(),
+  useNotificacoesProximasPaginadas: vi.fn(),
   useMarcarNotificacaoComoLida: vi.fn(),
   useMarcarTodasNotificacoesComoLidas: vi.fn(),
   useExcluirNotificacao: vi.fn(),
@@ -149,9 +149,12 @@ describe('NotificacoesPage', () => {
       isFetchingNextPage: false,
     } as any);
 
-    vi.mocked(useNotificacoesProximas).mockReturnValue({
-      data: mockNotificacoesProximas,
+    vi.mocked(useNotificacoesProximasPaginadas).mockReturnValue({
+      data: createPaginatedResponse(mockNotificacoesProximas),
       isLoading: false,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: false,
+      isFetchingNextPage: false,
     } as any);
 
     vi.mocked(useMarcarNotificacaoComoLida).mockReturnValue(mockMarcarLida as any);
@@ -229,9 +232,12 @@ describe('NotificacoesPage', () => {
         hasNextPage: false,
         isFetchingNextPage: false,
       } as any);
-      vi.mocked(useNotificacoesProximas).mockReturnValue({
-        data: [],
+      vi.mocked(useNotificacoesProximasPaginadas).mockReturnValue({
+        data: createPaginatedResponse([]),
         isLoading: false,
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: false,
+        isFetchingNextPage: false,
       } as any);
 
       render(<NotificacoesPage />, { wrapper: createWrapper() });
@@ -429,9 +435,12 @@ describe('NotificacoesPage', () => {
         hasNextPage: false,
         isFetchingNextPage: false,
       } as any);
-      vi.mocked(useNotificacoesProximas).mockReturnValue({
+      vi.mocked(useNotificacoesProximasPaginadas).mockReturnValue({
         data: undefined,
         isLoading: false,
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: false,
+        isFetchingNextPage: false,
       } as any);
 
       render(<NotificacoesPage />, { wrapper: createWrapper() });

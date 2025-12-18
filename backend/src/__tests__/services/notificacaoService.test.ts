@@ -81,94 +81,6 @@ describe('notificacaoService', () => {
     createdAt: new Date(),
   };
 
-  describe('listarTodas', () => {
-    it('deve retornar lista de notificações', async () => {
-      const notificacoes = [mockNotificacao, { ...mockNotificacao, id: '2' }];
-      (notificacaoRepository.findAll as jest.Mock).mockResolvedValue(notificacoes);
-
-      const resultado = await notificacaoService.listarTodas();
-
-      expect(notificacaoRepository.findAll).toHaveBeenCalled();
-      expect(resultado).toEqual(notificacoes);
-    });
-
-    it('deve retornar lista vazia quando não houver notificações', async () => {
-      (notificacaoRepository.findAll as jest.Mock).mockResolvedValue([]);
-
-      const resultado = await notificacaoService.listarTodas();
-
-      expect(resultado).toEqual([]);
-    });
-  });
-
-  describe('listarNaoLidas', () => {
-    it('deve retornar lista de notificações não lidas', async () => {
-      const notificacoes = [mockNotificacao];
-      (notificacaoRepository.findNaoLidas as jest.Mock).mockResolvedValue(notificacoes);
-
-      const resultado = await notificacaoService.listarNaoLidas();
-
-      expect(notificacaoRepository.findNaoLidas).toHaveBeenCalled();
-      expect(resultado).toEqual(notificacoes);
-    });
-  });
-
-  describe('listarProximas', () => {
-    it('deve retornar notificações próximas com dias padrão', async () => {
-      const notificacoes = [mockNotificacao];
-      (notificacaoRepository.findProximas as jest.Mock).mockResolvedValue(notificacoes);
-
-      const resultado = await notificacaoService.listarProximas();
-
-      expect(notificacaoRepository.findProximas).toHaveBeenCalledWith(30);
-      expect(resultado).toEqual(notificacoes);
-    });
-
-    it('deve retornar notificações próximas com dias específico', async () => {
-      const notificacoes = [mockNotificacao];
-      (notificacaoRepository.findProximas as jest.Mock).mockResolvedValue(notificacoes);
-
-      const resultado = await notificacaoService.listarProximas(15);
-
-      expect(notificacaoRepository.findProximas).toHaveBeenCalledWith(15);
-      expect(resultado).toEqual(notificacoes);
-    });
-  });
-
-  describe('listarVencidas', () => {
-    it('deve retornar lista de notificações vencidas', async () => {
-      const notificacoes = [mockNotificacao];
-      (notificacaoRepository.findVencidas as jest.Mock).mockResolvedValue(notificacoes);
-
-      const resultado = await notificacaoService.listarVencidas();
-
-      expect(notificacaoRepository.findVencidas).toHaveBeenCalled();
-      expect(resultado).toEqual(notificacoes);
-    });
-  });
-
-  describe('listarAtivas', () => {
-    it('deve retornar notificações ativas com dias padrão', async () => {
-      const notificacoes = [mockNotificacao];
-      (notificacaoRepository.findAtivas as jest.Mock).mockResolvedValue(notificacoes);
-
-      const resultado = await notificacaoService.listarAtivas();
-
-      expect(notificacaoRepository.findAtivas).toHaveBeenCalledWith(60);
-      expect(resultado).toEqual(notificacoes);
-    });
-
-    it('deve retornar notificações ativas com dias específico', async () => {
-      const notificacoes = [mockNotificacao];
-      (notificacaoRepository.findAtivas as jest.Mock).mockResolvedValue(notificacoes);
-
-      const resultado = await notificacaoService.listarAtivas(10);
-
-      expect(notificacaoRepository.findAtivas).toHaveBeenCalledWith(10);
-      expect(resultado).toEqual(notificacoes);
-    });
-  });
-
   describe('buscarPorId', () => {
     it('deve retornar notificação por ID', async () => {
       (notificacaoRepository.findById as jest.Mock).mockResolvedValue(mockNotificacao);
@@ -608,6 +520,42 @@ describe('notificacaoService', () => {
       const resultado = await notificacaoService.listarAtivasPaginado(45, 20, 'myCursor');
 
       expect(notificacaoRepository.findAtivasPaginated).toHaveBeenCalledWith(45, 20, 'myCursor');
+      expect(resultado).toEqual(mockPaginatedResponse);
+    });
+  });
+
+  describe('listarProximasPaginado', () => {
+    const mockPaginatedResponse = {
+      items: [mockNotificacao, { ...mockNotificacao, id: '2' }],
+      total: 22,
+      hasMore: true,
+      cursor: 'cHJveGltYXNDdXJzb3I=',
+    };
+
+    it('deve retornar notificações próximas paginadas com valores padrão', async () => {
+      (notificacaoRepository.findProximasPaginated as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      const resultado = await notificacaoService.listarProximasPaginado();
+
+      expect(notificacaoRepository.findProximasPaginated).toHaveBeenCalledWith(30, 10, undefined);
+      expect(resultado).toEqual(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações próximas paginadas com dias específico', async () => {
+      (notificacaoRepository.findProximasPaginated as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      const resultado = await notificacaoService.listarProximasPaginado(15);
+
+      expect(notificacaoRepository.findProximasPaginated).toHaveBeenCalledWith(15, 10, undefined);
+      expect(resultado).toEqual(mockPaginatedResponse);
+    });
+
+    it('deve retornar notificações próximas paginadas com todos os parâmetros', async () => {
+      (notificacaoRepository.findProximasPaginated as jest.Mock).mockResolvedValue(mockPaginatedResponse);
+
+      const resultado = await notificacaoService.listarProximasPaginado(30, 20, 'myCursor');
+
+      expect(notificacaoRepository.findProximasPaginated).toHaveBeenCalledWith(30, 20, 'myCursor');
       expect(resultado).toEqual(mockPaginatedResponse);
     });
   });

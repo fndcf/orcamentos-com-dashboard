@@ -7,26 +7,11 @@ const router = Router();
 // Todas as rotas requerem autenticação
 router.use(authMiddleware);
 
-// GET /api/notificacoes - Listar todas
-router.get('/', notificacaoController.listar);
-
 // GET /api/notificacoes/resumo - Obter resumo (total, não lidas, vencidas, próximas)
 router.get('/resumo', notificacaoController.obterResumo);
 
-// GET /api/notificacoes/nao-lidas - Listar não lidas
-router.get('/nao-lidas', notificacaoController.listarNaoLidas);
-
 // GET /api/notificacoes/nao-lidas/count - Contar não lidas
 router.get('/nao-lidas/count', notificacaoController.contarNaoLidas);
-
-// GET /api/notificacoes/proximas - Listar próximas a vencer (opcional: ?dias=30)
-router.get('/proximas', notificacaoController.listarProximas);
-
-// GET /api/notificacoes/vencidas - Listar vencidas
-router.get('/vencidas', notificacaoController.listarVencidas);
-
-// GET /api/notificacoes/ativas - Listar ativas (vencidas + próximas, não lidas) (opcional: ?dias=60)
-router.get('/ativas', notificacaoController.listarAtivas);
 
 // ========== ROTAS PAGINADAS ==========
 
@@ -41,6 +26,9 @@ router.get('/vencidas/paginado', notificacaoController.listarVencidasPaginado);
 
 // GET /api/notificacoes/ativas/paginado - Listar ativas paginado (?dias=60&pageSize=10&cursor=xxx)
 router.get('/ativas/paginado', notificacaoController.listarAtivasPaginado);
+
+// GET /api/notificacoes/proximas/paginado - Listar próximas a vencer paginado (?dias=30&pageSize=10&cursor=xxx)
+router.get('/proximas/paginado', notificacaoController.listarProximasPaginado);
 
 // PATCH /api/notificacoes/marcar-todas-lidas - Marcar todas como lidas (antes de /:id)
 router.patch('/marcar-todas-lidas', notificacaoController.marcarTodasComoLidas);
