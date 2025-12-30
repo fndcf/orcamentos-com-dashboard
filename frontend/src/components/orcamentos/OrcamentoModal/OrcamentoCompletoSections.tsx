@@ -285,7 +285,7 @@ export function CondicaoPagamentoFormSection({
   const parcelasInfo = useMemo((): ParcelaInfo[] => {
     const parcelas: ParcelaInfo[] = [];
 
-    for (let i = 2; i <= maxParcelas; i++) {
+    for (let i = 1; i <= maxParcelas; i++) {
       const temJuros = i >= jurosAPartirDe;
       const taxaAplicada = temJuros ? taxaJuros : 0;
 
