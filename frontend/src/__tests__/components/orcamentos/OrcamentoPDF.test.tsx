@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { OrcamentoPDFDocument, OrcamentoCompletoPDFDocument, gerarPDFOrcamento, gerarPDFExecucao } from '../../../components/orcamentos/OrcamentoPDF';
+import { OrcamentoCompletoPDFDocument, gerarPDFOrcamento, gerarPDFExecucao } from '../../../components/orcamentos/OrcamentoPDF';
 import { pdf } from '@react-pdf/renderer';
 import { Orcamento } from '../../../types';
 
@@ -83,104 +83,6 @@ const mockOrcamento = {
 describe('OrcamentoPDF', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  describe('OrcamentoPDFDocument', () => {
-    it('deve renderizar o documento PDF corretamente', () => {
-      // Devido à natureza do react-pdf, testamos apenas se o componente não lança erro
-      expect(() => {
-        OrcamentoPDFDocument({ orcamento: mockOrcamento });
-      }).not.toThrow();
-    });
-
-    it('deve renderizar com versão formatada', () => {
-      const orcamentoComVersao = { ...mockOrcamento, versao: 5 };
-      expect(() => {
-        OrcamentoPDFDocument({ orcamento: orcamentoComVersao });
-      }).not.toThrow();
-    });
-
-    it('deve renderizar sem observações', () => {
-      const orcamentoSemObs = { ...mockOrcamento, observacoes: undefined };
-      expect(() => {
-        OrcamentoPDFDocument({ orcamento: orcamentoSemObs });
-      }).not.toThrow();
-    });
-
-    it('deve renderizar sem consultor', () => {
-      const orcamentoSemConsultor = { ...mockOrcamento, consultor: undefined };
-      expect(() => {
-        OrcamentoPDFDocument({ orcamento: orcamentoSemConsultor });
-      }).not.toThrow();
-    });
-
-    it('deve renderizar sem contato', () => {
-      const orcamentoSemContato = { ...mockOrcamento, contato: undefined };
-      expect(() => {
-        OrcamentoPDFDocument({ orcamento: orcamentoSemContato });
-      }).not.toThrow();
-    });
-
-    it('deve renderizar sem endereço completo', () => {
-      const orcamentoSemEndereco = {
-        ...mockOrcamento,
-        clienteEndereco: undefined,
-        clienteCidade: undefined,
-        clienteEstado: undefined,
-        clienteCep: undefined,
-      };
-      expect(() => {
-        OrcamentoPDFDocument({ orcamento: orcamentoSemEndereco });
-      }).not.toThrow();
-    });
-
-    it('deve renderizar sem telefone', () => {
-      const orcamentoSemTelefone = { ...mockOrcamento, clienteTelefone: undefined };
-      expect(() => {
-        OrcamentoPDFDocument({ orcamento: orcamentoSemTelefone });
-      }).not.toThrow();
-    });
-
-    it('deve renderizar sem email', () => {
-      const orcamentoSemEmail = { ...mockOrcamento, clienteEmail: undefined };
-      expect(() => {
-        OrcamentoPDFDocument({ orcamento: orcamentoSemEmail });
-      }).not.toThrow();
-    });
-
-    it('deve renderizar com múltiplos itens (linhas alternadas)', () => {
-      const orcamentoMultiplosItens = {
-        ...mockOrcamento,
-        itensCompleto: [
-          { etapa: 'comercial' as const, categoriaId: 'cat1', categoriaNome: 'Cat1', descricao: 'Item 1', quantidade: 1, unidade: 'Serv.', valorUnitarioMaoDeObra: 50, valorUnitarioMaterial: 50, valorTotalMaoDeObra: 50, valorTotalMaterial: 50, valorTotal: 100 },
-          { etapa: 'comercial' as const, categoriaId: 'cat1', categoriaNome: 'Cat1', descricao: 'Item 2', quantidade: 2, unidade: 'Un.', valorUnitarioMaoDeObra: 100, valorUnitarioMaterial: 100, valorTotalMaoDeObra: 200, valorTotalMaterial: 200, valorTotal: 400 },
-          { etapa: 'comercial' as const, categoriaId: 'cat1', categoriaNome: 'Cat1', descricao: 'Item 3', quantidade: 3, unidade: 'Kg', valorUnitarioMaoDeObra: 25, valorUnitarioMaterial: 25, valorTotalMaoDeObra: 75, valorTotalMaterial: 75, valorTotal: 150 },
-          { etapa: 'comercial' as const, categoriaId: 'cat1', categoriaNome: 'Cat1', descricao: 'Item 4', quantidade: 1, unidade: 'Serv.', valorUnitarioMaoDeObra: 150, valorUnitarioMaterial: 150, valorTotalMaoDeObra: 150, valorTotalMaterial: 150, valorTotal: 300 },
-        ],
-      };
-      expect(() => {
-        OrcamentoPDFDocument({ orcamento: orcamentoMultiplosItens });
-      }).not.toThrow();
-    });
-
-    it('deve renderizar com item sem unidade', () => {
-      const orcamentoItemSemUnidade = {
-        ...mockOrcamento,
-        itensCompleto: [
-          { etapa: 'comercial' as const, categoriaId: 'cat1', categoriaNome: 'Cat1', descricao: 'Item 1', quantidade: 1, unidade: '', valorUnitarioMaoDeObra: 50, valorUnitarioMaterial: 50, valorTotalMaoDeObra: 50, valorTotalMaterial: 50, valorTotal: 100 },
-        ],
-      };
-      expect(() => {
-        OrcamentoPDFDocument({ orcamento: orcamentoItemSemUnidade });
-      }).not.toThrow();
-    });
-
-    it('deve renderizar com CEP incompleto', () => {
-      const orcamentoCepIncompleto = { ...mockOrcamento, clienteCep: '123' };
-      expect(() => {
-        OrcamentoPDFDocument({ orcamento: orcamentoCepIncompleto });
-      }).not.toThrow();
-    });
   });
 
   describe('gerarPDFOrcamento', () => {
