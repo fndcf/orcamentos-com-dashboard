@@ -657,6 +657,80 @@ export const ParcelamentoContainer = styled.div`
   border: 1px solid var(--border);
 `;
 
+export const DescontoContainer = styled.div`
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--background);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+
+  .label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    input {
+      width: 100px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      text-align: center;
+
+      &:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+    }
+
+    span {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+  }
+
+  .desconto-resumo {
+    padding: 12px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 6px;
+    border: 1px solid var(--success);
+
+    .desconto-detalhe {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+
+      &:last-child {
+        margin-bottom: 0;
+        padding-top: 8px;
+        border-top: 1px solid rgba(76, 175, 80, 0.3);
+        font-weight: 600;
+        font-size: 1rem;
+      }
+
+      .label {
+        color: var(--text-secondary);
+        margin-bottom: 0;
+      }
+
+      .valor {
+        font-weight: 500;
+        color: var(--success);
+      }
+    }
+  }
+`;
+
 export const EntradaSelector = styled.div`
   margin-bottom: 16px;
 

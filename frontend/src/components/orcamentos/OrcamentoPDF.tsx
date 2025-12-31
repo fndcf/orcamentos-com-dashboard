@@ -875,12 +875,16 @@ export function OrcamentoCompletoPDFDocument({
     ...new Set(itensResidenciais.map((item) => item.categoriaNome)),
   ];
 
-  const condicaoPagamentoTexto =
-    orcamento.condicaoPagamento === "parcelado"
-      ? orcamento.parcelamentoTexto || "Parcelado"
-      : orcamento.condicaoPagamento === "a_vista"
-      ? "À vista"
-      : "A combinar";
+  // Gerar texto da condição de pagamento (desconto à vista é tratado no JSX)
+  const condicaoPagamentoTexto = (() => {
+    if (orcamento.condicaoPagamento === "parcelado") {
+      return orcamento.parcelamentoTexto || "Parcelado";
+    }
+    if (orcamento.condicaoPagamento === "a_vista") {
+      return "À vista";
+    }
+    return "A combinar";
+  })();
 
   return (
     <Document>
@@ -2075,6 +2079,17 @@ export function OrcamentoCompletoPDFDocument({
                 ))}
               </View>
             </>
+          ) : orcamento.condicaoPagamento === "a_vista" &&
+            orcamento.descontoAVista &&
+            orcamento.descontoAVista.percentual > 0 ? (
+            <View>
+              <Text style={stylesCompleto.precosCondicao}>
+                À vista com {orcamento.descontoAVista.percentual}% de desconto:
+              </Text>
+              <Text style={stylesCompleto.precosValorTotal}>
+                {formatCurrency(orcamento.descontoAVista.valorFinal)}
+              </Text>
+            </View>
           ) : (
             <Text style={stylesCompleto.precosCondicao}>
               {condicaoPagamentoTexto}

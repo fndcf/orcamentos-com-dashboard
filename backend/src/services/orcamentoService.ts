@@ -1,7 +1,7 @@
 import { orcamentoRepository } from '../repositories/orcamentoRepository';
 import { clienteRepository } from '../repositories/clienteRepository';
 import { configuracoesGeraisRepository } from '../repositories/configuracoesGeraisRepository';
-import { Orcamento, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, TipoPessoa, ParcelamentoDados } from '../models';
+import { Orcamento, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, TipoPessoa, ParcelamentoDados, DescontoAVistaDados } from '../models';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { eventBus, OrcamentoEvents } from '../events';
 
@@ -24,6 +24,7 @@ interface CriarOrcamentoDTO {
   condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
+  descontoAVista?: DescontoAVistaDados;
   mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;
@@ -43,6 +44,7 @@ interface AtualizarOrcamentoDTO {
   condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
+  descontoAVista?: DescontoAVistaDados;
   mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;
@@ -170,6 +172,7 @@ export const orcamentoService = {
     if (data.condicaoPagamento) orcamento.condicaoPagamento = data.condicaoPagamento;
     if (data.parcelamentoTexto?.trim()) orcamento.parcelamentoTexto = data.parcelamentoTexto.trim();
     if (data.parcelamentoDados) orcamento.parcelamentoDados = data.parcelamentoDados;
+    if (data.descontoAVista) orcamento.descontoAVista = data.descontoAVista;
     if (data.mostrarValoresDetalhados !== undefined) orcamento.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
 
     return orcamentoRepository.create(orcamento);
@@ -239,9 +242,22 @@ export const orcamentoService = {
         updateData.parcelamentoTexto = '';
         updateData.parcelamentoDados = null;
       }
+      // Limpar dados de desconto se a condição não for "a_vista"
+      if (data.condicaoPagamento !== 'a_vista') {
+        updateData.descontoAVista = null;
+      }
     }
     if (data.parcelamentoTexto !== undefined) updateData.parcelamentoTexto = data.parcelamentoTexto?.trim() || '';
-    if (data.parcelamentoDados !== undefined) updateData.parcelamentoDados = data.parcelamentoDados;
+    if (data.parcelamentoDados !== undefined) updateData.parcelamentoDados = data.parcelamentoDados || null;
+    // Atualiza descontoAVista: verifica se a propriedade existe no objeto recebido
+    // Usamos 'in' porque o valor pode ser null (quando quer limpar) ou um objeto (quando quer salvar)
+    if ('descontoAVista' in data) {
+      if (data.descontoAVista && typeof data.descontoAVista === 'object' && data.descontoAVista.percentual > 0) {
+        updateData.descontoAVista = data.descontoAVista;
+      } else {
+        updateData.descontoAVista = null;
+      }
+    }
     if (data.mostrarValoresDetalhados !== undefined) updateData.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
 
     if (data.observacoes !== undefined) {
@@ -371,6 +387,7 @@ export const orcamentoService = {
     if (orcamentoOriginal.condicaoPagamento) novoOrcamento.condicaoPagamento = orcamentoOriginal.condicaoPagamento;
     if (orcamentoOriginal.parcelamentoTexto) novoOrcamento.parcelamentoTexto = orcamentoOriginal.parcelamentoTexto;
     if (orcamentoOriginal.parcelamentoDados) novoOrcamento.parcelamentoDados = orcamentoOriginal.parcelamentoDados;
+    if (orcamentoOriginal.descontoAVista) novoOrcamento.descontoAVista = orcamentoOriginal.descontoAVista;
     if (orcamentoOriginal.mostrarValoresDetalhados !== undefined) novoOrcamento.mostrarValoresDetalhados = orcamentoOriginal.mostrarValoresDetalhados;
     if (orcamentoOriginal.valorTotalMaoDeObra) novoOrcamento.valorTotalMaoDeObra = orcamentoOriginal.valorTotalMaoDeObra;
     if (orcamentoOriginal.valorTotalMaterial) novoOrcamento.valorTotalMaterial = orcamentoOriginal.valorTotalMaterial;

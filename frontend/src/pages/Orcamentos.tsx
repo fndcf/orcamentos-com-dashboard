@@ -293,6 +293,7 @@ export function Orcamentos() {
           condicaoPagamento: data.condicaoPagamento,
           parcelamentoTexto: data.parcelamentoTexto,
           parcelamentoDados: data.parcelamentoDados,
+          descontoAVista: data.descontoAVista,
           mostrarValoresDetalhados: data.mostrarValoresDetalhados,
           // Campos comuns
           observacoes: data.observacoes,

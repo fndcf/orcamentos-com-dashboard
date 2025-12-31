@@ -59,6 +59,13 @@ export interface ParcelamentoDados {
   opcoes: ParcelamentoOpcao[];
 }
 
+// Interface para dados de desconto à vista
+export interface DescontoAVistaDados {
+  percentual: number;
+  valorDesconto: number;
+  valorFinal: number;
+}
+
 // Interface do Orçamento
 export interface Orcamento {
   id?: string;
@@ -91,6 +98,7 @@ export interface Orcamento {
   condicaoPagamento?: "a_vista" | "a_combinar" | "parcelado";
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados | null; // Dados estruturados do parcelamento para o PDF
+  descontoAVista?: DescontoAVistaDados | null; // Dados de desconto para pagamento à vista
   mostrarValoresDetalhados?: boolean; // Se true, mostra tabela de MdO/Material no PDF; se false, só valor total
   // Totais
   valorTotal: number;

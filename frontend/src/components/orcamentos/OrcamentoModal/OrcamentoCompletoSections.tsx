@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Limitacao,
   Servico,
   ConfiguracoesGerais,
   ParcelamentoDados,
+  DescontoAVistaDados,
 } from "../../../types";
 import {
   Input,
@@ -20,6 +21,7 @@ import {
   CondicaoPagamentoSection,
   CondicaoOption,
   ParcelamentoContainer,
+  DescontoContainer,
   EntradaSelector,
   EntradaOption,
   ParcelamentoResumo,
@@ -248,9 +250,11 @@ interface CondicaoPagamentoSectionProps {
   condicao: "a_vista" | "a_combinar" | "parcelado";
   parcelamentoTexto: string;
   parcelamentoDados?: ParcelamentoDados;
+  descontoAVista?: DescontoAVistaDados;
   onCondicaoChange: (condicao: "a_vista" | "a_combinar" | "parcelado") => void;
   onParcelamentoTextoChange: (texto: string) => void;
   onParcelamentoDadosChange: (dados: ParcelamentoDados | undefined) => void;
+  onDescontoAVistaChange: (dados: DescontoAVistaDados | undefined) => void;
   valorTotal: number;
   configuracoes?: ConfiguracoesGerais;
 }
@@ -259,9 +263,11 @@ export function CondicaoPagamentoFormSection({
   condicao,
   parcelamentoTexto,
   parcelamentoDados,
+  descontoAVista,
   onCondicaoChange,
   onParcelamentoTextoChange,
   onParcelamentoDadosChange,
+  onDescontoAVistaChange,
   valorTotal,
   configuracoes,
 }: CondicaoPagamentoSectionProps) {
@@ -270,12 +276,30 @@ export function CondicaoPagamentoFormSection({
     parcelamentoDados?.entradaPercent ?? 20
   );
 
+  // Estado para o percentual de desconto à vista - controlado localmente
+  // Usamos uma ref para armazenar o último valor recebido do pai para detectar mudanças externas
+  const lastExternalPercentual = useRef<number | undefined>(descontoAVista?.percentual);
+  const [descontoPercent, setDescontoPercent] = useState<number>(
+    descontoAVista?.percentual ?? 0
+  );
+
   // Atualiza o estado quando parcelamentoDados mudar (ex: ao abrir modal de edição)
   useEffect(() => {
     if (parcelamentoDados?.entradaPercent !== undefined) {
       setEntradaPercent(parcelamentoDados.entradaPercent);
     }
   }, [parcelamentoDados?.entradaPercent]);
+
+  // Sincroniza o descontoPercent quando descontoAVista muda externamente (edição/duplicação)
+  // Só atualiza se o valor vier do pai (detectado pela mudança no percentual externo)
+  useEffect(() => {
+    const externalPercentual = descontoAVista?.percentual;
+    // Só atualiza se o valor externo mudou (não por causa de nossa própria atualização)
+    if (lastExternalPercentual.current !== externalPercentual) {
+      lastExternalPercentual.current = externalPercentual;
+      setDescontoPercent(externalPercentual ?? 0);
+    }
+  }, [descontoAVista?.percentual]);
 
   // Configurações de parcelamento
   const maxParcelas = configuracoes?.parcelamentoMaxParcelas ?? 6;
@@ -334,6 +358,48 @@ export function CondicaoPagamentoFormSection({
     taxaJuros,
     valorMinimoParcela,
   ]);
+
+  // Calcular valor do desconto à vista
+  const valorDesconto = useMemo(() => {
+    return (valorTotal * descontoPercent) / 100;
+  }, [valorTotal, descontoPercent]);
+
+  // Calcular valor final com desconto
+  const valorFinalComDesconto = useMemo(() => {
+    return valorTotal - valorDesconto;
+  }, [valorTotal, valorDesconto]);
+
+  // Gerar dados de desconto à vista
+  // Usamos uma ref para evitar chamar onDescontoAVistaChange desnecessariamente
+  // e causar loops de atualização
+  const lastDescontoSent = useRef<string | null>(null);
+
+  useEffect(() => {
+    // Criar uma chave única para o estado atual
+    const currentKey = condicao === "a_vista" && descontoPercent > 0
+      ? `${descontoPercent}-${valorDesconto}-${valorFinalComDesconto}`
+      : "none";
+
+    // Só atualiza se o valor mudou
+    if (lastDescontoSent.current !== currentKey) {
+      lastDescontoSent.current = currentKey;
+
+      if (condicao === "a_vista" && descontoPercent > 0) {
+        // Atualiza a ref para evitar que o useEffect de sincronização
+        // pense que o valor veio de fora e tente resetar
+        lastExternalPercentual.current = descontoPercent;
+        onDescontoAVistaChange({
+          percentual: descontoPercent,
+          valorDesconto,
+          valorFinal: valorFinalComDesconto,
+        });
+      } else {
+        // Atualiza a ref para undefined quando não há desconto
+        lastExternalPercentual.current = undefined;
+        onDescontoAVistaChange(undefined);
+      }
+    }
+  }, [condicao, descontoPercent, valorDesconto, valorFinalComDesconto, onDescontoAVistaChange]);
 
   // Gerar texto e dados de parcelamento para o PDF (entrada + info sobre parcelas)
   useEffect(() => {
@@ -404,6 +470,63 @@ export function CondicaoPagamentoFormSection({
           />
           <span>À vista</span>
         </CondicaoOption>
+
+        {condicao === "a_vista" && (
+          <DescontoContainer>
+            <div className="label">Desconto para pagamento à vista (opcional)</div>
+            <div className="input-row">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.5"
+                value={descontoPercent || ""}
+                placeholder="0"
+                onChange={(e) => {
+                  const valor = parseFloat(e.target.value) || 0;
+                  const novoPercentual = Math.min(100, Math.max(0, valor));
+                  setDescontoPercent(novoPercentual);
+
+                  // Atualiza o estado pai diretamente para garantir que o valor esteja disponível no submit
+                  if (novoPercentual > 0) {
+                    const novoDesconto = (valorTotal * novoPercentual) / 100;
+                    const novoValorFinal = valorTotal - novoDesconto;
+                    // Atualiza as refs para evitar que o useEffect tente atualizar novamente
+                    lastExternalPercentual.current = novoPercentual;
+                    lastDescontoSent.current = `${novoPercentual}-${novoDesconto}-${novoValorFinal}`;
+                    onDescontoAVistaChange({
+                      percentual: novoPercentual,
+                      valorDesconto: novoDesconto,
+                      valorFinal: novoValorFinal,
+                    });
+                  } else {
+                    lastExternalPercentual.current = undefined;
+                    lastDescontoSent.current = "none";
+                    onDescontoAVistaChange(undefined);
+                  }
+                }}
+              />
+              <span>% de desconto</span>
+            </div>
+            {descontoPercent > 0 && (
+              <div className="desconto-resumo">
+                <div className="desconto-detalhe">
+                  <span className="label">Valor original:</span>
+                  <span className="valor">{formatCurrency(valorTotal)}</span>
+                </div>
+                <div className="desconto-detalhe">
+                  <span className="label">Desconto ({descontoPercent}%):</span>
+                  <span className="valor">- {formatCurrency(valorDesconto)}</span>
+                </div>
+                <div className="desconto-detalhe">
+                  <span className="label">Valor final à vista:</span>
+                  <span className="valor">{formatCurrency(valorFinalComDesconto)}</span>
+                </div>
+              </div>
+            )}
+          </DescontoContainer>
+        )}
+
         <CondicaoOption $selected={condicao === "a_combinar"}>
           <input
             type="radio"

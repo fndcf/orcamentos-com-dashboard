@@ -1,5 +1,5 @@
 import api from './api';
-import { Orcamento, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, ParcelamentoDados } from '../types';
+import { Orcamento, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, ParcelamentoDados, DescontoAVistaDados } from '../types';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -20,6 +20,7 @@ interface CriarOrcamentoDTO {
   condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
+  descontoAVista?: DescontoAVistaDados | null;
   mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;
@@ -39,6 +40,7 @@ interface AtualizarOrcamentoDTO {
   condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
+  descontoAVista?: DescontoAVistaDados | null;
   mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;

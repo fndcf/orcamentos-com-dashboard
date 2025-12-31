@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { orcamentoService } from '../services/orcamentoService';
-import { OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, ParcelamentoDados } from '../types';
+import { OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, ParcelamentoDados, DescontoAVistaDados } from '../types';
 
 interface CriarOrcamentoDTO {
   tipo: OrcamentoTipo;
@@ -14,6 +14,8 @@ interface CriarOrcamentoDTO {
   prazoVistoriaBombeiros?: number;
   condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
+  parcelamentoDados?: ParcelamentoDados;
+  descontoAVista?: DescontoAVistaDados | null;
   mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;
@@ -33,6 +35,7 @@ interface AtualizarOrcamentoDTO {
   condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
+  descontoAVista?: DescontoAVistaDados | null;
   mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;

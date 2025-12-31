@@ -5,6 +5,7 @@ import {
   Cliente,
   OrcamentoSaveData,
   ParcelamentoDados,
+  DescontoAVistaDados,
 } from "../../../types";
 import { useClientes } from "../../../hooks/useClientes";
 import { useServicosAtivos } from "../../../hooks/useServicos";
@@ -99,6 +100,9 @@ export function OrcamentoModal({
   const [parcelamentoDados, setParcelamentoDados] = useState<
     ParcelamentoDados | undefined
   >(undefined);
+  const [descontoAVista, setDescontoAVista] = useState<
+    DescontoAVistaDados | undefined
+  >(undefined);
   const [mostrarValoresDetalhados, setMostrarValoresDetalhados] =
     useState(true);
 
@@ -141,7 +145,8 @@ export function OrcamentoModal({
         setPrazoVistoriaBombeiros(orcamento.prazoVistoriaBombeiros || 30);
         setCondicaoPagamento(orcamento.condicaoPagamento || "a_combinar");
         setParcelamentoTexto(orcamento.parcelamentoTexto || "");
-        setParcelamentoDados(orcamento.parcelamentoDados);
+        setParcelamentoDados(orcamento.parcelamentoDados ?? undefined);
+        setDescontoAVista(orcamento.descontoAVista ?? undefined);
         setMostrarValoresDetalhados(
           orcamento.mostrarValoresDetalhados !== false
         );
@@ -176,7 +181,8 @@ export function OrcamentoModal({
         setPrazoVistoriaBombeiros(duplicarDe.prazoVistoriaBombeiros || 30);
         setCondicaoPagamento(duplicarDe.condicaoPagamento || "a_combinar");
         setParcelamentoTexto(duplicarDe.parcelamentoTexto || "");
-        setParcelamentoDados(duplicarDe.parcelamentoDados);
+        setParcelamentoDados(duplicarDe.parcelamentoDados ?? undefined);
+        setDescontoAVista(duplicarDe.descontoAVista ?? undefined);
         setMostrarValoresDetalhados(
           duplicarDe.mostrarValoresDetalhados !== false
         );
@@ -197,6 +203,7 @@ export function OrcamentoModal({
         setCondicaoPagamento("a_combinar");
         setParcelamentoTexto("");
         setParcelamentoDados(undefined);
+        setDescontoAVista(undefined);
         setMostrarValoresDetalhados(true);
         setObservacoes("");
         setConsultor("");
@@ -439,6 +446,14 @@ export function OrcamentoModal({
       .map((id) => limitacoesAtivas?.find((l) => l.id === id)?.texto)
       .filter((texto): texto is string => !!texto);
 
+    // Determinar o valor do desconto para enviar
+    // Se condicao é a_vista e tem desconto, envia o objeto
+    // Se não é a_vista ou não tem desconto, envia null (não undefined)
+    // Isso garante que o backend receba a propriedade e possa atualizar corretamente
+    const descontoParaEnviar = condicaoPagamento === "a_vista" && descontoAVista?.percentual && descontoAVista.percentual > 0
+      ? descontoAVista
+      : null;
+
     await onSave({
       tipo: "completo",
       clienteId,
@@ -456,6 +471,8 @@ export function OrcamentoModal({
           : undefined,
       parcelamentoDados:
         condicaoPagamento === "parcelado" ? parcelamentoDados : undefined,
+      // Envia null explicitamente para garantir que o backend processe
+      descontoAVista: descontoParaEnviar,
       mostrarValoresDetalhados,
       observacoes: observacoes.trim() || undefined,
       // Envia string vazia para permitir limpar os campos ao editar
@@ -598,9 +615,11 @@ export function OrcamentoModal({
           condicao={condicaoPagamento}
           parcelamentoTexto={parcelamentoTexto}
           parcelamentoDados={parcelamentoDados}
+          descontoAVista={descontoAVista}
           onCondicaoChange={setCondicaoPagamento}
           onParcelamentoTextoChange={setParcelamentoTexto}
           onParcelamentoDadosChange={setParcelamentoDados}
+          onDescontoAVistaChange={setDescontoAVista}
           valorTotal={valorTotalOrcamento}
           configuracoes={configuracoes}
         />
