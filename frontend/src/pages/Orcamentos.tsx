@@ -292,9 +292,12 @@ export function Orcamentos() {
           prazoVistoriaBombeiros: data.prazoVistoriaBombeiros,
           condicaoPagamento: data.condicaoPagamento,
           parcelamentoTexto: data.parcelamentoTexto,
+          parcelamentoDados: data.parcelamentoDados,
           mostrarValoresDetalhados: data.mostrarValoresDetalhados,
           // Campos comuns
           observacoes: data.observacoes,
+          consultor: data.consultor,
+          contato: data.contato,
         },
       });
     } else {

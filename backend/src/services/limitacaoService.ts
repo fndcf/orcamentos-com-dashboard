@@ -33,6 +33,10 @@ export const limitacaoService = {
       throw new ValidationError('Texto deve ter pelo menos 20 caracteres');
     }
 
+    if (data.texto.length > 1000) {
+      throw new ValidationError('Texto deve ter no máximo 1000 caracteres');
+    }
+
     // Verificar se já existe uma limitação com o mesmo texto
     const existente = await limitacaoRepository.findByTexto(data.texto.trim());
     if (existente) {
@@ -63,6 +67,10 @@ export const limitacaoService = {
 
     if (data.texto !== undefined && data.texto.trim().length < 20) {
       throw new ValidationError('Texto deve ter pelo menos 20 caracteres');
+    }
+
+    if (data.texto !== undefined && data.texto.length > 1000) {
+      throw new ValidationError('Texto deve ter no máximo 1000 caracteres');
     }
 
     // Verificar se o novo texto já existe em outra limitação

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { orcamentoService } from '../services/orcamentoService';
-import { OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo } from '../types';
+import { OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, ParcelamentoDados } from '../types';
 
 interface CriarOrcamentoDTO {
   tipo: OrcamentoTipo;
@@ -32,10 +32,13 @@ interface AtualizarOrcamentoDTO {
   prazoVistoriaBombeiros?: number;
   condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
+  parcelamentoDados?: ParcelamentoDados;
   mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;
   dataValidade?: Date;
+  consultor?: string;
+  contato?: string;
 }
 
 export function useOrcamentos() {

@@ -247,6 +247,7 @@ interface ParcelaInfo {
 interface CondicaoPagamentoSectionProps {
   condicao: "a_vista" | "a_combinar" | "parcelado";
   parcelamentoTexto: string;
+  parcelamentoDados?: ParcelamentoDados;
   onCondicaoChange: (condicao: "a_vista" | "a_combinar" | "parcelado") => void;
   onParcelamentoTextoChange: (texto: string) => void;
   onParcelamentoDadosChange: (dados: ParcelamentoDados | undefined) => void;
@@ -257,13 +258,24 @@ interface CondicaoPagamentoSectionProps {
 export function CondicaoPagamentoFormSection({
   condicao,
   parcelamentoTexto,
+  parcelamentoDados,
   onCondicaoChange,
   onParcelamentoTextoChange,
   onParcelamentoDadosChange,
   valorTotal,
   configuracoes,
 }: CondicaoPagamentoSectionProps) {
-  const [entradaPercent, setEntradaPercent] = useState<number>(20);
+  // Inicializa com o valor salvo ou 20% como padrão
+  const [entradaPercent, setEntradaPercent] = useState<number>(
+    parcelamentoDados?.entradaPercent ?? 20
+  );
+
+  // Atualiza o estado quando parcelamentoDados mudar (ex: ao abrir modal de edição)
+  useEffect(() => {
+    if (parcelamentoDados?.entradaPercent !== undefined) {
+      setEntradaPercent(parcelamentoDados.entradaPercent);
+    }
+  }, [parcelamentoDados?.entradaPercent]);
 
   // Configurações de parcelamento
   const maxParcelas = configuracoes?.parcelamentoMaxParcelas ?? 6;

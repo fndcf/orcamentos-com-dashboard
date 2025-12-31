@@ -860,19 +860,19 @@ export function OrcamentoCompletoPDFDocument({
   const valorTotalMaterial = orcamento.valorTotalMaterial || 0;
 
   // Separar itens por etapa (residencial/comercial)
-  const itensResidenciais = itensCompleto.filter(
-    (item) => item.etapa === "residencial"
-  );
   const itensComerciais = itensCompleto.filter(
     (item) => item.etapa === "comercial"
   );
+  const itensResidenciais = itensCompleto.filter(
+    (item) => item.etapa === "residencial"
+  );
 
   // Obter categorias únicas por etapa
-  const categoriasResidenciais = [
-    ...new Set(itensResidenciais.map((item) => item.categoriaNome)),
-  ];
   const categoriasComerciais = [
     ...new Set(itensComerciais.map((item) => item.categoriaNome)),
+  ];
+  const categoriasResidenciais = [
+    ...new Set(itensResidenciais.map((item) => item.categoriaNome)),
   ];
 
   const condicaoPagamentoTexto =
@@ -1003,449 +1003,6 @@ export function OrcamentoCompletoPDFDocument({
           Os trabalhos de execução do projeto serão desenvolvidos de forma
           direcionada e envolverão as seguintes etapas:
         </Text>
-
-        {/* Tabela Residencial */}
-        {itensResidenciais.length > 0 && (
-          <View style={styles.itensSection}>
-            <Text style={stylesCompleto.etapaTitulo}>RESIDENCIAL</Text>
-            <View style={styles.table}>
-              {/* Header - versão detalhada ou simplificada */}
-              {orcamento.mostrarValoresDetalhados !== false ? (
-                <View style={stylesCompleto.tableHeaderCompleto}>
-                  <View style={stylesCompleto.tableHeaderRow1}>
-                    <View style={stylesCompleto.headerGroupLeft}>
-                      <Text
-                        style={stylesCompleto.tableHeaderTextCompleto}
-                      ></Text>
-                    </View>
-                    <View style={stylesCompleto.headerGroupMaoDeObra}>
-                      <Text
-                        style={[
-                          stylesCompleto.tableHeaderTextCompleto,
-                          { textAlign: "center" },
-                        ]}
-                      >
-                        MÃO DE OBRA
-                      </Text>
-                    </View>
-                    <View style={stylesCompleto.headerGroupMaterial}>
-                      <Text
-                        style={[
-                          stylesCompleto.tableHeaderTextCompleto,
-                          { textAlign: "center" },
-                        ]}
-                      >
-                        MATERIAIS
-                      </Text>
-                    </View>
-                    <View style={stylesCompleto.headerGroupTotal}>
-                      <Text
-                        style={[
-                          stylesCompleto.tableHeaderTextCompleto,
-                          { textAlign: "center" },
-                        ]}
-                      >
-                        MDO +
-                      </Text>
-                      <Text
-                        style={[
-                          stylesCompleto.tableHeaderTextCompleto,
-                          { textAlign: "center" },
-                        ]}
-                      >
-                        MAT
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={stylesCompleto.tableHeaderRow2}>
-                    <Text
-                      style={[
-                        stylesCompleto.tableHeaderTextCompleto,
-                        stylesCompleto.headerCellItem,
-                      ]}
-                    >
-                      ITEM
-                    </Text>
-                    <Text
-                      style={[
-                        stylesCompleto.tableHeaderTextCompleto,
-                        stylesCompleto.headerCellDescricao,
-                      ]}
-                    >
-                      DESCRIÇÃO DOS SERVIÇOS
-                    </Text>
-                    <Text
-                      style={[
-                        stylesCompleto.tableHeaderTextCompleto,
-                        stylesCompleto.headerCellUnid,
-                      ]}
-                    >
-                      UNID.
-                    </Text>
-                    <Text
-                      style={[
-                        stylesCompleto.tableHeaderTextCompleto,
-                        stylesCompleto.headerCellQtd,
-                      ]}
-                    >
-                      QTE.
-                    </Text>
-                    <Text
-                      style={[
-                        stylesCompleto.tableHeaderTextCompleto,
-                        stylesCompleto.headerCellMaoDeObraUnit,
-                      ]}
-                    >
-                      UNIT.
-                    </Text>
-                    <Text
-                      style={[
-                        stylesCompleto.tableHeaderTextCompleto,
-                        stylesCompleto.headerCellMaoDeObraTotal,
-                      ]}
-                    >
-                      TOTAL
-                    </Text>
-                    <Text
-                      style={[
-                        stylesCompleto.tableHeaderTextCompleto,
-                        stylesCompleto.headerCellMaterialUnit,
-                      ]}
-                    >
-                      UNIT.
-                    </Text>
-                    <Text
-                      style={[
-                        stylesCompleto.tableHeaderTextCompleto,
-                        stylesCompleto.headerCellMaterialTotal,
-                      ]}
-                    >
-                      TOTAL
-                    </Text>
-                    <Text
-                      style={[
-                        stylesCompleto.tableHeaderTextCompleto,
-                        stylesCompleto.headerCellTotal,
-                      ]}
-                    >
-                      TOTAL
-                    </Text>
-                  </View>
-                </View>
-              ) : (
-                <View style={styles.tableHeader}>
-                  <Text style={[styles.tableHeaderText, { width: "10%" }]}>
-                    ITEM
-                  </Text>
-                  <Text style={[styles.tableHeaderText, { width: "70%" }]}>
-                    DESCRIÇÃO DOS SERVIÇOS
-                  </Text>
-                  <Text style={[styles.tableHeaderText, { width: "10%" }]}>
-                    UNID.
-                  </Text>
-                  <Text style={[styles.tableHeaderText, { width: "10%" }]}>
-                    QTE.
-                  </Text>
-                </View>
-              )}
-
-              {/* Agrupar por categoria */}
-              {categoriasResidenciais.map((categoria, catIdx) => {
-                const itensCategoria = itensResidenciais.filter(
-                  (item) => item.categoriaNome === categoria
-                );
-                const subtotalMaoDeObra = itensCategoria.reduce(
-                  (acc, item) => acc + item.valorTotalMaoDeObra,
-                  0
-                );
-                const subtotalMaterial = itensCategoria.reduce(
-                  (acc, item) => acc + item.valorTotalMaterial,
-                  0
-                );
-                const subtotalTotal = itensCategoria.reduce(
-                  (acc, item) => acc + item.valorTotal,
-                  0
-                );
-                const categoriaNumero = catIdx + 1;
-                return (
-                  <View key={categoria}>
-                    {/* Linha da categoria */}
-                    <View style={stylesCompleto.categoriaRow}>
-                      <Text
-                        style={[
-                          stylesCompleto.categoriaText,
-                          {
-                            width:
-                              orcamento.mostrarValoresDetalhados !== false
-                                ? "8%"
-                                : "10%",
-                          },
-                        ]}
-                      >
-                        {categoriaNumero}.0
-                      </Text>
-                      <Text style={stylesCompleto.categoriaText}>
-                        {categoria}
-                      </Text>
-                    </View>
-                    {/* Itens da categoria */}
-                    {itensCategoria.map((item, idx) => {
-                      const itemNum = `${categoriaNumero}.${idx + 1}`;
-                      const isAlt = idx % 2 === 1;
-                      return orcamento.mostrarValoresDetalhados !== false ? (
-                        <View
-                          key={idx}
-                          style={isAlt ? styles.tableRowAlt : styles.tableRow}
-                        >
-                          <Text style={stylesCompleto.colItem}>{itemNum}</Text>
-                          <Text style={stylesCompleto.colDescricaoCompleto}>
-                            {item.descricao}
-                          </Text>
-                          <Text style={stylesCompleto.colUnidCompleto}>
-                            {item.unidade || "un"}
-                          </Text>
-                          <Text style={stylesCompleto.colQtdCompleto}>
-                            {item.quantidade}
-                          </Text>
-                          <Text style={stylesCompleto.colMaoDeObraUnit}>
-                            {formatCurrencyShort(item.valorUnitarioMaoDeObra)}
-                          </Text>
-                          <Text style={stylesCompleto.colMaoDeObraTotal}>
-                            {formatCurrencyShort(item.valorTotalMaoDeObra)}
-                          </Text>
-                          <Text style={stylesCompleto.colMaterialUnit}>
-                            {formatCurrencyShort(item.valorUnitarioMaterial)}
-                          </Text>
-                          <Text style={stylesCompleto.colMaterialTotal}>
-                            {formatCurrencyShort(item.valorTotalMaterial)}
-                          </Text>
-                          <Text style={stylesCompleto.colTotalCompleto}>
-                            {formatCurrencyShort(item.valorTotal)}
-                          </Text>
-                        </View>
-                      ) : (
-                        <View
-                          key={idx}
-                          style={isAlt ? styles.tableRowAlt : styles.tableRow}
-                        >
-                          <Text
-                            style={{
-                              width: "10%",
-                              fontSize: 8,
-                              textAlign: "center",
-                            }}
-                          >
-                            {itemNum}
-                          </Text>
-                          <Text style={{ width: "70%", fontSize: 8 }}>
-                            {item.descricao}
-                          </Text>
-                          <Text
-                            style={{
-                              width: "10%",
-                              fontSize: 8,
-                              textAlign: "center",
-                            }}
-                          >
-                            {item.unidade || "un"}
-                          </Text>
-                          <Text
-                            style={{
-                              width: "10%",
-                              fontSize: 8,
-                              textAlign: "center",
-                            }}
-                          >
-                            {item.quantidade}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                    {/* Linha de subtotal da categoria - só mostra na versão detalhada */}
-                    {orcamento.mostrarValoresDetalhados !== false && (
-                      <View style={stylesCompleto.subtotalRow}>
-                        <Text
-                          style={[
-                            stylesCompleto.subtotalText,
-                            stylesCompleto.colItem,
-                          ]}
-                        ></Text>
-                        <Text
-                          style={[
-                            stylesCompleto.subtotalText,
-                            stylesCompleto.colDescricaoCompleto,
-                          ]}
-                        >
-                          SUBTOTAL ITEM {categoriaNumero}.0
-                        </Text>
-                        <Text
-                          style={[
-                            stylesCompleto.subtotalText,
-                            stylesCompleto.colUnidCompleto,
-                          ]}
-                        ></Text>
-                        <Text
-                          style={[
-                            stylesCompleto.subtotalText,
-                            stylesCompleto.colQtdCompleto,
-                          ]}
-                        ></Text>
-                        <Text
-                          style={[
-                            stylesCompleto.subtotalText,
-                            stylesCompleto.colMaoDeObraUnit,
-                          ]}
-                        ></Text>
-                        <Text
-                          style={[
-                            stylesCompleto.subtotalValue,
-                            stylesCompleto.colMaoDeObraTotal,
-                          ]}
-                        >
-                          {formatCurrencyShort(subtotalMaoDeObra)}
-                        </Text>
-                        <Text
-                          style={[
-                            stylesCompleto.subtotalText,
-                            stylesCompleto.colMaterialUnit,
-                          ]}
-                        ></Text>
-                        <Text
-                          style={[
-                            stylesCompleto.subtotalValue,
-                            stylesCompleto.colMaterialTotal,
-                          ]}
-                        >
-                          {formatCurrencyShort(subtotalMaterial)}
-                        </Text>
-                        <Text
-                          style={[
-                            stylesCompleto.subtotalValue,
-                            stylesCompleto.colTotalCompleto,
-                          ]}
-                        >
-                          {formatCurrencyShort(subtotalTotal)}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-              {/* Total RESIDENCIAL */}
-              {orcamento.mostrarValoresDetalhados !== false ? (
-                <View style={stylesCompleto.totalEtapaRow}>
-                  <Text
-                    style={[
-                      stylesCompleto.totalEtapaText,
-                      stylesCompleto.colItem,
-                    ]}
-                  ></Text>
-                  <Text
-                    style={[
-                      stylesCompleto.totalEtapaText,
-                      stylesCompleto.colDescricaoCompleto,
-                    ]}
-                  >
-                    TOTAL RESIDENCIAL
-                  </Text>
-                  <Text
-                    style={[
-                      stylesCompleto.totalEtapaText,
-                      stylesCompleto.colUnidCompleto,
-                    ]}
-                  ></Text>
-                  <Text
-                    style={[
-                      stylesCompleto.totalEtapaText,
-                      stylesCompleto.colQtdCompleto,
-                    ]}
-                  ></Text>
-                  <Text
-                    style={[
-                      stylesCompleto.totalEtapaText,
-                      stylesCompleto.colMaoDeObraUnit,
-                    ]}
-                  ></Text>
-                  <Text
-                    style={[
-                      stylesCompleto.totalEtapaValue,
-                      stylesCompleto.colMaoDeObraTotal,
-                    ]}
-                  >
-                    {formatCurrencyShort(
-                      itensResidenciais.reduce(
-                        (acc, item) => acc + item.valorTotalMaoDeObra,
-                        0
-                      )
-                    )}
-                  </Text>
-                  <Text
-                    style={[
-                      stylesCompleto.totalEtapaText,
-                      stylesCompleto.colMaterialUnit,
-                    ]}
-                  ></Text>
-                  <Text
-                    style={[
-                      stylesCompleto.totalEtapaValue,
-                      stylesCompleto.colMaterialTotal,
-                    ]}
-                  >
-                    {formatCurrencyShort(
-                      itensResidenciais.reduce(
-                        (acc, item) => acc + item.valorTotalMaterial,
-                        0
-                      )
-                    )}
-                  </Text>
-                  <Text
-                    style={[
-                      stylesCompleto.totalEtapaValue,
-                      stylesCompleto.colTotalCompleto,
-                    ]}
-                  >
-                    {formatCurrencyShort(
-                      itensResidenciais.reduce(
-                        (acc, item) => acc + item.valorTotal,
-                        0
-                      )
-                    )}
-                  </Text>
-                </View>
-              ) : (
-                <View style={stylesCompleto.totalEtapaRow}>
-                  <Text style={{ width: "10%", fontSize: 9 }}></Text>
-                  <Text
-                    style={{
-                      width: "70%",
-                      fontSize: 9,
-                      fontWeight: "bold",
-                      color: "white",
-                    }}
-                  >
-                    TOTAL RESIDENCIAL
-                  </Text>
-                  <Text
-                    style={{
-                      width: "20%",
-                      fontSize: 9,
-                      textAlign: "right",
-                      fontWeight: "bold",
-                      color: "white",
-                    }}
-                  >
-                    {formatCurrencyShort(
-                      itensResidenciais.reduce(
-                        (acc, item) => acc + item.valorTotal,
-                        0
-                      )
-                    )}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-        )}
 
         {/* Tabela Comercial */}
         {itensComerciais.length > 0 && (
@@ -1890,6 +1447,449 @@ export function OrcamentoCompletoPDFDocument({
           </View>
         )}
 
+        {/* Tabela Residencial */}
+        {itensResidenciais.length > 0 && (
+          <View style={styles.itensSection}>
+            <Text style={stylesCompleto.etapaTitulo}>RESIDENCIAL</Text>
+            <View style={styles.table}>
+              {/* Header - versão detalhada ou simplificada */}
+              {orcamento.mostrarValoresDetalhados !== false ? (
+                <View style={stylesCompleto.tableHeaderCompleto}>
+                  <View style={stylesCompleto.tableHeaderRow1}>
+                    <View style={stylesCompleto.headerGroupLeft}>
+                      <Text
+                        style={stylesCompleto.tableHeaderTextCompleto}
+                      ></Text>
+                    </View>
+                    <View style={stylesCompleto.headerGroupMaoDeObra}>
+                      <Text
+                        style={[
+                          stylesCompleto.tableHeaderTextCompleto,
+                          { textAlign: "center" },
+                        ]}
+                      >
+                        MÃO DE OBRA
+                      </Text>
+                    </View>
+                    <View style={stylesCompleto.headerGroupMaterial}>
+                      <Text
+                        style={[
+                          stylesCompleto.tableHeaderTextCompleto,
+                          { textAlign: "center" },
+                        ]}
+                      >
+                        MATERIAIS
+                      </Text>
+                    </View>
+                    <View style={stylesCompleto.headerGroupTotal}>
+                      <Text
+                        style={[
+                          stylesCompleto.tableHeaderTextCompleto,
+                          { textAlign: "center" },
+                        ]}
+                      >
+                        MDO +
+                      </Text>
+                      <Text
+                        style={[
+                          stylesCompleto.tableHeaderTextCompleto,
+                          { textAlign: "center" },
+                        ]}
+                      >
+                        MAT
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={stylesCompleto.tableHeaderRow2}>
+                    <Text
+                      style={[
+                        stylesCompleto.tableHeaderTextCompleto,
+                        stylesCompleto.headerCellItem,
+                      ]}
+                    >
+                      ITEM
+                    </Text>
+                    <Text
+                      style={[
+                        stylesCompleto.tableHeaderTextCompleto,
+                        stylesCompleto.headerCellDescricao,
+                      ]}
+                    >
+                      DESCRIÇÃO DOS SERVIÇOS
+                    </Text>
+                    <Text
+                      style={[
+                        stylesCompleto.tableHeaderTextCompleto,
+                        stylesCompleto.headerCellUnid,
+                      ]}
+                    >
+                      UNID.
+                    </Text>
+                    <Text
+                      style={[
+                        stylesCompleto.tableHeaderTextCompleto,
+                        stylesCompleto.headerCellQtd,
+                      ]}
+                    >
+                      QTE.
+                    </Text>
+                    <Text
+                      style={[
+                        stylesCompleto.tableHeaderTextCompleto,
+                        stylesCompleto.headerCellMaoDeObraUnit,
+                      ]}
+                    >
+                      UNIT.
+                    </Text>
+                    <Text
+                      style={[
+                        stylesCompleto.tableHeaderTextCompleto,
+                        stylesCompleto.headerCellMaoDeObraTotal,
+                      ]}
+                    >
+                      TOTAL
+                    </Text>
+                    <Text
+                      style={[
+                        stylesCompleto.tableHeaderTextCompleto,
+                        stylesCompleto.headerCellMaterialUnit,
+                      ]}
+                    >
+                      UNIT.
+                    </Text>
+                    <Text
+                      style={[
+                        stylesCompleto.tableHeaderTextCompleto,
+                        stylesCompleto.headerCellMaterialTotal,
+                      ]}
+                    >
+                      TOTAL
+                    </Text>
+                    <Text
+                      style={[
+                        stylesCompleto.tableHeaderTextCompleto,
+                        stylesCompleto.headerCellTotal,
+                      ]}
+                    >
+                      TOTAL
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderText, { width: "10%" }]}>
+                    ITEM
+                  </Text>
+                  <Text style={[styles.tableHeaderText, { width: "70%" }]}>
+                    DESCRIÇÃO DOS SERVIÇOS
+                  </Text>
+                  <Text style={[styles.tableHeaderText, { width: "10%" }]}>
+                    UNID.
+                  </Text>
+                  <Text style={[styles.tableHeaderText, { width: "10%" }]}>
+                    QTE.
+                  </Text>
+                </View>
+              )}
+
+              {/* Agrupar por categoria */}
+              {categoriasResidenciais.map((categoria, catIdx) => {
+                const itensCategoria = itensResidenciais.filter(
+                  (item) => item.categoriaNome === categoria
+                );
+                const subtotalMaoDeObra = itensCategoria.reduce(
+                  (acc, item) => acc + item.valorTotalMaoDeObra,
+                  0
+                );
+                const subtotalMaterial = itensCategoria.reduce(
+                  (acc, item) => acc + item.valorTotalMaterial,
+                  0
+                );
+                const subtotalTotal = itensCategoria.reduce(
+                  (acc, item) => acc + item.valorTotal,
+                  0
+                );
+                const categoriaNumero = catIdx + 1;
+                return (
+                  <View key={categoria}>
+                    {/* Linha da categoria */}
+                    <View style={stylesCompleto.categoriaRow}>
+                      <Text
+                        style={[
+                          stylesCompleto.categoriaText,
+                          {
+                            width:
+                              orcamento.mostrarValoresDetalhados !== false
+                                ? "8%"
+                                : "10%",
+                          },
+                        ]}
+                      >
+                        {categoriaNumero}.0
+                      </Text>
+                      <Text style={stylesCompleto.categoriaText}>
+                        {categoria}
+                      </Text>
+                    </View>
+                    {/* Itens da categoria */}
+                    {itensCategoria.map((item, idx) => {
+                      const itemNum = `${categoriaNumero}.${idx + 1}`;
+                      const isAlt = idx % 2 === 1;
+                      return orcamento.mostrarValoresDetalhados !== false ? (
+                        <View
+                          key={idx}
+                          style={isAlt ? styles.tableRowAlt : styles.tableRow}
+                        >
+                          <Text style={stylesCompleto.colItem}>{itemNum}</Text>
+                          <Text style={stylesCompleto.colDescricaoCompleto}>
+                            {item.descricao}
+                          </Text>
+                          <Text style={stylesCompleto.colUnidCompleto}>
+                            {item.unidade || "un"}
+                          </Text>
+                          <Text style={stylesCompleto.colQtdCompleto}>
+                            {item.quantidade}
+                          </Text>
+                          <Text style={stylesCompleto.colMaoDeObraUnit}>
+                            {formatCurrencyShort(item.valorUnitarioMaoDeObra)}
+                          </Text>
+                          <Text style={stylesCompleto.colMaoDeObraTotal}>
+                            {formatCurrencyShort(item.valorTotalMaoDeObra)}
+                          </Text>
+                          <Text style={stylesCompleto.colMaterialUnit}>
+                            {formatCurrencyShort(item.valorUnitarioMaterial)}
+                          </Text>
+                          <Text style={stylesCompleto.colMaterialTotal}>
+                            {formatCurrencyShort(item.valorTotalMaterial)}
+                          </Text>
+                          <Text style={stylesCompleto.colTotalCompleto}>
+                            {formatCurrencyShort(item.valorTotal)}
+                          </Text>
+                        </View>
+                      ) : (
+                        <View
+                          key={idx}
+                          style={isAlt ? styles.tableRowAlt : styles.tableRow}
+                        >
+                          <Text
+                            style={{
+                              width: "10%",
+                              fontSize: 8,
+                              textAlign: "center",
+                            }}
+                          >
+                            {itemNum}
+                          </Text>
+                          <Text style={{ width: "70%", fontSize: 8 }}>
+                            {item.descricao}
+                          </Text>
+                          <Text
+                            style={{
+                              width: "10%",
+                              fontSize: 8,
+                              textAlign: "center",
+                            }}
+                          >
+                            {item.unidade || "un"}
+                          </Text>
+                          <Text
+                            style={{
+                              width: "10%",
+                              fontSize: 8,
+                              textAlign: "center",
+                            }}
+                          >
+                            {item.quantidade}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                    {/* Linha de subtotal da categoria - só mostra na versão detalhada */}
+                    {orcamento.mostrarValoresDetalhados !== false && (
+                      <View style={stylesCompleto.subtotalRow}>
+                        <Text
+                          style={[
+                            stylesCompleto.subtotalText,
+                            stylesCompleto.colItem,
+                          ]}
+                        ></Text>
+                        <Text
+                          style={[
+                            stylesCompleto.subtotalText,
+                            stylesCompleto.colDescricaoCompleto,
+                          ]}
+                        >
+                          SUBTOTAL ITEM {categoriaNumero}.0
+                        </Text>
+                        <Text
+                          style={[
+                            stylesCompleto.subtotalText,
+                            stylesCompleto.colUnidCompleto,
+                          ]}
+                        ></Text>
+                        <Text
+                          style={[
+                            stylesCompleto.subtotalText,
+                            stylesCompleto.colQtdCompleto,
+                          ]}
+                        ></Text>
+                        <Text
+                          style={[
+                            stylesCompleto.subtotalText,
+                            stylesCompleto.colMaoDeObraUnit,
+                          ]}
+                        ></Text>
+                        <Text
+                          style={[
+                            stylesCompleto.subtotalValue,
+                            stylesCompleto.colMaoDeObraTotal,
+                          ]}
+                        >
+                          {formatCurrencyShort(subtotalMaoDeObra)}
+                        </Text>
+                        <Text
+                          style={[
+                            stylesCompleto.subtotalText,
+                            stylesCompleto.colMaterialUnit,
+                          ]}
+                        ></Text>
+                        <Text
+                          style={[
+                            stylesCompleto.subtotalValue,
+                            stylesCompleto.colMaterialTotal,
+                          ]}
+                        >
+                          {formatCurrencyShort(subtotalMaterial)}
+                        </Text>
+                        <Text
+                          style={[
+                            stylesCompleto.subtotalValue,
+                            stylesCompleto.colTotalCompleto,
+                          ]}
+                        >
+                          {formatCurrencyShort(subtotalTotal)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+              {/* Total RESIDENCIAL */}
+              {orcamento.mostrarValoresDetalhados !== false ? (
+                <View style={stylesCompleto.totalEtapaRow}>
+                  <Text
+                    style={[
+                      stylesCompleto.totalEtapaText,
+                      stylesCompleto.colItem,
+                    ]}
+                  ></Text>
+                  <Text
+                    style={[
+                      stylesCompleto.totalEtapaText,
+                      stylesCompleto.colDescricaoCompleto,
+                    ]}
+                  >
+                    TOTAL RESIDENCIAL
+                  </Text>
+                  <Text
+                    style={[
+                      stylesCompleto.totalEtapaText,
+                      stylesCompleto.colUnidCompleto,
+                    ]}
+                  ></Text>
+                  <Text
+                    style={[
+                      stylesCompleto.totalEtapaText,
+                      stylesCompleto.colQtdCompleto,
+                    ]}
+                  ></Text>
+                  <Text
+                    style={[
+                      stylesCompleto.totalEtapaText,
+                      stylesCompleto.colMaoDeObraUnit,
+                    ]}
+                  ></Text>
+                  <Text
+                    style={[
+                      stylesCompleto.totalEtapaValue,
+                      stylesCompleto.colMaoDeObraTotal,
+                    ]}
+                  >
+                    {formatCurrencyShort(
+                      itensResidenciais.reduce(
+                        (acc, item) => acc + item.valorTotalMaoDeObra,
+                        0
+                      )
+                    )}
+                  </Text>
+                  <Text
+                    style={[
+                      stylesCompleto.totalEtapaText,
+                      stylesCompleto.colMaterialUnit,
+                    ]}
+                  ></Text>
+                  <Text
+                    style={[
+                      stylesCompleto.totalEtapaValue,
+                      stylesCompleto.colMaterialTotal,
+                    ]}
+                  >
+                    {formatCurrencyShort(
+                      itensResidenciais.reduce(
+                        (acc, item) => acc + item.valorTotalMaterial,
+                        0
+                      )
+                    )}
+                  </Text>
+                  <Text
+                    style={[
+                      stylesCompleto.totalEtapaValue,
+                      stylesCompleto.colTotalCompleto,
+                    ]}
+                  >
+                    {formatCurrencyShort(
+                      itensResidenciais.reduce(
+                        (acc, item) => acc + item.valorTotal,
+                        0
+                      )
+                    )}
+                  </Text>
+                </View>
+              ) : (
+                <View style={stylesCompleto.totalEtapaRow}>
+                  <Text style={{ width: "10%", fontSize: 9 }}></Text>
+                  <Text
+                    style={{
+                      width: "70%",
+                      fontSize: 9,
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                  >
+                    TOTAL RESIDENCIAL
+                  </Text>
+                  <Text
+                    style={{
+                      width: "20%",
+                      fontSize: 9,
+                      textAlign: "right",
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                  >
+                    {formatCurrencyShort(
+                      itensResidenciais.reduce(
+                        (acc, item) => acc + item.valorTotal,
+                        0
+                      )
+                    )}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* Totais */}
         {orcamento.mostrarValoresDetalhados !== false ? (
           <View style={stylesCompleto.totaisGrid}>
@@ -2108,7 +2108,7 @@ export function OrcamentoCompletoPDFDocument({
             Esta proposta tem validade de{" "}
             {configuracoes?.diasValidadeOrcamento || 30} (
             {numeroPorExtenso(configuracoes?.diasValidadeOrcamento || 30)}) dias
-            e o seu aceite poderá ser efetuado por e-mail ou fax.
+            e o seu aceite poderá ser efetuado pelo WhatsApp ou e-mail.
           </Text>
         </View>
 

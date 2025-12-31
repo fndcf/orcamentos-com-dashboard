@@ -163,6 +163,27 @@ describe('limitacaoService', () => {
         ordem: 1,
       });
     });
+
+    it('deve lançar ValidationError quando texto exceder 1000 caracteres', async () => {
+      const textoGrande = 'a'.repeat(1001);
+
+      await expect(limitacaoService.criar({ texto: textoGrande })).rejects.toThrow(ValidationError);
+      await expect(limitacaoService.criar({ texto: textoGrande })).rejects.toThrow(
+        'Texto deve ter no máximo 1000 caracteres'
+      );
+    });
+
+    it('deve aceitar texto com exatamente 1000 caracteres', async () => {
+      const textoExato = 'a'.repeat(1000);
+      (limitacaoRepository.findByTexto as jest.Mock).mockResolvedValue(null);
+      (limitacaoRepository.getNextOrdem as jest.Mock).mockResolvedValue(1);
+      (limitacaoRepository.create as jest.Mock).mockResolvedValue({ ...mockLimitacao, texto: textoExato });
+
+      const resultado = await limitacaoService.criar({ texto: textoExato });
+
+      expect(resultado).toBeDefined();
+      expect(limitacaoRepository.create).toHaveBeenCalled();
+    });
   });
 
   describe('atualizar', () => {
@@ -254,6 +275,28 @@ describe('limitacaoService', () => {
       (limitacaoRepository.update as jest.Mock).mockResolvedValue(null);
 
       await expect(limitacaoService.atualizar('1', { ativo: false })).rejects.toThrow('Erro ao atualizar limitação');
+    });
+
+    it('deve lançar ValidationError quando novo texto exceder 1000 caracteres', async () => {
+      const textoGrande = 'a'.repeat(1001);
+      (limitacaoRepository.findById as jest.Mock).mockResolvedValue(mockLimitacao);
+
+      await expect(limitacaoService.atualizar('1', { texto: textoGrande })).rejects.toThrow(ValidationError);
+      await expect(limitacaoService.atualizar('1', { texto: textoGrande })).rejects.toThrow(
+        'Texto deve ter no máximo 1000 caracteres'
+      );
+    });
+
+    it('deve aceitar atualização com texto de exatamente 1000 caracteres', async () => {
+      const textoExato = 'a'.repeat(1000);
+      (limitacaoRepository.findById as jest.Mock).mockResolvedValue(mockLimitacao);
+      (limitacaoRepository.findByTexto as jest.Mock).mockResolvedValue(null);
+      (limitacaoRepository.update as jest.Mock).mockResolvedValue({ ...mockLimitacao, texto: textoExato });
+
+      const resultado = await limitacaoService.atualizar('1', { texto: textoExato });
+
+      expect(resultado).toBeDefined();
+      expect(limitacaoRepository.update).toHaveBeenCalled();
     });
   });
 

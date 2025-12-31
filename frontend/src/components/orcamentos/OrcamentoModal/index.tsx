@@ -50,7 +50,7 @@ interface OrcamentoModalProps {
 }
 
 const emptyItemCompleto: OrcamentoItemCompleto = {
-  etapa: "residencial",
+  etapa: "comercial",
   categoriaId: "",
   categoriaNome: "",
   descricao: "",
@@ -96,8 +96,11 @@ export function OrcamentoModal({
     "a_vista" | "a_combinar" | "parcelado"
   >("a_combinar");
   const [parcelamentoTexto, setParcelamentoTexto] = useState("");
-  const [parcelamentoDados, setParcelamentoDados] = useState<ParcelamentoDados | undefined>(undefined);
-  const [mostrarValoresDetalhados, setMostrarValoresDetalhados] = useState(true);
+  const [parcelamentoDados, setParcelamentoDados] = useState<
+    ParcelamentoDados | undefined
+  >(undefined);
+  const [mostrarValoresDetalhados, setMostrarValoresDetalhados] =
+    useState(true);
 
   // Estados comuns
   const [observacoes, setObservacoes] = useState("");
@@ -127,9 +130,7 @@ export function OrcamentoModal({
         );
         // Converter textos das limitações de volta para IDs (para compatibilidade com checkboxes)
         const limitacoesIds = (orcamento.limitacoesSelecionadas || [])
-          .map(
-            (texto) => limitacoesAtivas?.find((l) => l.texto === texto)?.id
-          )
+          .map((texto) => limitacoesAtivas?.find((l) => l.texto === texto)?.id)
           .filter((id): id is string => !!id);
         setLimitacoesSelecionadas(
           limitacoesIds.length > 0
@@ -141,7 +142,9 @@ export function OrcamentoModal({
         setCondicaoPagamento(orcamento.condicaoPagamento || "a_combinar");
         setParcelamentoTexto(orcamento.parcelamentoTexto || "");
         setParcelamentoDados(orcamento.parcelamentoDados);
-        setMostrarValoresDetalhados(orcamento.mostrarValoresDetalhados !== false);
+        setMostrarValoresDetalhados(
+          orcamento.mostrarValoresDetalhados !== false
+        );
 
         // Buscar cliente selecionado
         const cliente = clientes?.find((c) => c.id === orcamento.clienteId);
@@ -162,9 +165,7 @@ export function OrcamentoModal({
         );
         // Converter textos das limitações de volta para IDs (para compatibilidade com checkboxes)
         const limitacoesIds = (duplicarDe.limitacoesSelecionadas || [])
-          .map(
-            (texto) => limitacoesAtivas?.find((l) => l.texto === texto)?.id
-          )
+          .map((texto) => limitacoesAtivas?.find((l) => l.texto === texto)?.id)
           .filter((id): id is string => !!id);
         setLimitacoesSelecionadas(
           limitacoesIds.length > 0
@@ -176,7 +177,9 @@ export function OrcamentoModal({
         setCondicaoPagamento(duplicarDe.condicaoPagamento || "a_combinar");
         setParcelamentoTexto(duplicarDe.parcelamentoTexto || "");
         setParcelamentoDados(duplicarDe.parcelamentoDados);
-        setMostrarValoresDetalhados(duplicarDe.mostrarValoresDetalhados !== false);
+        setMostrarValoresDetalhados(
+          duplicarDe.mostrarValoresDetalhados !== false
+        );
 
         // Buscar cliente selecionado
         const cliente = clientes?.find((c) => c.id === duplicarDe.clienteId);
@@ -327,7 +330,10 @@ export function OrcamentoModal({
 
   // Calcular valor total do orçamento
   const valorTotalOrcamento = useMemo(() => {
-    return itensCompleto.reduce((total, item) => total + (item.valorTotal || 0), 0);
+    return itensCompleto.reduce(
+      (total, item) => total + (item.valorTotal || 0),
+      0
+    );
   }, [itensCompleto]);
 
   const scrollToFirstError = (errorKeys: string[]) => {
@@ -376,9 +382,7 @@ export function OrcamentoModal({
       newErrors.servico = "Selecione um serviço";
     }
 
-    const itensValidos = itensCompleto.filter((item) =>
-      item.descricao.trim()
-    );
+    const itensValidos = itensCompleto.filter((item) => item.descricao.trim());
     if (itensValidos.length === 0) {
       newErrors.itensCompleto = "Adicione pelo menos um item com descrição";
     }
@@ -428,9 +432,7 @@ export function OrcamentoModal({
         };
       });
 
-    const servicoSelecionado = servicosAtivos?.find(
-      (s) => s.id === servicoId
-    );
+    const servicoSelecionado = servicosAtivos?.find((s) => s.id === servicoId);
 
     // Converter IDs das limitações para textos
     const limitacoesTextos = limitacoesSelecionadas
@@ -453,13 +455,12 @@ export function OrcamentoModal({
           ? parcelamentoTexto.trim()
           : undefined,
       parcelamentoDados:
-        condicaoPagamento === "parcelado"
-          ? parcelamentoDados
-          : undefined,
+        condicaoPagamento === "parcelado" ? parcelamentoDados : undefined,
       mostrarValoresDetalhados,
       observacoes: observacoes.trim() || undefined,
-      consultor: consultor.trim() || undefined,
-      contato: contato.trim() || undefined,
+      // Envia string vazia para permitir limpar os campos ao editar
+      consultor: consultor.trim(),
+      contato: contato.trim(),
     });
 
     onClose();
@@ -596,6 +597,7 @@ export function OrcamentoModal({
         <CondicaoPagamentoFormSection
           condicao={condicaoPagamento}
           parcelamentoTexto={parcelamentoTexto}
+          parcelamentoDados={parcelamentoDados}
           onCondicaoChange={setCondicaoPagamento}
           onParcelamentoTextoChange={setParcelamentoTexto}
           onParcelamentoDadosChange={setParcelamentoDados}

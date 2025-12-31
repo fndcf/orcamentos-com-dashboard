@@ -47,6 +47,8 @@ interface AtualizarOrcamentoDTO {
   // Campos comuns
   observacoes?: string;
   dataValidade?: Date;
+  consultor?: string;
+  contato?: string;
 }
 
 export const orcamentoService = {
@@ -230,8 +232,15 @@ export const orcamentoService = {
     if (data.limitacoesSelecionadas !== undefined) updateData.limitacoesSelecionadas = data.limitacoesSelecionadas;
     if (data.prazoExecucaoServicos !== undefined) updateData.prazoExecucaoServicos = data.prazoExecucaoServicos;
     if (data.prazoVistoriaBombeiros !== undefined) updateData.prazoVistoriaBombeiros = data.prazoVistoriaBombeiros;
-    if (data.condicaoPagamento !== undefined) updateData.condicaoPagamento = data.condicaoPagamento;
-    if (data.parcelamentoTexto !== undefined) updateData.parcelamentoTexto = data.parcelamentoTexto?.trim() || undefined;
+    if (data.condicaoPagamento !== undefined) {
+      updateData.condicaoPagamento = data.condicaoPagamento;
+      // Limpar dados de parcelamento se a condição não for "parcelado"
+      if (data.condicaoPagamento !== 'parcelado') {
+        updateData.parcelamentoTexto = '';
+        updateData.parcelamentoDados = null;
+      }
+    }
+    if (data.parcelamentoTexto !== undefined) updateData.parcelamentoTexto = data.parcelamentoTexto?.trim() || '';
     if (data.parcelamentoDados !== undefined) updateData.parcelamentoDados = data.parcelamentoDados;
     if (data.mostrarValoresDetalhados !== undefined) updateData.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
 
@@ -244,6 +253,15 @@ export const orcamentoService = {
 
     if (data.dataValidade) {
       updateData.dataValidade = data.dataValidade;
+    }
+
+    // Campos consultor e contato (permite limpar os campos passando string vazia)
+    if (data.consultor !== undefined) {
+      updateData.consultor = data.consultor?.trim() || '';
+    }
+
+    if (data.contato !== undefined) {
+      updateData.contato = data.contato?.trim() || '';
     }
 
     return orcamentoRepository.update(id, updateData);

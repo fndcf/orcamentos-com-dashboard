@@ -99,7 +99,11 @@ export function ItensCompleto({
       onItemChange(index, "descricao", item.descricao);
       onItemChange(index, "unidade", item.unidade);
       onItemChange(index, "valorUnitarioMaterial", item.valorUnitario || 0);
-      onItemChange(index, "valorUnitarioMaoDeObra", item.valorMaoDeObraUnitario || 0);
+      onItemChange(
+        index,
+        "valorUnitarioMaoDeObra",
+        item.valorMaoDeObraUnitario || 0
+      );
     }
     setDescricaoDropdownOpen(null);
   };
@@ -151,8 +155,8 @@ export function ItensCompleto({
                   onItemChange(index, "etapa", e.target.value as EtapaTipo)
                 }
               >
-                <option value="residencial">Residencial</option>
                 <option value="comercial">Comercial</option>
+                <option value="residencial">Residencial</option>
               </Select>
             </InputGroup>
 
@@ -226,9 +230,20 @@ export function ItensCompleto({
                           <div className="descricao">{itemPred.descricao}</div>
                           <div className="unidade">
                             Unidade: {itemPred.unidade}
-                            {(itemPred.valorUnitario || itemPred.valorMaoDeObraUnitario) && (
-                              <span style={{ marginLeft: 8, color: 'var(--primary)' }}>
-                                | Mat: {formatCurrency(itemPred.valorUnitario || 0)} | M.O: {formatCurrency(itemPred.valorMaoDeObraUnitario || 0)}
+                            {(itemPred.valorUnitario ||
+                              itemPred.valorMaoDeObraUnitario) && (
+                              <span
+                                style={{
+                                  marginLeft: 8,
+                                  color: "var(--primary)",
+                                }}
+                              >
+                                | Mat:{" "}
+                                {formatCurrency(itemPred.valorUnitario || 0)} |
+                                M.O:{" "}
+                                {formatCurrency(
+                                  itemPred.valorMaoDeObraUnitario || 0
+                                )}
                               </span>
                             )}
                           </div>

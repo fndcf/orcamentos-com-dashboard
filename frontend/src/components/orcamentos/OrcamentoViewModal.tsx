@@ -1,10 +1,15 @@
-import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
-import { Orcamento, OrcamentoStatus } from '../../types';
-import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
-import { formatCurrency, formatDate, formatDocument, formatPhone } from '../../utils/constants';
-import { gerarPDFOrcamento, gerarPDFExecucao } from './OrcamentoPDF';
+import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
+import { Orcamento, OrcamentoStatus } from "../../types";
+import { Modal } from "../ui/Modal";
+import { Button } from "../ui/Button";
+import {
+  formatCurrency,
+  formatDate,
+  formatDocument,
+  formatPhone,
+} from "../../utils/constants";
+import { gerarPDFOrcamento, gerarPDFExecucao } from "./OrcamentoPDF";
 
 const Header = styled.div`
   display: flex;
@@ -48,22 +53,22 @@ const StatusBadge = styled.span<{ $status: OrcamentoStatus }>`
 
   ${({ $status }) => {
     switch ($status) {
-      case 'aberto':
+      case "aberto":
         return `
           background: rgba(33, 150, 243, 0.1);
           color: #1976d2;
         `;
-      case 'aceito':
+      case "aceito":
         return `
           background: rgba(76, 175, 80, 0.1);
           color: #388e3c;
         `;
-      case 'recusado':
+      case "recusado":
         return `
           background: rgba(244, 67, 54, 0.1);
           color: #d32f2f;
         `;
-      case 'expirado':
+      case "expirado":
         return `
           background: rgba(158, 158, 158, 0.1);
           color: #616161;
@@ -367,10 +372,10 @@ const ConsultorInfo = styled.div`
 `;
 
 const statusLabels: Record<OrcamentoStatus, string> = {
-  aberto: 'Aberto',
-  aceito: 'Aceito',
-  recusado: 'Recusado',
-  expirado: 'Expirado',
+  aberto: "Aberto",
+  aceito: "Aceito",
+  recusado: "Recusado",
+  expirado: "Expirado",
 };
 
 interface OrcamentoViewModalProps {
@@ -394,11 +399,11 @@ export function OrcamentoViewModal({
 
   const handleGoToOrcamentos = () => {
     onClose();
-    navigate('/orcamentos');
+    navigate("/orcamentos");
   };
 
   const handleEdit = () => {
-    if (orcamento.status !== 'aberto') {
+    if (orcamento.status !== "aberto") {
       alert('Só é possível editar orçamentos com status "Aberto"');
       return;
     }
@@ -438,7 +443,8 @@ export function OrcamentoViewModal({
         <OrcamentoNumero>
           <div className="numero">Orçamento #{orcamento.numero}</div>
           <div className="data">
-            Emitido em {formatDate(orcamento.dataEmissao)} | Válido até {formatDate(orcamento.dataValidade)}
+            Emitido em {formatDate(orcamento.dataEmissao)} | Válido até{" "}
+            {formatDate(orcamento.dataValidade)}
           </div>
         </OrcamentoNumero>
         <StatusBadge $status={orcamento.status}>
@@ -481,10 +487,14 @@ export function OrcamentoViewModal({
           {(orcamento.consultor || orcamento.contato) && (
             <ConsultorInfo>
               {orcamento.consultor && (
-                <span>Consultor: <strong>{orcamento.consultor}</strong></span>
+                <span>
+                  Consultor: <strong>{orcamento.consultor}</strong>
+                </span>
               )}
               {orcamento.contato && (
-                <span>Contato: <strong>{orcamento.contato}</strong></span>
+                <span>
+                  Contato: <strong>{orcamento.contato}</strong>
+                </span>
               )}
             </ConsultorInfo>
           )}
@@ -513,27 +523,41 @@ export function OrcamentoViewModal({
               <span>Etapa</span>
               <span>Categoria</span>
               <span>Descrição</span>
-              <span style={{ textAlign: 'right' }}>Qtd</span>
-              <span style={{ textAlign: 'right' }}>Unid</span>
-              <span style={{ textAlign: 'right' }}>M.O. Unit.</span>
-              <span style={{ textAlign: 'right' }}>Mat. Unit.</span>
-              <span style={{ textAlign: 'right' }}>Total M.O.</span>
-              <span style={{ textAlign: 'right' }}>Total Mat.</span>
+              <span style={{ textAlign: "right" }}>Qtd</span>
+              <span style={{ textAlign: "right" }}>Unid</span>
+              <span style={{ textAlign: "right" }}>M.O. Unit.</span>
+              <span style={{ textAlign: "right" }}>Mat. Unit.</span>
+              <span style={{ textAlign: "right" }}>Total M.O.</span>
+              <span style={{ textAlign: "right" }}>Total Mat.</span>
             </ItemHeaderCompleto>
             {orcamento.itensCompleto.map((item, index) => (
               <ItemRowCompleto key={index}>
-                <DesktopOnly className="etapa">{item.etapa === 'residencial' ? 'Residencial' : 'Comercial'}</DesktopOnly>
-                <DesktopOnly className="categoria">{item.categoriaNome}</DesktopOnly>
+                <DesktopOnly className="etapa">
+                  {item.etapa === "comercial" ? "Comercial" : "Residencial"}
+                </DesktopOnly>
+                <DesktopOnly className="categoria">
+                  {item.categoriaNome}
+                </DesktopOnly>
                 <span className="descricao">{item.descricao}</span>
                 <DesktopOnly className="number">{item.quantidade}</DesktopOnly>
                 <DesktopOnly className="number">{item.unidade}</DesktopOnly>
-                <DesktopOnly className="valor">{formatCurrency(item.valorUnitarioMaoDeObra)}</DesktopOnly>
-                <DesktopOnly className="valor">{formatCurrency(item.valorUnitarioMaterial)}</DesktopOnly>
-                <DesktopOnly className="valor">{formatCurrency(item.valorTotalMaoDeObra)}</DesktopOnly>
-                <DesktopOnly className="valor">{formatCurrency(item.valorTotalMaterial)}</DesktopOnly>
+                <DesktopOnly className="valor">
+                  {formatCurrency(item.valorUnitarioMaoDeObra)}
+                </DesktopOnly>
+                <DesktopOnly className="valor">
+                  {formatCurrency(item.valorUnitarioMaterial)}
+                </DesktopOnly>
+                <DesktopOnly className="valor">
+                  {formatCurrency(item.valorTotalMaoDeObra)}
+                </DesktopOnly>
+                <DesktopOnly className="valor">
+                  {formatCurrency(item.valorTotalMaterial)}
+                </DesktopOnly>
                 <MobileItemField>
                   <span className="label">Etapa:</span>
-                  <span>{item.etapa === 'residencial' ? 'Residencial' : 'Comercial'}</span>
+                  <span>
+                    {item.etapa === "comercial" ? "Comercial" : "Residencial"}
+                  </span>
                 </MobileItemField>
                 <MobileItemField>
                   <span className="label">Categoria:</span>
@@ -541,7 +565,9 @@ export function OrcamentoViewModal({
                 </MobileItemField>
                 <MobileItemField>
                   <span className="label">Quantidade:</span>
-                  <span>{item.quantidade} {item.unidade}</span>
+                  <span>
+                    {item.quantidade} {item.unidade}
+                  </span>
                 </MobileItemField>
                 <MobileItemField>
                   <span className="label">M.O. Unitário:</span>
@@ -565,59 +591,74 @@ export function OrcamentoViewModal({
           <TotaisCompletoSection>
             <div className="total-item">
               <div className="label">Total Mão de Obra</div>
-              <div className="value">{formatCurrency(orcamento.valorTotalMaoDeObra || 0)}</div>
+              <div className="value">
+                {formatCurrency(orcamento.valorTotalMaoDeObra || 0)}
+              </div>
             </div>
             <div className="total-item">
               <div className="label">Total Material</div>
-              <div className="value">{formatCurrency(orcamento.valorTotalMaterial || 0)}</div>
+              <div className="value">
+                {formatCurrency(orcamento.valorTotalMaterial || 0)}
+              </div>
             </div>
             <div className="total-item">
               <div className="label">Total Geral</div>
-              <div className="value destaque">{formatCurrency(orcamento.valorTotal)}</div>
+              <div className="value destaque">
+                {formatCurrency(orcamento.valorTotal)}
+              </div>
             </div>
           </TotaisCompletoSection>
         </Section>
       )}
 
       {/* Limitações */}
-      {orcamento.limitacoesSelecionadas && orcamento.limitacoesSelecionadas.length > 0 && (
-        <Section>
-          <h4>Limitações do Escopo</h4>
-          <LimitacoesSection>
-            <ul>
-              {orcamento.limitacoesSelecionadas.map((limitacao, index) => (
-                <li key={index}>{limitacao}</li>
-              ))}
-            </ul>
-          </LimitacoesSection>
-        </Section>
-      )}
+      {orcamento.limitacoesSelecionadas &&
+        orcamento.limitacoesSelecionadas.length > 0 && (
+          <Section>
+            <h4>Limitações do Escopo</h4>
+            <LimitacoesSection>
+              <ul>
+                {orcamento.limitacoesSelecionadas.map((limitacao, index) => (
+                  <li key={index}>{limitacao}</li>
+                ))}
+              </ul>
+            </LimitacoesSection>
+          </Section>
+        )}
 
       {/* Prazos e Condições */}
       <Section>
         <h4>Prazos e Condições</h4>
-          <InfoSection>
-            {orcamento.prazoExecucaoServicos && (
-              <div className="info-row">
-                <span className="label">Prazo de Execução dos Serviços</span>
-                <span className="value">{orcamento.prazoExecucaoServicos} dias úteis (podendo ser intercalados)</span>
-              </div>
-            )}
-            {orcamento.prazoVistoriaBombeiros && (
-              <div className="info-row">
-                <span className="label">Prazo para Vistoria do Corpo de Bombeiros</span>
-                <span className="value">{orcamento.prazoVistoriaBombeiros} dias (após gerado o protocolo)</span>
-              </div>
-            )}
+        <InfoSection>
+          {orcamento.prazoExecucaoServicos && (
             <div className="info-row">
-              <span className="label">Condição de Pagamento</span>
+              <span className="label">Prazo de Execução dos Serviços</span>
               <span className="value">
-                {orcamento.condicaoPagamento === 'parcelado'
-                  ? orcamento.parcelamentoTexto || 'Parcelado'
-                  : 'A combinar'}
+                {orcamento.prazoExecucaoServicos} dias úteis (podendo ser
+                intercalados)
               </span>
             </div>
-          </InfoSection>
+          )}
+          {orcamento.prazoVistoriaBombeiros && (
+            <div className="info-row">
+              <span className="label">
+                Prazo para Vistoria do Corpo de Bombeiros
+              </span>
+              <span className="value">
+                {orcamento.prazoVistoriaBombeiros} dias (após gerado o
+                protocolo)
+              </span>
+            </div>
+          )}
+          <div className="info-row">
+            <span className="label">Condição de Pagamento</span>
+            <span className="value">
+              {orcamento.condicaoPagamento === "parcelado"
+                ? orcamento.parcelamentoTexto || "Parcelado"
+                : "A combinar"}
+            </span>
+          </div>
+        </InfoSection>
       </Section>
 
       <ActionButtons>
@@ -627,20 +668,20 @@ export function OrcamentoViewModal({
         <Button
           $variant="primary"
           onClick={handlePDF}
-          style={{ background: '#9333ea' }}
+          style={{ background: "#9333ea" }}
         >
           Gerar PDF
         </Button>
-        {orcamento.status === 'aceito' && (
+        {orcamento.status === "aceito" && (
           <Button
             $variant="primary"
             onClick={handlePDFExecucao}
-            style={{ background: '#ea580c', color: 'white' }}
+            style={{ background: "#ea580c", color: "white" }}
           >
             PDF Execução
           </Button>
         )}
-        {orcamento.status === 'aberto' && (
+        {orcamento.status === "aberto" && (
           <Button $variant="primary" onClick={handleEdit}>
             Editar
           </Button>
@@ -648,7 +689,7 @@ export function OrcamentoViewModal({
         <Button
           $variant="secondary"
           onClick={handleDuplicate}
-          style={{ background: '#059669', color: 'white' }}
+          style={{ background: "#059669", color: "white" }}
         >
           Duplicar
         </Button>

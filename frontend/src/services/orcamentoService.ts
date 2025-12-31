@@ -43,6 +43,8 @@ interface AtualizarOrcamentoDTO {
   // Campos comuns
   observacoes?: string;
   dataValidade?: Date;
+  consultor?: string;
+  contato?: string;
 }
 
 interface EstatisticasOrcamento {

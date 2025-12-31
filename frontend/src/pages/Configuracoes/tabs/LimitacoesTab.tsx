@@ -108,7 +108,13 @@ export function LimitacoesTab() {
     }
   };
 
-  const isSaveDisabled = !texto.trim() || texto.trim().length < 20;
+  const MAX_CARACTERES = 1000;
+  const MIN_CARACTERES = 20;
+  const caracteresUsados = texto.length;
+  const isSaveDisabled =
+    !texto.trim() ||
+    texto.trim().length < MIN_CARACTERES ||
+    texto.length > MAX_CARACTERES;
 
   return (
     <>
@@ -196,11 +202,35 @@ export function LimitacoesTab() {
             onChange={(e) => setTexto(e.target.value)}
             placeholder="Ex: O Contratante deverá nos informar procedimentos e rotinas operacionais ligadas à saúde e segurança a serem observadas e seguidas por nossos profissionais durante a execução dos trabalhos de campo."
             rows={5}
+            maxLength={MAX_CARACTERES}
           />
-          <HelpText>
-            Mínimo de 20 caracteres. Este parágrafo poderá ser selecionado no
-            orçamento.
-          </HelpText>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginTop: 4,
+            }}
+          >
+            <HelpText style={{ margin: 0 }}>
+              Mínimo de {MIN_CARACTERES} caracteres. Este parágrafo poderá ser
+              selecionado no orçamento.
+            </HelpText>
+            <span
+              style={{
+                fontSize: 12,
+                color:
+                  caracteresUsados > MAX_CARACTERES
+                    ? "#dc3545"
+                    : caracteresUsados > MAX_CARACTERES * 0.9
+                      ? "#fd7e14"
+                      : "#6c757d",
+                fontWeight: caracteresUsados > MAX_CARACTERES * 0.9 ? 500 : 400,
+              }}
+            >
+              {caracteresUsados}/{MAX_CARACTERES}
+            </span>
+          </div>
         </FormGroup>
 
         <ModalButtons>

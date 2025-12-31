@@ -1,11 +1,11 @@
 // Tipos de Status do Orçamento
-export type OrcamentoStatus = 'aberto' | 'aceito' | 'recusado' | 'expirado';
+export type OrcamentoStatus = "aberto" | "aceito" | "recusado" | "expirado";
 
 // Tipos de Orçamento (mantido apenas 'completo')
-export type OrcamentoTipo = 'completo';
+export type OrcamentoTipo = "completo";
 
 // Tipos de Etapa do Item (Residencial/Comercial)
-export type EtapaTipo = 'residencial' | 'comercial';
+export type EtapaTipo = "comercial" | "residencial";
 
 // Interface do Cliente
 export interface Cliente {
@@ -13,7 +13,7 @@ export interface Cliente {
   razaoSocial: string;
   nomeFantasia?: string;
   cnpj?: string;
-  tipoPessoa?: 'fisica' | 'juridica';
+  tipoPessoa?: "fisica" | "juridica";
   endereco?: string;
   cidade?: string;
   estado?: string;
@@ -40,7 +40,7 @@ export interface OrcamentoItemCompleto {
 }
 
 // Tipos de Pessoa (Cliente)
-export type TipoPessoa = 'fisica' | 'juridica';
+export type TipoPessoa = "fisica" | "juridica";
 
 // Interface para opção de parcelamento
 export interface ParcelamentoOpcao {
@@ -88,9 +88,9 @@ export interface Orcamento {
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number; // Dias úteis para execução dos serviços
   prazoVistoriaBombeiros?: number; // Dias para vistoria do Corpo de Bombeiros
-  condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
+  condicaoPagamento?: "a_vista" | "a_combinar" | "parcelado";
   parcelamentoTexto?: string;
-  parcelamentoDados?: ParcelamentoDados; // Dados estruturados do parcelamento para o PDF
+  parcelamentoDados?: ParcelamentoDados | null; // Dados estruturados do parcelamento para o PDF
   mostrarValoresDetalhados?: boolean; // Se true, mostra tabela de MdO/Material no PDF; se false, só valor total
   // Totais
   valorTotal: number;
@@ -127,10 +127,10 @@ export interface ItemServico {
   categoriaId: string;
   descricao: string;
   unidade: string;
-  valorUnitario?: number;           // Valor unitário de venda
-  valorMaoDeObraUnitario?: number;  // Valor unitário de mão de obra
-  valorCusto?: number;              // Valor de custo (para referência interna)
-  valorMaoDeObraCusto?: number;     // Valor de custo de mão de obra (para referência interna)
+  valorUnitario?: number; // Valor unitário de venda
+  valorMaoDeObraUnitario?: number; // Valor unitário de mão de obra
+  valorCusto?: number; // Valor de custo (para referência interna)
+  valorMaoDeObraCusto?: number; // Valor de custo de mão de obra (para referência interna)
   ativo: boolean;
   ordem: number;
   createdAt: Date;
