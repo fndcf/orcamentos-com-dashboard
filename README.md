@@ -6,7 +6,7 @@ Sistema completo de gestão de orçamentos para empresas de proteção contra in
 
 ### Gestão de Orçamentos
 
-- **Orçamento Completo**: Detalhamento por serviços, categorias, separação de mão de obra e materiais, limites de escopo selecionáveis e observações para escrita, formas de pagamento com parcelamentos e opções de entrada personalizada e prazos de execução e vistoria.
+- **Orçamento Completo**: Detalhamento por serviços, categorias, separação de mão de obra e materiais, limites de escopo selecionáveis e observações para escrita, formas de pagamento com parcelamentos, opções de entrada personalizada, **desconto para pagamento à vista** e prazos de execução e vistoria.
 - **Versionamento**: Controle de versões dos orçamentos
 - **Status**: Acompanhamento (aberto, aceito, recusado, expirado)
 - **Duplicação**: Criação de novos orçamentos baseados em existentes
@@ -25,7 +25,12 @@ Sistema completo de gestão de orçamentos para empresas de proteção contra in
 - **Itens de Serviço**: Descrições pré-definidas com unidades de medida, valor do material, valor da mão de obra, custo do material e custo da mão de abro
 - **Limitações**: Textos padrão de limitações/ressalvas
 - **Palavras-chave**: Monitoramento de prazos com notificações
-- **Dados da Empresa**: Configurações gerais (CNPJ, endereço, validade), parametrização de validade da proposta, valor minimo do parcelamento, taxa de juros e parcela miníma
+- **Dados da Empresa**: Configurações gerais (CNPJ, endereço, validade), parametrização de validade da proposta, valor mínimo do parcelamento, taxa de juros e parcela mínima
+
+### Condições de Pagamento
+
+- **Parcelamento**: Configuração de número de parcelas com taxa de juros, valor mínimo de parcela e opção de entrada personalizada
+- **À Vista com Desconto**: Aplicação de desconto percentual para pagamentos à vista, com cálculo automático do valor final e exibição no PDF
 
 ### Notificações
 
@@ -273,14 +278,14 @@ npm run test:coverage       # Com cobertura
 
 O projeto mantém uma cobertura de testes abrangente:
 
-### Backend (458 testes)
+### Backend (462 testes)
 
 | Métrica    | Cobertura |
 | ---------- | --------- |
-| Statements | 97.98%    |
-| Branches   | 92.02%    |
+| Statements | 97.36%    |
+| Branches   | 88.20%    |
 | Functions  | 99.42%    |
-| Lines      | 99.37%    |
+| Lines      | 98.88%    |
 
 - **Controllers**: 100% de cobertura (todos os endpoints)
 - **Services**: 100% de cobertura (lógica de negócio)
@@ -288,14 +293,14 @@ O projeto mantém uma cobertura de testes abrangente:
 - **Utils**: 100% de cobertura (logger, errors, constants)
 - **Events**: 100% de cobertura (EventBus)
 
-### Frontend (916 testes)
+### Frontend (60 testes)
 
 | Métrica    | Cobertura |
 | ---------- | --------- |
-| Statements | 93.97%    |
-| Branches   | 88.91%    |
-| Functions  | 84.82%    |
-| Lines      | 93.97%    |
+| Statements | 93.08%    |
+| Branches   | 84.72%    |
+| Functions  | 82.25%    |
+| Lines      | 93.08%    |
 
 - **Componentes**: OrcamentoModal, ClienteModal, NotificacaoDropdown, OrcamentoPDF
 - **Páginas**: Login, Dashboard, Clientes, Orçamentos, Notificações, Relatórios, Configurações
