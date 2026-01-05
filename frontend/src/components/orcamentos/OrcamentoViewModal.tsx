@@ -8,6 +8,7 @@ import {
   formatDate,
   formatDocument,
   formatPhone,
+  formatOrcamentoNumero,
 } from "../../utils/constants";
 import { gerarPDFOrcamento, gerarPDFExecucao } from "./OrcamentoPDF";
 
@@ -441,7 +442,7 @@ export function OrcamentoViewModal({
     >
       <Header>
         <OrcamentoNumero>
-          <div className="numero">Orçamento #{orcamento.numero}</div>
+          <div className="numero">Orçamento {formatOrcamentoNumero(orcamento.numero, orcamento.dataEmissao, orcamento.versao)}</div>
           <div className="data">
             Emitido em {formatDate(orcamento.dataEmissao)} | Válido até{" "}
             {formatDate(orcamento.dataValidade)}

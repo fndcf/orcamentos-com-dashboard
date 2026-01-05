@@ -16,6 +16,8 @@ export interface OrcamentoBase {
   observacoes?: string;
   consultor?: string;
   contato?: string;
+  email?: string; // Email específico do orçamento (prioridade sobre clienteEmail)
+  telefone?: string; // Telefone específico do orçamento (prioridade sobre clienteTelefone)
 }
 
 /** Campos completos do cliente no orçamento (para exibição) */

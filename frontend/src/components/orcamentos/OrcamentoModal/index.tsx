@@ -7,6 +7,7 @@ import {
   ParcelamentoDados,
   DescontoAVistaDados,
 } from "../../../types";
+import { formatOrcamentoNumero } from "../../../utils/constants";
 import { useClientes } from "../../../hooks/useClientes";
 import { useServicosAtivos } from "../../../hooks/useServicos";
 import { useCategoriasItemAtivas } from "../../../hooks/useCategoriasItem";
@@ -110,6 +111,8 @@ export function OrcamentoModal({
   const [observacoes, setObservacoes] = useState("");
   const [consultor, setConsultor] = useState("");
   const [contato, setContato] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Estado para novo cliente inline
@@ -125,6 +128,8 @@ export function OrcamentoModal({
         setObservacoes(orcamento.observacoes || "");
         setConsultor(orcamento.consultor || "");
         setContato(orcamento.contato || "");
+        setEmail(orcamento.email || "");
+        setTelefone(orcamento.telefone || "");
 
         setServicoId(orcamento.servicoId || "");
         setItensCompleto(
@@ -161,6 +166,8 @@ export function OrcamentoModal({
         setObservacoes(duplicarDe.observacoes || "");
         setConsultor(duplicarDe.consultor || "");
         setContato(duplicarDe.contato || "");
+        setEmail(duplicarDe.email || "");
+        setTelefone(duplicarDe.telefone || "");
 
         setServicoId(duplicarDe.servicoId || "");
         setItensCompleto(
@@ -208,6 +215,8 @@ export function OrcamentoModal({
         setObservacoes("");
         setConsultor("");
         setContato("");
+        setEmail("");
+        setTelefone("");
         setMostrarNovoCliente(false);
       }
       setErrors({});
@@ -478,6 +487,8 @@ export function OrcamentoModal({
       // Envia string vazia para permitir limpar os campos ao editar
       consultor: consultor.trim(),
       contato: contato.trim(),
+      email: email.trim(),
+      telefone: telefone.trim(),
     });
 
     onClose();
@@ -489,9 +500,9 @@ export function OrcamentoModal({
       onClose={onClose}
       title={
         orcamento
-          ? `Editar Orçamento #${orcamento.numero}`
+          ? `Editar Orçamento ${formatOrcamentoNumero(orcamento.numero, orcamento.dataEmissao, orcamento.versao)}`
           : duplicarDe
-          ? `Duplicar Orçamento #${duplicarDe.numero}`
+          ? `Duplicar Orçamento ${formatOrcamentoNumero(duplicarDe.numero, duplicarDe.dataEmissao, duplicarDe.versao)}`
           : "Novo Orçamento"
       }
       size="xlarge"
@@ -640,6 +651,27 @@ export function OrcamentoModal({
               placeholder="Nome do contato no cliente"
               value={contato}
               onChange={(e) => setContato(e.target.value)}
+            />
+          </InputGroup>
+        </InputRow>
+
+        <InputRow>
+          <InputGroup>
+            <Label>E-mail</Label>
+            <Input
+              type="email"
+              placeholder="E-mail para contato (prioridade sobre cadastro do cliente)"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </InputGroup>
+
+          <InputGroup>
+            <Label>Telefone</Label>
+            <Input
+              placeholder="Telefone para contato (prioridade sobre cadastro do cliente)"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
             />
           </InputGroup>
         </InputRow>

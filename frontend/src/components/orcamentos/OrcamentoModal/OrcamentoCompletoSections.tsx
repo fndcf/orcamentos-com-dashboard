@@ -271,6 +271,9 @@ export function CondicaoPagamentoFormSection({
   valorTotal,
   configuracoes,
 }: CondicaoPagamentoSectionProps) {
+  // Ref para controlar se já foi inicializado com os dados do pai
+  const isInitialized = useRef(false);
+
   // Inicializa com o valor salvo ou 20% como padrão
   const [entradaPercent, setEntradaPercent] = useState<number>(
     parcelamentoDados?.entradaPercent ?? 20
@@ -284,9 +287,12 @@ export function CondicaoPagamentoFormSection({
   );
 
   // Atualiza o estado quando parcelamentoDados mudar (ex: ao abrir modal de edição)
+  // Só sincroniza uma vez na inicialização, depois o estado local é controlado pelo usuário
   useEffect(() => {
-    if (parcelamentoDados?.entradaPercent !== undefined) {
-      setEntradaPercent(parcelamentoDados.entradaPercent);
+    const externalEntrada = parcelamentoDados?.entradaPercent;
+    if (!isInitialized.current && externalEntrada !== undefined) {
+      isInitialized.current = true;
+      setEntradaPercent(externalEntrada);
     }
   }, [parcelamentoDados?.entradaPercent]);
 

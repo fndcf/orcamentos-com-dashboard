@@ -38,7 +38,7 @@ import {
 import { OrcamentoModal } from "../components/orcamentos/OrcamentoModal";
 import { OrcamentoViewModal } from "../components/orcamentos/OrcamentoViewModal";
 import { gerarPDFOrcamento, gerarPDFExecucao } from "../components/orcamentos/OrcamentoPDF";
-import { formatCurrency, formatDate } from "../utils/constants";
+import { formatCurrency, formatDate, formatOrcamentoNumero } from "../utils/constants";
 import Footer from "@/components/layout/Footer";
 
 const Container = styled.div`
@@ -299,6 +299,8 @@ export function Orcamentos() {
           observacoes: data.observacoes,
           consultor: data.consultor,
           contato: data.contato,
+          email: data.email,
+          telefone: data.telefone,
         },
       });
     } else {
@@ -445,7 +447,7 @@ export function Orcamentos() {
                           onClick={() => setOrcamentoView(orcamento)}
                           title="Clique para ver detalhes"
                         >
-                          <span className="numero">#{orcamento.numero}</span>
+                          <span className="numero">{formatOrcamentoNumero(orcamento.numero, orcamento.dataEmissao, orcamento.versao)}</span>
                           <span className="cliente">
                             {orcamento.clienteNome}
                           </span>
@@ -530,7 +532,7 @@ export function Orcamentos() {
                       onClick={() => setOrcamentoView(orcamento)}
                       style={{ cursor: "pointer" }}
                     >
-                      <span className="primary">#{orcamento.numero}</span>
+                      <span className="primary">{formatOrcamentoNumero(orcamento.numero, orcamento.dataEmissao, orcamento.versao)}</span>
                       <span className="secondary">{orcamento.clienteNome}</span>
                     </MobileCardTitle>
                     <StatusBadge $status={orcamento.status}>

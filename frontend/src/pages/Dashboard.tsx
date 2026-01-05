@@ -18,7 +18,7 @@ import {
 import { useOrcamentos } from "../hooks/useOrcamentos";
 import { useClientes } from "../hooks/useClientes";
 import { Loading } from "../components/ui";
-import { formatCurrency } from "../utils/constants";
+import { formatCurrency, formatOrcamentoNumero } from "../utils/constants";
 import { Orcamento, OrcamentoStatus } from "../types";
 import { OrcamentoViewModal } from "../components/orcamentos/OrcamentoViewModal";
 import Footer from "@/components/layout/Footer";
@@ -572,7 +572,7 @@ export function Dashboard() {
               >
                 <div className="info">
                   <span className="numero">
-                    #{orcamento.numero}
+                    {formatOrcamentoNumero(orcamento.numero, orcamento.dataEmissao, orcamento.versao)}
                     <StatusBadge $status={orcamento.status}>
                       {STATUS_LABELS[orcamento.status]}
                     </StatusBadge>

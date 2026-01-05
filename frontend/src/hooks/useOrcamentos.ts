@@ -22,6 +22,8 @@ interface CriarOrcamentoDTO {
   diasValidade?: number;
   consultor?: string;
   contato?: string;
+  email?: string;
+  telefone?: string;
 }
 
 interface AtualizarOrcamentoDTO {
@@ -42,6 +44,8 @@ interface AtualizarOrcamentoDTO {
   dataValidade?: Date;
   consultor?: string;
   contato?: string;
+  email?: string;
+  telefone?: string;
 }
 
 export function useOrcamentos() {
