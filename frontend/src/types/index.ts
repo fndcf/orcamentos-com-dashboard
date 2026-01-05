@@ -86,6 +86,8 @@ export interface Orcamento {
   clienteEmail?: string;
   consultor?: string;
   contato?: string;
+  email?: string; // Email específico do orçamento (prioridade sobre clienteEmail)
+  telefone?: string; // Telefone específico do orçamento (prioridade sobre clienteTelefone)
   status: OrcamentoStatus;
   dataEmissao: Date | string;
   dataValidade: Date | string;
@@ -258,4 +260,6 @@ export interface OrcamentoSaveData {
   observacoes?: string;
   consultor?: string;
   contato?: string;
+  email?: string;
+  telefone?: string;
 }

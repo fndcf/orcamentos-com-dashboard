@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import { Cliente, Orcamento, OrcamentoStatus } from '../../types';
 import { useOrcamentosPorCliente } from '../../hooks/useOrcamentos';
 import { Modal, Loading, EmptyState } from '../ui';
-import { formatCurrency, formatDate } from '../../utils/constants';
+import { formatCurrency, formatDate, formatOrcamentoNumero } from '../../utils/constants';
 import { gerarPDFOrcamento } from '../orcamentos/OrcamentoPDF';
 
 const ClienteHeader = styled.div`
@@ -305,8 +305,7 @@ export function HistoricoOrcamentosModal({
               <OrcamentoCard key={orcamento.id}>
                 <OrcamentoInfo>
                   <span className="numero">
-                    Orçamento #{orcamento.numero}
-                    {orcamento.versao > 0 && `_v${String(orcamento.versao).padStart(2, '0')}`}
+                    Orçamento {formatOrcamentoNumero(orcamento.numero, orcamento.dataEmissao, orcamento.versao)}
                   </span>
                   <span className="data">
                     Emissão: {formatDate(orcamento.dataEmissao)} |

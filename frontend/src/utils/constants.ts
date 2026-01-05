@@ -76,3 +76,16 @@ export const formatPhone = (phone: string): string => {
   }
   return cleaned.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
 };
+
+// Formatação do número do orçamento no padrão #AANNNN_vXX
+// Exemplo: #260084_v00 (ano 2026, número 84, versão 0)
+export const formatOrcamentoNumero = (
+  numero: number,
+  dataEmissao: Date | string,
+  versao: number = 0
+): string => {
+  const ano = new Date(dataEmissao).getFullYear().toString().slice(-2);
+  const numeroFormatado = String(numero).padStart(4, '0');
+  const versaoFormatada = `_v${String(versao).padStart(2, '0')}`;
+  return `#${ano}${numeroFormatado}${versaoFormatada}`;
+};

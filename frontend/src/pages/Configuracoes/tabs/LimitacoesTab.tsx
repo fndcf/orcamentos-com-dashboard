@@ -142,11 +142,11 @@ export function LimitacoesTab() {
 
         {limitacoes && limitacoes.length > 0 ? (
           <ItemsList>
-            {limitacoes.map((l) => (
+            {limitacoes.map((l, index) => (
               <Item key={l.id} $ativo={l.ativo}>
                 <ItemInfo>
                   <div className="titulo">
-                    Observação #{l.ordem}
+                    Observação #{index + 1}
                     <StatusBadge $ativo={l.ativo}>
                       {l.ativo ? "Ativa" : "Inativa"}
                     </StatusBadge>

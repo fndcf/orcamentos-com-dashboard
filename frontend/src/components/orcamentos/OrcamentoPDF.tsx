@@ -9,6 +9,7 @@ import {
 import { Orcamento, ConfiguracoesGerais } from "../../types";
 import { configuracoesGeraisService } from "../../services/configuracoesGeraisService";
 import { logger } from "../../utils/logger";
+import { formatOrcamentoNumero } from "../../utils/constants";
 
 // Cores do tema
 const COLORS = {
@@ -25,7 +26,7 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingLeft: 40,
     paddingRight: 40,
-    paddingBottom: 75, // Espaço para o rodapé fixo
+    paddingBottom: 90, // Espaço para o rodapé fixo
     fontSize: 9,
     fontFamily: "Helvetica",
     color: COLORS.dark,
@@ -312,7 +313,7 @@ const styles = StyleSheet.create({
   // Footer
   footer: {
     position: "absolute",
-    bottom: 20,
+    bottom: 25,
     left: 40,
     right: 40,
     textAlign: "center",
@@ -320,7 +321,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     borderTopWidth: 1,
     borderTopColor: COLORS.primary,
-    paddingTop: 8,
+    paddingTop: 10,
   },
   footerEmpresa: {
     fontSize: 9,
@@ -844,8 +845,11 @@ export function OrcamentoCompletoPDFDocument({
   orcamento,
   configuracoes,
 }: OrcamentoPDFProps) {
-  const ano = new Date(orcamento.dataEmissao).getFullYear();
-  const versaoFormatada = `_v${String(orcamento.versao || 0).padStart(2, "0")}`;
+  const numeroOrcamentoFormatado = formatOrcamentoNumero(
+    orcamento.numero,
+    orcamento.dataEmissao,
+    orcamento.versao
+  );
 
   const enderecoCompleto = [
     orcamento.clienteEndereco,
@@ -897,8 +901,7 @@ export function OrcamentoCompletoPDFDocument({
           </View>
           <View style={styles.orcamentoInfo}>
             <Text style={styles.orcamentoNumero}>
-              Orçamento #{orcamento.numero}/{ano}
-              {versaoFormatada}
+              Orçamento {numeroOrcamentoFormatado}
             </Text>
             <View style={styles.orcamentoInfoRow}>
               <Text style={styles.orcamentoLabel}>Emissão:</Text>
@@ -955,12 +958,12 @@ export function OrcamentoCompletoPDFDocument({
               </Text>
             </View>
           )}
-          {orcamento.clienteTelefone &&
-            orcamento.clienteTelefone.trim() !== "" && (
+          {/* Telefone: prioridade modal > cliente */}
+          {(orcamento.telefone?.trim() || orcamento.clienteTelefone?.trim()) && (
               <View style={{ marginBottom: 4 }}>
                 <Text style={styles.clienteValue}>
                   <Text style={{ fontWeight: "bold" }}>Telefone: </Text>
-                  {orcamento.clienteTelefone}
+                  {orcamento.telefone?.trim() || orcamento.clienteTelefone}
                 </Text>
               </View>
             )}
@@ -972,11 +975,12 @@ export function OrcamentoCompletoPDFDocument({
               </Text>
             </View>
           )}
-          {orcamento.clienteEmail && orcamento.clienteEmail.trim() !== "" && (
+          {/* E-mail: prioridade modal > cliente */}
+          {(orcamento.email?.trim() || orcamento.clienteEmail?.trim()) && (
             <View style={{ marginBottom: 4 }}>
               <Text style={styles.clienteValue}>
                 <Text style={{ fontWeight: "bold" }}>E-mail: </Text>
-                {orcamento.clienteEmail}
+                {orcamento.email?.trim() || orcamento.clienteEmail}
               </Text>
             </View>
           )}
@@ -2187,7 +2191,12 @@ export async function gerarPDFOrcamento(orcamento: Orcamento): Promise<void> {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `orcamento-${orcamento.numero}.pdf`;
+  const numeroArquivo = formatOrcamentoNumero(
+    orcamento.numero,
+    orcamento.dataEmissao,
+    orcamento.versao
+  ).replace("#", "");
+  link.download = `orcamento-${numeroArquivo}.pdf`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -2200,7 +2209,7 @@ const stylesExecucao = StyleSheet.create({
     paddingTop: 40,
     paddingLeft: 40,
     paddingRight: 40,
-    paddingBottom: 75,
+    paddingBottom: 90,
     fontSize: 9,
     fontFamily: "Helvetica",
     color: COLORS.dark,
@@ -2411,7 +2420,13 @@ function OrdemExecucaoPDFDocument({
             <Text style={stylesExecucao.titulo}>ORDEM DE EXECUÇÃO</Text>
             <View style={stylesExecucao.infoRow}>
               <Text style={stylesExecucao.infoLabel}>Orçamento Nº:</Text>
-              <Text style={stylesExecucao.infoValue}>{orcamento.numero}</Text>
+              <Text style={stylesExecucao.infoValue}>
+                {formatOrcamentoNumero(
+                  orcamento.numero,
+                  orcamento.dataEmissao,
+                  orcamento.versao
+                )}
+              </Text>
             </View>
             <View style={stylesExecucao.infoRow}>
               <Text style={stylesExecucao.infoLabel}>Data Aceite:</Text>
@@ -2449,14 +2464,21 @@ function OrdemExecucaoPDFDocument({
               {orcamento.clienteCep ? ` | CEP: ${orcamento.clienteCep}` : ""}
             </Text>
           )}
-          {orcamento.clienteTelefone && (
+          {/* Telefone: prioridade modal > cliente */}
+          {(orcamento.telefone?.trim() || orcamento.clienteTelefone) && (
             <Text style={stylesExecucao.clienteInfo}>
-              Telefone: {orcamento.clienteTelefone}
+              Telefone: {orcamento.telefone?.trim() || orcamento.clienteTelefone}
             </Text>
           )}
           {orcamento.contato && (
             <Text style={stylesExecucao.clienteInfo}>
               Contato: {orcamento.contato}
+            </Text>
+          )}
+          {/* E-mail: prioridade modal > cliente */}
+          {(orcamento.email?.trim() || orcamento.clienteEmail) && (
+            <Text style={stylesExecucao.clienteInfo}>
+              E-mail: {orcamento.email?.trim() || orcamento.clienteEmail}
             </Text>
           )}
         </View>
@@ -2682,7 +2704,12 @@ export async function gerarPDFExecucao(orcamento: Orcamento): Promise<void> {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `ordem-execucao-${orcamento.numero}.pdf`;
+  const numeroArquivo = formatOrcamentoNumero(
+    orcamento.numero,
+    orcamento.dataEmissao,
+    orcamento.versao
+  ).replace("#", "");
+  link.download = `ordem-execucao-${numeroArquivo}.pdf`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

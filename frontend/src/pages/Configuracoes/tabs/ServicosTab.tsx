@@ -122,11 +122,11 @@ export function ServicosTab() {
 
         {servicos && servicos.length > 0 ? (
           <ItemsList>
-            {servicos.map((s) => (
+            {servicos.map((s, index) => (
               <Item key={s.id} $ativo={s.ativo}>
                 <ItemInfo>
                   <div className="titulo">
-                    Serviço #{s.ordem}
+                    Serviço #{index + 1}
                     <StatusBadge $ativo={s.ativo}>{s.ativo ? 'Ativo' : 'Inativo'}</StatusBadge>
                   </div>
                   <div className="descricao">{s.descricao}</div>
