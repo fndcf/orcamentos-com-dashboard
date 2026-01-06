@@ -402,29 +402,41 @@ export const orcamentoService = {
       updateData.dataValidade = data.dataValidade;
     }
 
-    // Campos consultor, contato, email e telefone (usa FieldValue.delete() para remover campos vazios)
+    // Campos consultor, contato, email e telefone - só atualiza se mudou
     if (data.consultor !== undefined) {
-      const valor = data.consultor?.trim();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      updateData.consultor = valor ? valor : (FieldValue.delete() as any);
+      const novoValor = data.consultor?.trim() || '';
+      const valorAtual = orcamento.consultor || '';
+      if (novoValor !== valorAtual) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updateData.consultor = novoValor ? novoValor : (FieldValue.delete() as any);
+      }
     }
 
     if (data.contato !== undefined) {
-      const valor = data.contato?.trim();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      updateData.contato = valor ? valor : (FieldValue.delete() as any);
+      const novoValor = data.contato?.trim() || '';
+      const valorAtual = orcamento.contato || '';
+      if (novoValor !== valorAtual) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updateData.contato = novoValor ? novoValor : (FieldValue.delete() as any);
+      }
     }
 
     if (data.email !== undefined) {
-      const valor = data.email?.trim();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      updateData.email = valor ? valor : (FieldValue.delete() as any);
+      const novoValor = data.email?.trim() || '';
+      const valorAtual = orcamento.email || '';
+      if (novoValor !== valorAtual) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updateData.email = novoValor ? novoValor : (FieldValue.delete() as any);
+      }
     }
 
     if (data.telefone !== undefined) {
-      const valor = data.telefone?.trim();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      updateData.telefone = valor ? valor : (FieldValue.delete() as any);
+      const novoValor = data.telefone?.trim() || '';
+      const valorAtual = orcamento.telefone || '';
+      if (novoValor !== valorAtual) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updateData.telefone = novoValor ? novoValor : (FieldValue.delete() as any);
+      }
     }
 
     // Só incrementa a versão se houve alterações reais nos dados
