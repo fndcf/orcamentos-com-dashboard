@@ -1,15 +1,23 @@
-import { orcamentoRepository } from '../repositories/orcamentoRepository';
-import { clienteRepository } from '../repositories/clienteRepository';
-import { configuracoesGeraisRepository } from '../repositories/configuracoesGeraisRepository';
-import { Orcamento, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, TipoPessoa, ParcelamentoDados, DescontoAVistaDados } from '../models';
-import { ValidationError, NotFoundError } from '../utils/errors';
-import { eventBus, OrcamentoEvents } from '../events';
-import { FieldValue } from '../config/firebase';
+import { orcamentoRepository } from "../repositories/orcamentoRepository";
+import { clienteRepository } from "../repositories/clienteRepository";
+import { configuracoesGeraisRepository } from "../repositories/configuracoesGeraisRepository";
+import {
+  Orcamento,
+  OrcamentoItemCompleto,
+  OrcamentoStatus,
+  OrcamentoTipo,
+  TipoPessoa,
+  ParcelamentoDados,
+  DescontoAVistaDados,
+} from "../models";
+import { ValidationError, NotFoundError } from "../utils/errors";
+import { eventBus, OrcamentoEvents } from "../events";
+import { FieldValue } from "../config/firebase";
 
 // Helper para detectar tipo de pessoa baseado no documento (CPF ou CNPJ)
 function detectarTipoPessoa(documento: string): TipoPessoa {
-  const docLimpo = documento?.replace(/\D/g, '') || '';
-  return docLimpo.length <= 11 ? 'fisica' : 'juridica';
+  const docLimpo = documento?.replace(/\D/g, "") || "";
+  return docLimpo.length <= 11 ? "fisica" : "juridica";
 }
 
 // Helper para comparar valores de forma profunda (para detectar mudanças reais)
@@ -20,7 +28,7 @@ function isEqual(a: any, b: any): boolean {
   if (a == null || b == null) return false;
 
   // Se são tipos primitivos
-  if (typeof a !== 'object' || typeof b !== 'object') {
+  if (typeof a !== "object" || typeof b !== "object") {
     return a === b;
   }
 
@@ -36,7 +44,7 @@ function isEqual(a: any, b: any): boolean {
 
   if (keysA.length !== keysB.length) return false;
 
-  return keysA.every(key => isEqual(a[key], b[key]));
+  return keysA.every((key) => isEqual(a[key], b[key]));
 }
 
 interface CriarOrcamentoDTO {
@@ -49,7 +57,7 @@ interface CriarOrcamentoDTO {
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
   prazoVistoriaBombeiros?: number;
-  condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
+  condicaoPagamento?: "a_vista" | "a_combinar" | "parcelado";
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
   descontoAVista?: DescontoAVistaDados;
@@ -71,7 +79,7 @@ interface AtualizarOrcamentoDTO {
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
   prazoVistoriaBombeiros?: number;
-  condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
+  condicaoPagamento?: "a_vista" | "a_combinar" | "parcelado";
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
   descontoAVista?: DescontoAVistaDados;
@@ -106,7 +114,7 @@ export const orcamentoService = {
     // Validar cliente
     const cliente = await clienteRepository.findById(data.clienteId);
     if (!cliente) {
-      throw new NotFoundError('Cliente não encontrado');
+      throw new NotFoundError("Cliente não encontrado");
     }
 
     // Obter próximo número
@@ -124,50 +132,60 @@ export const orcamentoService = {
 
     // Validar itens completos
     if (!data.itensCompleto || data.itensCompleto.length === 0) {
-      throw new ValidationError('O orçamento deve ter pelo menos um item');
+      throw new ValidationError("O orçamento deve ter pelo menos um item");
     }
 
     // Validar serviço
     if (!data.servicoId) {
-      throw new ValidationError('O orçamento deve ter um serviço selecionado');
+      throw new ValidationError("O orçamento deve ter um serviço selecionado");
     }
 
     // Validar cada item completo
     for (const item of data.itensCompleto) {
       if (!item.categoriaId) {
-        throw new ValidationError('Cada item deve ter uma categoria');
+        throw new ValidationError("Cada item deve ter uma categoria");
       }
       if (!item.descricao || item.descricao.trim().length < 3) {
-        throw new ValidationError('Descrição do item deve ter pelo menos 3 caracteres');
+        throw new ValidationError(
+          "Descrição do item deve ter pelo menos 3 caracteres"
+        );
       }
       if (item.quantidade <= 0) {
-        throw new ValidationError('Quantidade deve ser maior que zero');
+        throw new ValidationError("Quantidade deve ser maior que zero");
       }
     }
 
     // Calcular valores dos itens completos
-    const itensCalculados = data.itensCompleto.map(item => ({
+    const itensCalculados = data.itensCompleto.map((item) => ({
       ...item,
       descricao: item.descricao.trim(),
       valorTotalMaoDeObra: item.quantidade * item.valorUnitarioMaoDeObra,
       valorTotalMaterial: item.quantidade * item.valorUnitarioMaterial,
-      valorTotal: item.quantidade * (item.valorUnitarioMaoDeObra + item.valorUnitarioMaterial),
+      valorTotal:
+        item.quantidade *
+        (item.valorUnitarioMaoDeObra + item.valorUnitarioMaterial),
     }));
 
-    const valorTotalMaoDeObra = itensCalculados.reduce((acc, item) => acc + item.valorTotalMaoDeObra, 0);
-    const valorTotalMaterial = itensCalculados.reduce((acc, item) => acc + item.valorTotalMaterial, 0);
+    const valorTotalMaoDeObra = itensCalculados.reduce(
+      (acc, item) => acc + item.valorTotalMaoDeObra,
+      0
+    );
+    const valorTotalMaterial = itensCalculados.reduce(
+      (acc, item) => acc + item.valorTotalMaterial,
+      0
+    );
     const valorTotal = valorTotalMaoDeObra + valorTotalMaterial;
 
     // Base do orçamento
-    const orcamento: Omit<Orcamento, 'id' | 'createdAt'> = {
+    const orcamento: Omit<Orcamento, "id" | "createdAt"> = {
       numero,
       versao: 0,
-      tipo: 'completo',
+      tipo: "completo",
       clienteId: data.clienteId,
       clienteNome: cliente.razaoSocial,
-      clienteCnpj: cliente.cnpj || '',
-      clienteTipoPessoa: detectarTipoPessoa(cliente.cnpj || ''),
-      status: 'aberto',
+      clienteCnpj: cliente.cnpj || "",
+      clienteTipoPessoa: detectarTipoPessoa(cliente.cnpj || ""),
+      status: "aberto",
       dataEmissao,
       dataValidade,
       servicoId: data.servicoId,
@@ -197,17 +215,24 @@ export const orcamentoService = {
     }
 
     // Campos opcionais do orçamento
-    if (data.servicoDescricao) orcamento.servicoDescricao = data.servicoDescricao;
+    if (data.servicoDescricao)
+      orcamento.servicoDescricao = data.servicoDescricao;
     if (data.limitacoesSelecionadas && data.limitacoesSelecionadas.length > 0) {
       orcamento.limitacoesSelecionadas = data.limitacoesSelecionadas;
     }
-    if (data.prazoExecucaoServicos) orcamento.prazoExecucaoServicos = data.prazoExecucaoServicos;
-    if (data.prazoVistoriaBombeiros) orcamento.prazoVistoriaBombeiros = data.prazoVistoriaBombeiros;
-    if (data.condicaoPagamento) orcamento.condicaoPagamento = data.condicaoPagamento;
-    if (data.parcelamentoTexto?.trim()) orcamento.parcelamentoTexto = data.parcelamentoTexto.trim();
-    if (data.parcelamentoDados) orcamento.parcelamentoDados = data.parcelamentoDados;
+    if (data.prazoExecucaoServicos)
+      orcamento.prazoExecucaoServicos = data.prazoExecucaoServicos;
+    if (data.prazoVistoriaBombeiros)
+      orcamento.prazoVistoriaBombeiros = data.prazoVistoriaBombeiros;
+    if (data.condicaoPagamento)
+      orcamento.condicaoPagamento = data.condicaoPagamento;
+    if (data.parcelamentoTexto?.trim())
+      orcamento.parcelamentoTexto = data.parcelamentoTexto.trim();
+    if (data.parcelamentoDados)
+      orcamento.parcelamentoDados = data.parcelamentoDados;
     if (data.descontoAVista) orcamento.descontoAVista = data.descontoAVista;
-    if (data.mostrarValoresDetalhados !== undefined) orcamento.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
+    if (data.mostrarValoresDetalhados !== undefined)
+      orcamento.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
 
     return orcamentoRepository.create(orcamento);
   },
@@ -216,8 +241,10 @@ export const orcamentoService = {
     const orcamento = await orcamentoRepository.findById(id);
 
     // Só permite atualizar se estiver aberto
-    if (orcamento.status !== 'aberto') {
-      throw new ValidationError('Só é possível atualizar orçamentos com status "aberto"');
+    if (orcamento.status !== "aberto") {
+      throw new ValidationError(
+        'Só é possível atualizar orçamentos com status "aberto"'
+      );
     }
 
     const updateData: Partial<Orcamento> = {};
@@ -225,35 +252,45 @@ export const orcamentoService = {
     // Atualização dos itens - compara com valores existentes
     if (data.itensCompleto) {
       if (data.itensCompleto.length === 0) {
-        throw new ValidationError('O orçamento deve ter pelo menos um item');
+        throw new ValidationError("O orçamento deve ter pelo menos um item");
       }
 
       // Validar cada item completo
       for (const item of data.itensCompleto) {
         if (!item.categoriaId) {
-          throw new ValidationError('Cada item deve ter uma categoria');
+          throw new ValidationError("Cada item deve ter uma categoria");
         }
         if (!item.descricao || item.descricao.trim().length < 3) {
-          throw new ValidationError('Descrição do item deve ter pelo menos 3 caracteres');
+          throw new ValidationError(
+            "Descrição do item deve ter pelo menos 3 caracteres"
+          );
         }
         if (item.quantidade <= 0) {
-          throw new ValidationError('Quantidade deve ser maior que zero');
+          throw new ValidationError("Quantidade deve ser maior que zero");
         }
       }
 
       // Calcular valores dos itens completos
-      const itensCalculados = data.itensCompleto.map(item => ({
+      const itensCalculados = data.itensCompleto.map((item) => ({
         ...item,
         descricao: item.descricao.trim(),
         valorTotalMaoDeObra: item.quantidade * item.valorUnitarioMaoDeObra,
         valorTotalMaterial: item.quantidade * item.valorUnitarioMaterial,
-        valorTotal: item.quantidade * (item.valorUnitarioMaoDeObra + item.valorUnitarioMaterial),
+        valorTotal:
+          item.quantidade *
+          (item.valorUnitarioMaoDeObra + item.valorUnitarioMaterial),
       }));
 
       // Só atualiza itens se realmente mudaram
       if (!isEqual(itensCalculados, orcamento.itensCompleto)) {
-        const valorTotalMaoDeObra = itensCalculados.reduce((acc, item) => acc + item.valorTotalMaoDeObra, 0);
-        const valorTotalMaterial = itensCalculados.reduce((acc, item) => acc + item.valorTotalMaterial, 0);
+        const valorTotalMaoDeObra = itensCalculados.reduce(
+          (acc, item) => acc + item.valorTotalMaoDeObra,
+          0
+        );
+        const valorTotalMaterial = itensCalculados.reduce(
+          (acc, item) => acc + item.valorTotalMaterial,
+          0
+        );
         const valorTotal = valorTotalMaoDeObra + valorTotalMaterial;
 
         updateData.itensCompleto = itensCalculados;
@@ -264,112 +301,134 @@ export const orcamentoService = {
     }
 
     // Campos opcionais do orçamento - só atualiza se mudou
-    if (data.servicoId !== undefined && data.servicoId !== orcamento.servicoId) {
+    if (
+      data.servicoId !== undefined &&
+      data.servicoId !== orcamento.servicoId
+    ) {
       updateData.servicoId = data.servicoId;
     }
-    if (data.servicoDescricao !== undefined && data.servicoDescricao !== orcamento.servicoDescricao) {
+    if (
+      data.servicoDescricao !== undefined &&
+      data.servicoDescricao !== orcamento.servicoDescricao
+    ) {
       updateData.servicoDescricao = data.servicoDescricao;
     }
-    if (data.limitacoesSelecionadas !== undefined && !isEqual(data.limitacoesSelecionadas, orcamento.limitacoesSelecionadas)) {
+    if (
+      data.limitacoesSelecionadas !== undefined &&
+      !isEqual(data.limitacoesSelecionadas, orcamento.limitacoesSelecionadas)
+    ) {
       updateData.limitacoesSelecionadas = data.limitacoesSelecionadas;
     }
-    if (data.prazoExecucaoServicos !== undefined && data.prazoExecucaoServicos !== orcamento.prazoExecucaoServicos) {
+    if (
+      data.prazoExecucaoServicos !== undefined &&
+      data.prazoExecucaoServicos !== orcamento.prazoExecucaoServicos
+    ) {
       updateData.prazoExecucaoServicos = data.prazoExecucaoServicos;
     }
-    if (data.prazoVistoriaBombeiros !== undefined && data.prazoVistoriaBombeiros !== orcamento.prazoVistoriaBombeiros) {
+    if (
+      data.prazoVistoriaBombeiros !== undefined &&
+      data.prazoVistoriaBombeiros !== orcamento.prazoVistoriaBombeiros
+    ) {
       updateData.prazoVistoriaBombeiros = data.prazoVistoriaBombeiros;
     }
 
     // Condição de pagamento - só atualiza se mudou
-    if (data.condicaoPagamento !== undefined && data.condicaoPagamento !== orcamento.condicaoPagamento) {
+    if (
+      data.condicaoPagamento !== undefined &&
+      data.condicaoPagamento !== orcamento.condicaoPagamento
+    ) {
       updateData.condicaoPagamento = data.condicaoPagamento;
       // Limpar dados de parcelamento se a condição não for "parcelado"
-      if (data.condicaoPagamento !== 'parcelado') {
-        updateData.parcelamentoTexto = '';
+      if (data.condicaoPagamento !== "parcelado") {
+        updateData.parcelamentoTexto = "";
         updateData.parcelamentoDados = null;
       }
       // Limpar dados de desconto se a condição não for "a_vista"
-      if (data.condicaoPagamento !== 'a_vista') {
+      if (data.condicaoPagamento !== "a_vista") {
         updateData.descontoAVista = null;
       }
     }
 
     // Parcelamento - só atualiza se mudou
-    const novoParcelamentoTexto = data.parcelamentoTexto?.trim() || '';
-    if (data.parcelamentoTexto !== undefined && novoParcelamentoTexto !== (orcamento.parcelamentoTexto || '')) {
+    const novoParcelamentoTexto = data.parcelamentoTexto?.trim() || "";
+    if (
+      data.parcelamentoTexto !== undefined &&
+      novoParcelamentoTexto !== (orcamento.parcelamentoTexto || "")
+    ) {
       updateData.parcelamentoTexto = novoParcelamentoTexto;
     }
-    if (data.parcelamentoDados !== undefined && !isEqual(data.parcelamentoDados, orcamento.parcelamentoDados)) {
+    if (
+      data.parcelamentoDados !== undefined &&
+      !isEqual(data.parcelamentoDados, orcamento.parcelamentoDados)
+    ) {
       updateData.parcelamentoDados = data.parcelamentoDados || null;
     }
 
     // Desconto à vista - só atualiza se mudou
-    if ('descontoAVista' in data) {
-      const novoDesconto = (data.descontoAVista && typeof data.descontoAVista === 'object' && data.descontoAVista.percentual > 0)
-        ? data.descontoAVista
-        : null;
+    if ("descontoAVista" in data) {
+      const novoDesconto =
+        data.descontoAVista &&
+        typeof data.descontoAVista === "object" &&
+        data.descontoAVista.percentual > 0
+          ? data.descontoAVista
+          : null;
       if (!isEqual(novoDesconto, orcamento.descontoAVista)) {
         updateData.descontoAVista = novoDesconto;
       }
     }
 
     // Mostrar valores detalhados - só atualiza se mudou
-    if (data.mostrarValoresDetalhados !== undefined && data.mostrarValoresDetalhados !== orcamento.mostrarValoresDetalhados) {
+    if (
+      data.mostrarValoresDetalhados !== undefined &&
+      data.mostrarValoresDetalhados !== orcamento.mostrarValoresDetalhados
+    ) {
       updateData.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
     }
 
     // Observações - só atualiza se mudou
     if (data.observacoes !== undefined) {
-      const novaObs = data.observacoes?.trim() || '';
-      if (novaObs !== (orcamento.observacoes || '')) {
+      const novaObs = data.observacoes?.trim() || "";
+      if (novaObs !== (orcamento.observacoes || "")) {
         if (novaObs) {
           updateData.observacoes = novaObs;
         }
       }
     }
 
-    if (data.dataValidade && !isEqual(data.dataValidade, orcamento.dataValidade)) {
+    if (
+      data.dataValidade &&
+      !isEqual(data.dataValidade, orcamento.dataValidade)
+    ) {
       updateData.dataValidade = data.dataValidade;
     }
 
-    // Campos consultor, contato, email e telefone - só atualiza se mudou
+    // Campos consultor, contato, email e telefone (usa FieldValue.delete() para remover campos vazios)
     if (data.consultor !== undefined) {
-      const novoValor = data.consultor?.trim() || '';
-      const valorAtual = orcamento.consultor || '';
-      if (novoValor !== valorAtual) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        updateData.consultor = novoValor ? novoValor : FieldValue.delete() as any;
-      }
+      const valor = data.consultor?.trim();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      updateData.consultor = valor ? valor : (FieldValue.delete() as any);
     }
 
     if (data.contato !== undefined) {
-      const novoValor = data.contato?.trim() || '';
-      const valorAtual = orcamento.contato || '';
-      if (novoValor !== valorAtual) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        updateData.contato = novoValor ? novoValor : FieldValue.delete() as any;
-      }
+      const valor = data.contato?.trim();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      updateData.contato = valor ? valor : (FieldValue.delete() as any);
     }
 
     if (data.email !== undefined) {
-      const novoValor = data.email?.trim() || '';
-      const valorAtual = orcamento.email || '';
-      if (novoValor !== valorAtual) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        updateData.email = novoValor ? novoValor : FieldValue.delete() as any;
-      }
+      const valor = data.email?.trim();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      updateData.email = valor ? valor : (FieldValue.delete() as any);
     }
 
     if (data.telefone !== undefined) {
-      const novoValor = data.telefone?.trim() || '';
-      const valorAtual = orcamento.telefone || '';
-      if (novoValor !== valorAtual) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        updateData.telefone = novoValor ? novoValor : FieldValue.delete() as any;
-      }
+      const valor = data.telefone?.trim();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      updateData.telefone = valor ? valor : (FieldValue.delete() as any);
     }
 
     // Só incrementa a versão se houve alterações reais nos dados
+    // Verifica se há alguma propriedade em updateData (além de versao que ainda não foi adicionada)
     const hasChanges = Object.keys(updateData).length > 0;
 
     if (hasChanges) {
@@ -381,15 +440,18 @@ export const orcamentoService = {
     return orcamento;
   },
 
-  async atualizarStatus(id: string, status: OrcamentoStatus): Promise<Orcamento> {
+  async atualizarStatus(
+    id: string,
+    status: OrcamentoStatus
+  ): Promise<Orcamento> {
     const orcamento = await orcamentoRepository.findById(id);
 
     // Validar transições de status
     const transicoesValidas: Record<OrcamentoStatus, OrcamentoStatus[]> = {
-      aberto: ['aceito', 'recusado', 'expirado'],
-      aceito: ['aberto'],
-      recusado: ['aberto'],
-      expirado: ['aberto'],
+      aberto: ["aceito", "recusado", "expirado"],
+      aceito: ["aberto"],
+      recusado: ["aberto"],
+      expirado: ["aberto"],
     };
 
     if (!transicoesValidas[orcamento.status].includes(status)) {
@@ -398,10 +460,14 @@ export const orcamentoService = {
       );
     }
 
-    const dataAceite = status === 'aceito' ? new Date() : undefined;
+    const dataAceite = status === "aceito" ? new Date() : undefined;
     const statusAnterior = orcamento.status;
 
-    const orcamentoAtualizado = await orcamentoRepository.updateStatus(id, status, dataAceite);
+    const orcamentoAtualizado = await orcamentoRepository.updateStatus(
+      id,
+      status,
+      dataAceite
+    );
 
     // Emite evento de mudança de status - notificacaoService escuta e reage
     // Isso elimina a dependência circular entre os serviços
@@ -418,8 +484,8 @@ export const orcamentoService = {
     const orcamento = await orcamentoRepository.findById(id);
 
     // Só permite excluir se não estiver aceito
-    if (orcamento.status === 'aceito') {
-      throw new ValidationError('Não é possível excluir um orçamento aceito');
+    if (orcamento.status === "aceito") {
+      throw new ValidationError("Não é possível excluir um orçamento aceito");
     }
 
     return orcamentoRepository.delete(id);
@@ -433,7 +499,9 @@ export const orcamentoService = {
     try {
       cliente = await clienteRepository.findById(orcamentoOriginal.clienteId);
     } catch {
-      throw new ValidationError('Cliente do orçamento original não existe mais');
+      throw new ValidationError(
+        "Cliente do orçamento original não existe mais"
+      );
     }
 
     // Obter próximo número
@@ -448,15 +516,15 @@ export const orcamentoService = {
     const dataValidade = new Date();
     dataValidade.setDate(dataValidade.getDate() + diasValidade);
 
-    const novoOrcamento: Omit<Orcamento, 'id' | 'createdAt'> = {
+    const novoOrcamento: Omit<Orcamento, "id" | "createdAt"> = {
       numero,
       versao: 0,
-      tipo: 'completo',
+      tipo: "completo",
       clienteId: orcamentoOriginal.clienteId,
       clienteNome: cliente.razaoSocial,
-      clienteCnpj: cliente.cnpj || '',
-      clienteTipoPessoa: detectarTipoPessoa(cliente.cnpj || ''),
-      status: 'aberto',
+      clienteCnpj: cliente.cnpj || "",
+      clienteTipoPessoa: detectarTipoPessoa(cliente.cnpj || ""),
+      status: "aberto",
       dataEmissao,
       dataValidade,
       valorTotal: orcamentoOriginal.valorTotal,
@@ -471,26 +539,47 @@ export const orcamentoService = {
     if (cliente.email) novoOrcamento.clienteEmail = cliente.email;
 
     // Manter consultor, contato, email, telefone e observações do original
-    if (orcamentoOriginal.consultor) novoOrcamento.consultor = orcamentoOriginal.consultor;
-    if (orcamentoOriginal.contato) novoOrcamento.contato = orcamentoOriginal.contato;
+    if (orcamentoOriginal.consultor)
+      novoOrcamento.consultor = orcamentoOriginal.consultor;
+    if (orcamentoOriginal.contato)
+      novoOrcamento.contato = orcamentoOriginal.contato;
     if (orcamentoOriginal.email) novoOrcamento.email = orcamentoOriginal.email;
-    if (orcamentoOriginal.telefone) novoOrcamento.telefone = orcamentoOriginal.telefone;
-    if (orcamentoOriginal.observacoes) novoOrcamento.observacoes = orcamentoOriginal.observacoes;
+    if (orcamentoOriginal.telefone)
+      novoOrcamento.telefone = orcamentoOriginal.telefone;
+    if (orcamentoOriginal.observacoes)
+      novoOrcamento.observacoes = orcamentoOriginal.observacoes;
 
     // Campos do orçamento
-    if (orcamentoOriginal.servicoId) novoOrcamento.servicoId = orcamentoOriginal.servicoId;
-    if (orcamentoOriginal.servicoDescricao) novoOrcamento.servicoDescricao = orcamentoOriginal.servicoDescricao;
-    if (orcamentoOriginal.itensCompleto) novoOrcamento.itensCompleto = orcamentoOriginal.itensCompleto;
-    if (orcamentoOriginal.limitacoesSelecionadas) novoOrcamento.limitacoesSelecionadas = orcamentoOriginal.limitacoesSelecionadas;
-    if (orcamentoOriginal.prazoExecucaoServicos) novoOrcamento.prazoExecucaoServicos = orcamentoOriginal.prazoExecucaoServicos;
-    if (orcamentoOriginal.prazoVistoriaBombeiros) novoOrcamento.prazoVistoriaBombeiros = orcamentoOriginal.prazoVistoriaBombeiros;
-    if (orcamentoOriginal.condicaoPagamento) novoOrcamento.condicaoPagamento = orcamentoOriginal.condicaoPagamento;
-    if (orcamentoOriginal.parcelamentoTexto) novoOrcamento.parcelamentoTexto = orcamentoOriginal.parcelamentoTexto;
-    if (orcamentoOriginal.parcelamentoDados) novoOrcamento.parcelamentoDados = orcamentoOriginal.parcelamentoDados;
-    if (orcamentoOriginal.descontoAVista) novoOrcamento.descontoAVista = orcamentoOriginal.descontoAVista;
-    if (orcamentoOriginal.mostrarValoresDetalhados !== undefined) novoOrcamento.mostrarValoresDetalhados = orcamentoOriginal.mostrarValoresDetalhados;
-    if (orcamentoOriginal.valorTotalMaoDeObra) novoOrcamento.valorTotalMaoDeObra = orcamentoOriginal.valorTotalMaoDeObra;
-    if (orcamentoOriginal.valorTotalMaterial) novoOrcamento.valorTotalMaterial = orcamentoOriginal.valorTotalMaterial;
+    if (orcamentoOriginal.servicoId)
+      novoOrcamento.servicoId = orcamentoOriginal.servicoId;
+    if (orcamentoOriginal.servicoDescricao)
+      novoOrcamento.servicoDescricao = orcamentoOriginal.servicoDescricao;
+    if (orcamentoOriginal.itensCompleto)
+      novoOrcamento.itensCompleto = orcamentoOriginal.itensCompleto;
+    if (orcamentoOriginal.limitacoesSelecionadas)
+      novoOrcamento.limitacoesSelecionadas =
+        orcamentoOriginal.limitacoesSelecionadas;
+    if (orcamentoOriginal.prazoExecucaoServicos)
+      novoOrcamento.prazoExecucaoServicos =
+        orcamentoOriginal.prazoExecucaoServicos;
+    if (orcamentoOriginal.prazoVistoriaBombeiros)
+      novoOrcamento.prazoVistoriaBombeiros =
+        orcamentoOriginal.prazoVistoriaBombeiros;
+    if (orcamentoOriginal.condicaoPagamento)
+      novoOrcamento.condicaoPagamento = orcamentoOriginal.condicaoPagamento;
+    if (orcamentoOriginal.parcelamentoTexto)
+      novoOrcamento.parcelamentoTexto = orcamentoOriginal.parcelamentoTexto;
+    if (orcamentoOriginal.parcelamentoDados)
+      novoOrcamento.parcelamentoDados = orcamentoOriginal.parcelamentoDados;
+    if (orcamentoOriginal.descontoAVista)
+      novoOrcamento.descontoAVista = orcamentoOriginal.descontoAVista;
+    if (orcamentoOriginal.mostrarValoresDetalhados !== undefined)
+      novoOrcamento.mostrarValoresDetalhados =
+        orcamentoOriginal.mostrarValoresDetalhados;
+    if (orcamentoOriginal.valorTotalMaoDeObra)
+      novoOrcamento.valorTotalMaoDeObra = orcamentoOriginal.valorTotalMaoDeObra;
+    if (orcamentoOriginal.valorTotalMaterial)
+      novoOrcamento.valorTotalMaterial = orcamentoOriginal.valorTotalMaterial;
 
     return orcamentoRepository.create(novoOrcamento);
   },
@@ -500,13 +589,13 @@ export const orcamentoService = {
   },
 
   async verificarExpirados(): Promise<number> {
-    const orcamentosAbertos = await orcamentoRepository.findByStatus('aberto');
+    const orcamentosAbertos = await orcamentoRepository.findByStatus("aberto");
     const hoje = new Date();
     let expirados = 0;
 
     for (const orcamento of orcamentosAbertos) {
       if (orcamento.dataValidade < hoje) {
-        await orcamentoRepository.updateStatus(orcamento.id!, 'expirado');
+        await orcamentoRepository.updateStatus(orcamento.id!, "expirado");
         expirados++;
       }
     }
