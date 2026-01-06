@@ -12,6 +12,33 @@ function detectarTipoPessoa(documento: string): TipoPessoa {
   return docLimpo.length <= 11 ? 'fisica' : 'juridica';
 }
 
+// Helper para comparar valores de forma profunda (para detectar mudanças reais)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isEqual(a: any, b: any): boolean {
+  // Se ambos são null/undefined
+  if (a == null && b == null) return true;
+  if (a == null || b == null) return false;
+
+  // Se são tipos primitivos
+  if (typeof a !== 'object' || typeof b !== 'object') {
+    return a === b;
+  }
+
+  // Se são arrays
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    return a.every((item, index) => isEqual(item, b[index]));
+  }
+
+  // Se são objetos
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+
+  if (keysA.length !== keysB.length) return false;
+
+  return keysA.every(key => isEqual(a[key], b[key]));
+}
+
 interface CriarOrcamentoDTO {
   tipo: OrcamentoTipo;
   clienteId: string;
@@ -195,7 +222,7 @@ export const orcamentoService = {
 
     const updateData: Partial<Orcamento> = {};
 
-    // Atualização dos itens
+    // Atualização dos itens - compara com valores existentes
     if (data.itensCompleto) {
       if (data.itensCompleto.length === 0) {
         throw new ValidationError('O orçamento deve ter pelo menos um item');
@@ -223,23 +250,38 @@ export const orcamentoService = {
         valorTotal: item.quantidade * (item.valorUnitarioMaoDeObra + item.valorUnitarioMaterial),
       }));
 
-      const valorTotalMaoDeObra = itensCalculados.reduce((acc, item) => acc + item.valorTotalMaoDeObra, 0);
-      const valorTotalMaterial = itensCalculados.reduce((acc, item) => acc + item.valorTotalMaterial, 0);
-      const valorTotal = valorTotalMaoDeObra + valorTotalMaterial;
+      // Só atualiza itens se realmente mudaram
+      if (!isEqual(itensCalculados, orcamento.itensCompleto)) {
+        const valorTotalMaoDeObra = itensCalculados.reduce((acc, item) => acc + item.valorTotalMaoDeObra, 0);
+        const valorTotalMaterial = itensCalculados.reduce((acc, item) => acc + item.valorTotalMaterial, 0);
+        const valorTotal = valorTotalMaoDeObra + valorTotalMaterial;
 
-      updateData.itensCompleto = itensCalculados;
-      updateData.valorTotalMaoDeObra = valorTotalMaoDeObra;
-      updateData.valorTotalMaterial = valorTotalMaterial;
-      updateData.valorTotal = valorTotal;
+        updateData.itensCompleto = itensCalculados;
+        updateData.valorTotalMaoDeObra = valorTotalMaoDeObra;
+        updateData.valorTotalMaterial = valorTotalMaterial;
+        updateData.valorTotal = valorTotal;
+      }
     }
 
-    // Campos opcionais do orçamento
-    if (data.servicoId !== undefined) updateData.servicoId = data.servicoId;
-    if (data.servicoDescricao !== undefined) updateData.servicoDescricao = data.servicoDescricao;
-    if (data.limitacoesSelecionadas !== undefined) updateData.limitacoesSelecionadas = data.limitacoesSelecionadas;
-    if (data.prazoExecucaoServicos !== undefined) updateData.prazoExecucaoServicos = data.prazoExecucaoServicos;
-    if (data.prazoVistoriaBombeiros !== undefined) updateData.prazoVistoriaBombeiros = data.prazoVistoriaBombeiros;
-    if (data.condicaoPagamento !== undefined) {
+    // Campos opcionais do orçamento - só atualiza se mudou
+    if (data.servicoId !== undefined && data.servicoId !== orcamento.servicoId) {
+      updateData.servicoId = data.servicoId;
+    }
+    if (data.servicoDescricao !== undefined && data.servicoDescricao !== orcamento.servicoDescricao) {
+      updateData.servicoDescricao = data.servicoDescricao;
+    }
+    if (data.limitacoesSelecionadas !== undefined && !isEqual(data.limitacoesSelecionadas, orcamento.limitacoesSelecionadas)) {
+      updateData.limitacoesSelecionadas = data.limitacoesSelecionadas;
+    }
+    if (data.prazoExecucaoServicos !== undefined && data.prazoExecucaoServicos !== orcamento.prazoExecucaoServicos) {
+      updateData.prazoExecucaoServicos = data.prazoExecucaoServicos;
+    }
+    if (data.prazoVistoriaBombeiros !== undefined && data.prazoVistoriaBombeiros !== orcamento.prazoVistoriaBombeiros) {
+      updateData.prazoVistoriaBombeiros = data.prazoVistoriaBombeiros;
+    }
+
+    // Condição de pagamento - só atualiza se mudou
+    if (data.condicaoPagamento !== undefined && data.condicaoPagamento !== orcamento.condicaoPagamento) {
       updateData.condicaoPagamento = data.condicaoPagamento;
       // Limpar dados de parcelamento se a condição não for "parcelado"
       if (data.condicaoPagamento !== 'parcelado') {
@@ -251,57 +293,83 @@ export const orcamentoService = {
         updateData.descontoAVista = null;
       }
     }
-    if (data.parcelamentoTexto !== undefined) updateData.parcelamentoTexto = data.parcelamentoTexto?.trim() || '';
-    if (data.parcelamentoDados !== undefined) updateData.parcelamentoDados = data.parcelamentoDados || null;
-    // Atualiza descontoAVista: verifica se a propriedade existe no objeto recebido
-    // Usamos 'in' porque o valor pode ser null (quando quer limpar) ou um objeto (quando quer salvar)
+
+    // Parcelamento - só atualiza se mudou
+    const novoParcelamentoTexto = data.parcelamentoTexto?.trim() || '';
+    if (data.parcelamentoTexto !== undefined && novoParcelamentoTexto !== (orcamento.parcelamentoTexto || '')) {
+      updateData.parcelamentoTexto = novoParcelamentoTexto;
+    }
+    if (data.parcelamentoDados !== undefined && !isEqual(data.parcelamentoDados, orcamento.parcelamentoDados)) {
+      updateData.parcelamentoDados = data.parcelamentoDados || null;
+    }
+
+    // Desconto à vista - só atualiza se mudou
     if ('descontoAVista' in data) {
-      if (data.descontoAVista && typeof data.descontoAVista === 'object' && data.descontoAVista.percentual > 0) {
-        updateData.descontoAVista = data.descontoAVista;
-      } else {
-        updateData.descontoAVista = null;
+      const novoDesconto = (data.descontoAVista && typeof data.descontoAVista === 'object' && data.descontoAVista.percentual > 0)
+        ? data.descontoAVista
+        : null;
+      if (!isEqual(novoDesconto, orcamento.descontoAVista)) {
+        updateData.descontoAVista = novoDesconto;
       }
     }
-    if (data.mostrarValoresDetalhados !== undefined) updateData.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
 
+    // Mostrar valores detalhados - só atualiza se mudou
+    if (data.mostrarValoresDetalhados !== undefined && data.mostrarValoresDetalhados !== orcamento.mostrarValoresDetalhados) {
+      updateData.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
+    }
+
+    // Observações - só atualiza se mudou
     if (data.observacoes !== undefined) {
-      const obs = data.observacoes?.trim();
-      if (obs) {
-        updateData.observacoes = obs;
+      const novaObs = data.observacoes?.trim() || '';
+      if (novaObs !== (orcamento.observacoes || '')) {
+        if (novaObs) {
+          updateData.observacoes = novaObs;
+        }
       }
     }
 
-    if (data.dataValidade) {
+    if (data.dataValidade && !isEqual(data.dataValidade, orcamento.dataValidade)) {
       updateData.dataValidade = data.dataValidade;
     }
 
-    // Campos consultor, contato, email e telefone (usa FieldValue.delete() para remover campos vazios)
+    // Campos consultor, contato, email e telefone - só atualiza se mudou
     if (data.consultor !== undefined) {
-      const valor = data.consultor?.trim();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      updateData.consultor = valor ? valor : FieldValue.delete() as any;
+      const novoValor = data.consultor?.trim() || '';
+      const valorAtual = orcamento.consultor || '';
+      if (novoValor !== valorAtual) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updateData.consultor = novoValor ? novoValor : FieldValue.delete() as any;
+      }
     }
 
     if (data.contato !== undefined) {
-      const valor = data.contato?.trim();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      updateData.contato = valor ? valor : FieldValue.delete() as any;
+      const novoValor = data.contato?.trim() || '';
+      const valorAtual = orcamento.contato || '';
+      if (novoValor !== valorAtual) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updateData.contato = novoValor ? novoValor : FieldValue.delete() as any;
+      }
     }
 
     if (data.email !== undefined) {
-      const valor = data.email?.trim();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      updateData.email = valor ? valor : FieldValue.delete() as any;
+      const novoValor = data.email?.trim() || '';
+      const valorAtual = orcamento.email || '';
+      if (novoValor !== valorAtual) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updateData.email = novoValor ? novoValor : FieldValue.delete() as any;
+      }
     }
 
     if (data.telefone !== undefined) {
-      const valor = data.telefone?.trim();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      updateData.telefone = valor ? valor : FieldValue.delete() as any;
+      const novoValor = data.telefone?.trim() || '';
+      const valorAtual = orcamento.telefone || '';
+      if (novoValor !== valorAtual) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updateData.telefone = novoValor ? novoValor : FieldValue.delete() as any;
+      }
     }
 
     // Só incrementa a versão se houve alterações reais nos dados
-    // Verifica se há alguma propriedade em updateData (além de versao que ainda não foi adicionada)
     const hasChanges = Object.keys(updateData).length > 0;
 
     if (hasChanges) {
