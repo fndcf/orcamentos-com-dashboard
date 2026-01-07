@@ -24,6 +24,7 @@ interface CriarOrcamentoDTO {
   contato?: string;
   email?: string;
   telefone?: string;
+  enderecoServico?: string;
 }
 
 interface AtualizarOrcamentoDTO {
@@ -46,6 +47,7 @@ interface AtualizarOrcamentoDTO {
   contato?: string;
   email?: string;
   telefone?: string;
+  enderecoServico?: string;
 }
 
 export function useOrcamentos() {

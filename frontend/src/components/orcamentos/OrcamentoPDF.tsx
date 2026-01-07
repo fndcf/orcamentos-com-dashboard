@@ -984,6 +984,14 @@ export function OrcamentoCompletoPDFDocument({
               </Text>
             </View>
           )}
+          {orcamento.enderecoServico && orcamento.enderecoServico.trim() !== "" && (
+            <View style={{ marginBottom: 4 }}>
+              <Text style={styles.clienteValue}>
+                <Text style={{ fontWeight: "bold" }}>Endereço do Serviço: </Text>
+                {orcamento.enderecoServico}
+              </Text>
+            </View>
+          )}
           {orcamento.servicoDescricao &&
             orcamento.servicoDescricao.trim() !== "" && (
               <View style={{ marginBottom: 4 }}>
@@ -2493,6 +2501,11 @@ function OrdemExecucaoPDFDocument({
           {(orcamento.email?.trim() || orcamento.clienteEmail) && (
             <Text style={stylesExecucao.clienteInfo}>
               E-mail: {orcamento.email?.trim() || orcamento.clienteEmail}
+            </Text>
+          )}
+          {orcamento.enderecoServico && (
+            <Text style={stylesExecucao.clienteInfo}>
+              Endereço do Serviço: {orcamento.enderecoServico}
             </Text>
           )}
         </View>

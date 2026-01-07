@@ -118,6 +118,7 @@ export function OrcamentoModal({
   const [contato, setContato] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [enderecoServico, setEnderecoServico] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Estado para novo cliente inline
@@ -178,6 +179,7 @@ export function OrcamentoModal({
         setContato(orcamento.contato || "");
         setEmail(orcamento.email || "");
         setTelefone(orcamento.telefone || "");
+        setEnderecoServico(orcamento.enderecoServico || "");
 
         setServicoId(orcamento.servicoId || "");
         setItensCompleto(
@@ -217,6 +219,7 @@ export function OrcamentoModal({
         setContato(duplicarDe.contato || "");
         setEmail(duplicarDe.email || "");
         setTelefone(duplicarDe.telefone || "");
+        setEnderecoServico(duplicarDe.enderecoServico || "");
 
         setServicoId(duplicarDe.servicoId || "");
         setItensCompleto(
@@ -268,6 +271,7 @@ export function OrcamentoModal({
         setContato("");
         setEmail("");
         setTelefone("");
+        setEnderecoServico("");
         setMostrarNovoCliente(false);
       }
       setErrors({});
@@ -590,6 +594,7 @@ export function OrcamentoModal({
       contato: contato.trim(),
       email: email.trim(),
       telefone: telefone.trim(),
+      enderecoServico: enderecoServico.trim(),
     });
 
     onClose();
@@ -820,6 +825,17 @@ export function OrcamentoModal({
               placeholder="Telefone para contato (prioridade sobre cadastro do cliente)"
               value={telefone}
               onChange={(e) => setTelefone(e.target.value)}
+            />
+          </InputGroup>
+        </InputRow>
+
+        <InputRow>
+          <InputGroup style={{ flex: 1 }}>
+            <Label>Endereço do Serviço</Label>
+            <Input
+              placeholder="Endereço onde o serviço será executado"
+              value={enderecoServico}
+              onChange={(e) => setEnderecoServico(e.target.value)}
             />
           </InputGroup>
         </InputRow>

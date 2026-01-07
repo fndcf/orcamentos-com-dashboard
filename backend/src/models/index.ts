@@ -86,6 +86,7 @@ export interface Orcamento {
   contato?: string;
   email?: string; // Email específico do orçamento (prioridade sobre clienteEmail)
   telefone?: string; // Telefone específico do orçamento (prioridade sobre clienteTelefone)
+  enderecoServico?: string; // Endereço onde o serviço será executado
   status: OrcamentoStatus;
   dataEmissao: Date;
   dataValidade: Date;

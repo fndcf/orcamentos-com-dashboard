@@ -79,6 +79,7 @@ interface CriarOrcamentoDTO {
   contato?: string;
   email?: string;
   telefone?: string;
+  enderecoServico?: string;
 }
 
 interface AtualizarOrcamentoDTO {
@@ -101,6 +102,7 @@ interface AtualizarOrcamentoDTO {
   contato?: string;
   email?: string;
   telefone?: string;
+  enderecoServico?: string;
 }
 
 export const orcamentoService = {
@@ -213,11 +215,12 @@ export const orcamentoService = {
     if (cliente.telefone) orcamento.clienteTelefone = cliente.telefone;
     if (cliente.email) orcamento.clienteEmail = cliente.email;
 
-    // Adicionar consultor, contato, email e telefone se existirem
+    // Adicionar consultor, contato, email, telefone e enderecoServico se existirem
     if (data.consultor?.trim()) orcamento.consultor = data.consultor.trim();
     if (data.contato?.trim()) orcamento.contato = data.contato.trim();
     if (data.email?.trim()) orcamento.email = data.email.trim();
     if (data.telefone?.trim()) orcamento.telefone = data.telefone.trim();
+    if (data.enderecoServico?.trim()) orcamento.enderecoServico = data.enderecoServico.trim();
 
     // Adicionar observações apenas se existir
     if (data.observacoes?.trim()) {
@@ -449,6 +452,15 @@ export const orcamentoService = {
       }
     }
 
+    if (data.enderecoServico !== undefined) {
+      const novoValor = data.enderecoServico?.trim() || '';
+      const valorAtual = orcamento.enderecoServico || '';
+      if (novoValor !== valorAtual) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updateData.enderecoServico = novoValor ? novoValor : (FieldValue.delete() as any);
+      }
+    }
+
     // Só incrementa a versão se houve alterações reais nos dados
     // Verifica se há alguma propriedade em updateData (além de versao que ainda não foi adicionada)
     const hasChanges = Object.keys(updateData).length > 0;
@@ -560,7 +572,7 @@ export const orcamentoService = {
     if (cliente.telefone) novoOrcamento.clienteTelefone = cliente.telefone;
     if (cliente.email) novoOrcamento.clienteEmail = cliente.email;
 
-    // Manter consultor, contato, email, telefone e observações do original
+    // Manter consultor, contato, email, telefone, enderecoServico e observações do original
     if (orcamentoOriginal.consultor)
       novoOrcamento.consultor = orcamentoOriginal.consultor;
     if (orcamentoOriginal.contato)
@@ -568,6 +580,8 @@ export const orcamentoService = {
     if (orcamentoOriginal.email) novoOrcamento.email = orcamentoOriginal.email;
     if (orcamentoOriginal.telefone)
       novoOrcamento.telefone = orcamentoOriginal.telefone;
+    if (orcamentoOriginal.enderecoServico)
+      novoOrcamento.enderecoServico = orcamentoOriginal.enderecoServico;
     if (orcamentoOriginal.observacoes)
       novoOrcamento.observacoes = orcamentoOriginal.observacoes;
 

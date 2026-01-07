@@ -301,6 +301,7 @@ export function Orcamentos() {
           contato: data.contato,
           email: data.email,
           telefone: data.telefone,
+          enderecoServico: data.enderecoServico,
         },
       });
     } else {

@@ -499,6 +499,13 @@ export function OrcamentoViewModal({
               )}
             </ConsultorInfo>
           )}
+          {orcamento.enderecoServico && (
+            <ConsultorInfo>
+              <span>
+                Endereço do Serviço: <strong>{orcamento.enderecoServico}</strong>
+              </span>
+            </ConsultorInfo>
+          )}
         </ClienteInfo>
       </Section>
 
