@@ -495,6 +495,91 @@ describe('OrcamentoPDF', () => {
       }).not.toThrow();
     });
 
+    it('deve renderizar com parcelasSelecionadas', () => {
+      const orcamentoComParcelasSelecionadas = {
+        ...mockOrcamentoCompleto,
+        condicaoPagamento: 'parcelado' as const,
+        parcelamentoDados: {
+          entradaPercent: 20,
+          valorEntrada: 500,
+          valorRestante: 2000,
+          opcoes: [
+            { numeroParcelas: 1, valorParcela: 2000, valorTotal: 2500, temJuros: false, taxaJuros: 0 },
+            { numeroParcelas: 2, valorParcela: 1000, valorTotal: 2500, temJuros: false, taxaJuros: 0 },
+            { numeroParcelas: 3, valorParcela: 700, valorTotal: 2600, temJuros: true, taxaJuros: 2.5 },
+            { numeroParcelas: 4, valorParcela: 550, valorTotal: 2700, temJuros: true, taxaJuros: 2.5 },
+          ],
+          parcelasSelecionadas: [1, 3], // Apenas 1x e 3x selecionadas
+        },
+      };
+      expect(() => {
+        OrcamentoCompletoPDFDocument({ orcamento: orcamentoComParcelasSelecionadas as Orcamento });
+      }).not.toThrow();
+    });
+
+    it('deve renderizar com parcelas abaixo do mínimo marcadas', () => {
+      const orcamentoComParcelasAbaixoMinimo = {
+        ...mockOrcamentoCompleto,
+        condicaoPagamento: 'parcelado' as const,
+        parcelamentoDados: {
+          entradaPercent: 20,
+          valorEntrada: 500,
+          valorRestante: 2000,
+          opcoes: [
+            { numeroParcelas: 1, valorParcela: 2000, valorTotal: 2500, temJuros: false, taxaJuros: 0, abaixoDoMinimo: false },
+            { numeroParcelas: 2, valorParcela: 1000, valorTotal: 2500, temJuros: false, taxaJuros: 0, abaixoDoMinimo: false },
+            { numeroParcelas: 3, valorParcela: 700, valorTotal: 2600, temJuros: true, taxaJuros: 2.5, abaixoDoMinimo: true },
+            { numeroParcelas: 4, valorParcela: 550, valorTotal: 2700, temJuros: true, taxaJuros: 2.5, abaixoDoMinimo: true },
+          ],
+        },
+      };
+      expect(() => {
+        OrcamentoCompletoPDFDocument({ orcamento: orcamentoComParcelasAbaixoMinimo as Orcamento });
+      }).not.toThrow();
+    });
+
+    it('deve renderizar filtrando parcelas abaixo do mínimo quando não há seleção', () => {
+      const orcamentoSemSelecao = {
+        ...mockOrcamentoCompleto,
+        condicaoPagamento: 'parcelado' as const,
+        parcelamentoDados: {
+          entradaPercent: 20,
+          valorEntrada: 500,
+          valorRestante: 2000,
+          opcoes: [
+            { numeroParcelas: 1, valorParcela: 2000, valorTotal: 2500, temJuros: false, taxaJuros: 0, abaixoDoMinimo: false },
+            { numeroParcelas: 2, valorParcela: 1000, valorTotal: 2500, temJuros: false, taxaJuros: 0, abaixoDoMinimo: false },
+            { numeroParcelas: 3, valorParcela: 700, valorTotal: 2600, temJuros: true, taxaJuros: 2.5, abaixoDoMinimo: true },
+          ],
+          // Sem parcelasSelecionadas - deve filtrar as abaixo do mínimo
+        },
+      };
+      expect(() => {
+        OrcamentoCompletoPDFDocument({ orcamento: orcamentoSemSelecao as Orcamento });
+      }).not.toThrow();
+    });
+
+    it('deve renderizar incluindo parcelas abaixo do mínimo quando selecionadas manualmente', () => {
+      const orcamentoComSelecaoManual = {
+        ...mockOrcamentoCompleto,
+        condicaoPagamento: 'parcelado' as const,
+        parcelamentoDados: {
+          entradaPercent: 20,
+          valorEntrada: 500,
+          valorRestante: 2000,
+          opcoes: [
+            { numeroParcelas: 1, valorParcela: 2000, valorTotal: 2500, temJuros: false, taxaJuros: 0, abaixoDoMinimo: false },
+            { numeroParcelas: 2, valorParcela: 1000, valorTotal: 2500, temJuros: false, taxaJuros: 0, abaixoDoMinimo: false },
+            { numeroParcelas: 3, valorParcela: 700, valorTotal: 2600, temJuros: true, taxaJuros: 2.5, abaixoDoMinimo: true },
+          ],
+          parcelasSelecionadas: [1, 3], // Incluindo a parcela 3x que está abaixo do mínimo
+        },
+      };
+      expect(() => {
+        OrcamentoCompletoPDFDocument({ orcamento: orcamentoComSelecaoManual as Orcamento });
+      }).not.toThrow();
+    });
+
     it('deve renderizar com mostrarValoresDetalhados como false', () => {
       const orcamentoSemDetalhes = {
         ...mockOrcamentoCompleto,

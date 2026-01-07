@@ -279,6 +279,12 @@ export function CondicaoPagamentoFormSection({
     parcelamentoDados?.entradaPercent ?? 20
   );
 
+  // Estado para as parcelas selecionadas (quais aparecem no PDF)
+  // Por padrão, nenhuma selecionada significa mostrar 1x e 2x apenas
+  const [parcelasSelecionadas, setParcelasSelecionadas] = useState<number[]>(
+    parcelamentoDados?.parcelasSelecionadas ?? []
+  );
+
   // Estado para o percentual de desconto à vista - controlado localmente
   // Usamos uma ref para armazenar o último valor recebido do pai para detectar mudanças externas
   const lastExternalPercentual = useRef<number | undefined>(descontoAVista?.percentual);
@@ -290,11 +296,15 @@ export function CondicaoPagamentoFormSection({
   // Só sincroniza uma vez na inicialização, depois o estado local é controlado pelo usuário
   useEffect(() => {
     const externalEntrada = parcelamentoDados?.entradaPercent;
+    const externalParcelas = parcelamentoDados?.parcelasSelecionadas;
     if (!isInitialized.current && externalEntrada !== undefined) {
       isInitialized.current = true;
       setEntradaPercent(externalEntrada);
+      if (externalParcelas !== undefined) {
+        setParcelasSelecionadas(externalParcelas);
+      }
     }
-  }, [parcelamentoDados?.entradaPercent]);
+  }, [parcelamentoDados?.entradaPercent, parcelamentoDados?.parcelasSelecionadas]);
 
   // Sincroniza o descontoPercent quando descontoAVista muda externamente (edição/duplicação)
   // Só atualiza se o valor vier do pai (detectado pela mudança no percentual externo)
@@ -407,6 +417,17 @@ export function CondicaoPagamentoFormSection({
     }
   }, [condicao, descontoPercent, valorDesconto, valorFinalComDesconto, onDescontoAVistaChange]);
 
+  // Função para alternar seleção de parcela
+  const toggleParcelaSelecionada = (numero: number) => {
+    setParcelasSelecionadas((prev) => {
+      if (prev.includes(numero)) {
+        return prev.filter((n) => n !== numero);
+      } else {
+        return [...prev, numero].sort((a, b) => a - b);
+      }
+    });
+  };
+
   // Gerar texto e dados de parcelamento para o PDF (entrada + info sobre parcelas)
   useEffect(() => {
     if (condicao === "parcelado") {
@@ -434,17 +455,21 @@ export function CondicaoPagamentoFormSection({
       onParcelamentoTextoChange(texto);
 
       // Gerar dados estruturados para o PDF
+      // Incluir todas as parcelas para permitir seleção manual das que estão abaixo do mínimo
       const parcelamentoDados: ParcelamentoDados = {
         entradaPercent,
         valorEntrada,
         valorRestante,
-        opcoes: parcelasDisponiveis.map((p) => ({
+        // Envia todas as parcelas, mas o PDF filtrará baseado em parcelasSelecionadas ou parcelasDisponiveis
+        opcoes: parcelasInfo.map((p) => ({
           numeroParcelas: p.numero,
           valorParcela: p.valorParcela,
           valorTotal: valorEntrada + p.valorTotal,
           temJuros: p.temJuros,
           taxaJuros: p.taxaJuros,
+          abaixoDoMinimo: p.disabled, // Marca quais estão abaixo do mínimo
         })),
+        parcelasSelecionadas: parcelasSelecionadas.length > 0 ? parcelasSelecionadas : undefined,
       };
       onParcelamentoDadosChange(parcelamentoDados);
     } else {
@@ -457,6 +482,7 @@ export function CondicaoPagamentoFormSection({
     valorEntrada,
     valorRestante,
     parcelasInfo,
+    parcelasSelecionadas,
     taxaJuros,
     jurosAPartirDe,
     onParcelamentoTextoChange,
@@ -591,12 +617,26 @@ export function CondicaoPagamentoFormSection({
                     key={parcela.numero}
                     className={parcela.disabled ? "disabled" : ""}
                     style={{
-                      opacity: parcela.disabled ? 0.5 : 1,
+                      opacity: parcela.disabled ? 0.6 : 1,
                       paddingLeft: 16,
+                      cursor: "pointer",
                     }}
                     title={parcela.motivoDisabled}
+                    onClick={() => toggleParcelaSelecionada(parcela.numero)}
                   >
-                    <span className="label">
+                    <span className="label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={parcelasSelecionadas.includes(parcela.numero)}
+                        onChange={() => toggleParcelaSelecionada(parcela.numero)}
+                        style={{
+                          width: 16,
+                          height: 16,
+                          accentColor: "var(--primary)",
+                          cursor: "pointer",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
                       {parcela.numero}x de{" "}
                       {formatCurrency(parcela.valorParcela)}
                       {parcela.temJuros && (

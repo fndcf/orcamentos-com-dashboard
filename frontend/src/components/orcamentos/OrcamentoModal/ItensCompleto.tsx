@@ -22,6 +22,7 @@ import {
   DescricaoDropdown,
   DescricaoOption,
   DescricaoEmptyMessage,
+  AddItemButtonContainer,
 } from "./styles";
 
 interface ItensCompletoProps {
@@ -127,9 +128,6 @@ export function ItensCompleto({
     <ItensSection id="itensCompletoSection">
       <SectionTitle>
         Itens do Orçamento (com Mão de Obra e Material)
-        <Button type="button" $size="small" onClick={onAddItem}>
-          + Adicionar Item
-        </Button>
       </SectionTitle>
 
       {errors.itensCompleto && <ErrorText>{errors.itensCompleto}</ErrorText>}
@@ -364,6 +362,11 @@ export function ItensCompleto({
           <div className="value destaque">{formatCurrency(totais.total)}</div>
         </div>
       </TotaisCompleto>
+      <AddItemButtonContainer>
+        <Button type="button" $size="small" onClick={onAddItem}>
+          + Adicionar Item
+        </Button>
+      </AddItemButtonContainer>
     </ItensSection>
   );
 }

@@ -2009,80 +2009,94 @@ export function OrcamentoCompletoPDFDocument({
           {/* Se tem dados de parcelamento, mostrar tabela detalhada */}
           {orcamento.parcelamentoDados &&
           orcamento.parcelamentoDados.opcoes.length > 0 ? (
-            <>
-              {/* Box de entrada */}
-              <View style={stylesCompleto.parcelamentoEntradaBox}>
-                <Text style={stylesCompleto.parcelamentoEntradaText}>
-                  Entrada: {orcamento.parcelamentoDados.entradaPercent}% -{" "}
-                  {formatCurrency(orcamento.parcelamentoDados.valorEntrada)}
-                </Text>
-                <Text style={stylesCompleto.parcelamentoRestanteText}>
-                  Restante:{" "}
-                  {formatCurrency(orcamento.parcelamentoDados.valorRestante)}
-                </Text>
-              </View>
+            (() => {
+              // Filtrar parcelas baseado na seleção
+              // Se parcelasSelecionadas está definido, usa a seleção do usuário
+              // Caso contrário, mostra apenas as parcelas que NÃO estão abaixo do mínimo
+              const parcelasSelecionadas = orcamento.parcelamentoDados.parcelasSelecionadas;
+              const opcoesParaExibir = parcelasSelecionadas && parcelasSelecionadas.length > 0
+                ? orcamento.parcelamentoDados.opcoes.filter(opcao =>
+                    parcelasSelecionadas.includes(opcao.numeroParcelas)
+                  )
+                : orcamento.parcelamentoDados.opcoes.filter(opcao => !opcao.abaixoDoMinimo);
 
-              {/* Tabela de opções de parcelamento */}
-              <View style={stylesCompleto.parcelamentoTable}>
-                <View style={stylesCompleto.parcelamentoTableHeader}>
-                  <Text
-                    style={[
-                      stylesCompleto.parcelamentoTableHeaderText,
-                      stylesCompleto.parcelamentoColParcelas,
-                    ]}
-                  >
-                    PARCELAS
-                  </Text>
-                  <Text
-                    style={[
-                      stylesCompleto.parcelamentoTableHeaderText,
-                      stylesCompleto.parcelamentoColValor,
-                    ]}
-                  >
-                    VALOR/PARCELA
-                  </Text>
-                  <Text
-                    style={[
-                      stylesCompleto.parcelamentoTableHeaderText,
-                      stylesCompleto.parcelamentoColJuros,
-                    ]}
-                  >
-                    JUROS
-                  </Text>
-                  <Text
-                    style={[
-                      stylesCompleto.parcelamentoTableHeaderText,
-                      stylesCompleto.parcelamentoColTotal,
-                    ]}
-                  >
-                    TOTAL FINAL
-                  </Text>
-                </View>
-                {orcamento.parcelamentoDados.opcoes.map((opcao, index) => (
-                  <View
-                    key={opcao.numeroParcelas}
-                    style={
-                      index % 2 === 0
-                        ? stylesCompleto.parcelamentoTableRow
-                        : stylesCompleto.parcelamentoTableRowAlt
-                    }
-                  >
-                    <Text style={stylesCompleto.parcelamentoColParcelas}>
-                      {opcao.numeroParcelas}x
+              return (
+                <>
+                  {/* Box de entrada */}
+                  <View style={stylesCompleto.parcelamentoEntradaBox}>
+                    <Text style={stylesCompleto.parcelamentoEntradaText}>
+                      Entrada: {orcamento.parcelamentoDados.entradaPercent}% -{" "}
+                      {formatCurrency(orcamento.parcelamentoDados.valorEntrada)}
                     </Text>
-                    <Text style={stylesCompleto.parcelamentoColValor}>
-                      {formatCurrency(opcao.valorParcela)}
-                    </Text>
-                    <Text style={stylesCompleto.parcelamentoColJuros}>
-                      {opcao.temJuros ? `+${opcao.taxaJuros}%` : "Sem juros"}
-                    </Text>
-                    <Text style={stylesCompleto.parcelamentoColTotal}>
-                      {formatCurrency(opcao.valorTotal)}
+                    <Text style={stylesCompleto.parcelamentoRestanteText}>
+                      Restante:{" "}
+                      {formatCurrency(orcamento.parcelamentoDados.valorRestante)}
                     </Text>
                   </View>
-                ))}
-              </View>
-            </>
+
+                  {/* Tabela de opções de parcelamento */}
+                  <View style={stylesCompleto.parcelamentoTable}>
+                    <View style={stylesCompleto.parcelamentoTableHeader}>
+                      <Text
+                        style={[
+                          stylesCompleto.parcelamentoTableHeaderText,
+                          stylesCompleto.parcelamentoColParcelas,
+                        ]}
+                      >
+                        PARCELAS
+                      </Text>
+                      <Text
+                        style={[
+                          stylesCompleto.parcelamentoTableHeaderText,
+                          stylesCompleto.parcelamentoColValor,
+                        ]}
+                      >
+                        VALOR/PARCELA
+                      </Text>
+                      <Text
+                        style={[
+                          stylesCompleto.parcelamentoTableHeaderText,
+                          stylesCompleto.parcelamentoColJuros,
+                        ]}
+                      >
+                        JUROS
+                      </Text>
+                      <Text
+                        style={[
+                          stylesCompleto.parcelamentoTableHeaderText,
+                          stylesCompleto.parcelamentoColTotal,
+                        ]}
+                      >
+                        TOTAL FINAL
+                      </Text>
+                    </View>
+                    {opcoesParaExibir.map((opcao, index) => (
+                      <View
+                        key={opcao.numeroParcelas}
+                        style={
+                          index % 2 === 0
+                            ? stylesCompleto.parcelamentoTableRow
+                            : stylesCompleto.parcelamentoTableRowAlt
+                        }
+                      >
+                        <Text style={stylesCompleto.parcelamentoColParcelas}>
+                          {opcao.numeroParcelas}x
+                        </Text>
+                        <Text style={stylesCompleto.parcelamentoColValor}>
+                          {formatCurrency(opcao.valorParcela)}
+                        </Text>
+                        <Text style={stylesCompleto.parcelamentoColJuros}>
+                          {opcao.temJuros ? `+${opcao.taxaJuros}%` : "Sem juros"}
+                        </Text>
+                        <Text style={stylesCompleto.parcelamentoColTotal}>
+                          {formatCurrency(opcao.valorTotal)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              );
+            })()
           ) : orcamento.condicaoPagamento === "a_vista" &&
             orcamento.descontoAVista &&
             orcamento.descontoAVista.percentual > 0 ? (

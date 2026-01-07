@@ -847,6 +847,96 @@ export const ParcelamentoResumo = styled.div`
   }
 `;
 
+export const ParcelasCheckboxSection = styled.div`
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--background);
+  border-radius: 8px;
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .section-hint {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+`;
+
+export const ParcelasCheckboxGrid = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px;
+`;
+
+export const ParcelaCheckboxItem = styled.label<{ $disabled?: boolean }>`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: ${({ $disabled }) => $disabled ? 'not-allowed' : 'pointer'};
+  transition: background 0.2s;
+  opacity: ${({ $disabled }) => $disabled ? 0.5 : 1};
+
+  &:hover {
+    background: ${({ $disabled }) => $disabled ? 'transparent' : 'rgba(0, 0, 0, 0.03)'};
+  }
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--primary);
+    flex-shrink: 0;
+    cursor: ${({ $disabled }) => $disabled ? 'not-allowed' : 'pointer'};
+  }
+
+  .parcela-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+
+    .parcela-detalhe {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .juros-tag {
+        color: var(--warning);
+        font-size: 0.8rem;
+      }
+
+      .disabled-tag {
+        color: var(--error);
+        font-size: 0.75rem;
+      }
+    }
+
+    .parcela-total {
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+  }
+`;
+
 export const ParcelamentoDetalhe = styled.div`
   display: flex;
   justify-content: space-between;
@@ -1007,4 +1097,10 @@ export const ClienteSearchEmpty = styled.div`
   text-align: center;
   color: var(--text-secondary);
   font-size: 0.9rem;
+`;
+
+export const AddItemButtonContainer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 `;
