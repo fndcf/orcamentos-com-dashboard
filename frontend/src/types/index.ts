@@ -185,6 +185,11 @@ export interface ConfiguracoesGerais {
   parcelamentoValorMinimo?: number; // Valor mínimo por parcela (ex: 1000)
   parcelamentoJurosAPartirDe?: number; // A partir de qual parcela aplica juros (ex: 3)
   parcelamentoTaxaJuros?: number; // Taxa de juros por parcela em % (ex: 2.5)
+  // Custo fixo mensal da empresa (para cálculo de lucro líquido)
+  custoFixoMensal?: number;
+  // Impostos para cálculo de lucro
+  impostoMaterial?: number; // Percentual de imposto sobre material (ex: 10%)
+  impostoServico?: number; // Percentual de imposto sobre serviço/mão de obra (ex: 15%)
 }
 
 // Interface da Notificação

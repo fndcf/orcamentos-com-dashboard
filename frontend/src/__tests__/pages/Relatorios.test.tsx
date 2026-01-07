@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { Relatorios } from '../../pages/Relatorios';
 import { useOrcamentos } from '../../hooks/useOrcamentos';
 import { useItensServico } from '../../hooks/useItensServico';
+import { useConfiguracoesGerais } from '../../hooks/useConfiguracoesGerais';
 
 // Mock dos hooks
 vi.mock('../../hooks/useOrcamentos', () => ({
@@ -12,6 +13,10 @@ vi.mock('../../hooks/useOrcamentos', () => ({
 
 vi.mock('../../hooks/useItensServico', () => ({
   useItensServico: vi.fn(),
+}));
+
+vi.mock('../../hooks/useConfiguracoesGerais', () => ({
+  useConfiguracoesGerais: vi.fn(),
 }));
 
 // Mock do recharts
@@ -191,6 +196,18 @@ const mockOrcamentoCompleto = {
   ],
 };
 
+const mockConfiguracoesGerais = {
+  diasValidadeOrcamento: 30,
+  nomeEmpresa: 'Empresa Teste',
+  cnpjEmpresa: '12345678901234',
+  enderecoEmpresa: 'Rua Teste, 123',
+  telefoneEmpresa: '11999999999',
+  emailEmpresa: 'teste@empresa.com',
+  custoFixoMensal: 0,
+  impostoMaterial: 0,
+  impostoServico: 0,
+};
+
 describe('Relatorios', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -202,6 +219,12 @@ describe('Relatorios', () => {
     // Mock da data atual para os testes serem consistentes
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2024-06-15'));
+
+    // Mock padrão para configurações gerais
+    vi.mocked(useConfiguracoesGerais).mockReturnValue({
+      data: mockConfiguracoesGerais,
+      isLoading: false,
+    } as any);
   });
 
   afterEach(() => {
@@ -606,5 +629,314 @@ describe('Relatorios', () => {
     render(<Relatorios />, { wrapper: createWrapper() });
 
     expect(screen.getByText('Orçamentos por Status')).toBeInTheDocument();
+  });
+
+  describe('Cálculos de lucro com impostos', () => {
+    it('deve mostrar seção de impostos na análise de lucro quando impostos configurados', () => {
+      vi.mocked(useOrcamentos).mockReturnValue({
+        data: [mockOrcamentoCompleto],
+        isLoading: false,
+      } as any);
+      vi.mocked(useItensServico).mockReturnValue({
+        data: mockItensServico,
+        isLoading: false,
+      } as any);
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 10,
+          impostoServico: 15,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<Relatorios />, { wrapper: createWrapper() });
+
+      // Deve mostrar os percentuais de impostos nas seções
+      expect(screen.getByText(/Material.*Imposto: 10%/)).toBeInTheDocument();
+      expect(screen.getByText(/Mão de Obra.*Imposto: 15%/)).toBeInTheDocument();
+    });
+
+    it('deve mostrar card de impostos totais quando impostos configurados', () => {
+      vi.mocked(useOrcamentos).mockReturnValue({
+        data: [mockOrcamentoCompleto],
+        isLoading: false,
+      } as any);
+      vi.mocked(useItensServico).mockReturnValue({
+        data: mockItensServico,
+        isLoading: false,
+      } as any);
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 10,
+          impostoServico: 15,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<Relatorios />, { wrapper: createWrapper() });
+
+      // Deve mostrar seção de impostos
+      expect(screen.getByText('Impostos')).toBeInTheDocument();
+    });
+
+    it('não deve mostrar seção de impostos quando não há impostos configurados', () => {
+      vi.mocked(useOrcamentos).mockReturnValue({
+        data: [mockOrcamentoCompleto],
+        isLoading: false,
+      } as any);
+      vi.mocked(useItensServico).mockReturnValue({
+        data: mockItensServico,
+        isLoading: false,
+      } as any);
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 0,
+          impostoServico: 0,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<Relatorios />, { wrapper: createWrapper() });
+
+      // Não deve mostrar cards de impostos individuais (dentro da análise de lucro)
+      // A seção "Impostos" dos cards de resumo não deve aparecer quando zerado
+      const impostoLabels = screen.queryAllByText('Imposto');
+      // Quando não há impostos, não deve ter cards de imposto
+      expect(impostoLabels.length).toBe(0);
+    });
+
+    it('deve mostrar seção de lucro líquido quando impostos configurados (mesmo sem custo fixo)', () => {
+      vi.mocked(useOrcamentos).mockReturnValue({
+        data: [mockOrcamentoCompleto],
+        isLoading: false,
+      } as any);
+      vi.mocked(useItensServico).mockReturnValue({
+        data: mockItensServico,
+        isLoading: false,
+      } as any);
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          custoFixoMensal: 0,
+          impostoMaterial: 10,
+          impostoServico: 15,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<Relatorios />, { wrapper: createWrapper() });
+
+      // Deve mostrar seção de lucro líquido
+      expect(screen.getByText('Lucro Líquido da Empresa')).toBeInTheDocument();
+    });
+
+    it('não deve mostrar seção de lucro líquido quando não há custo fixo nem impostos', () => {
+      vi.mocked(useOrcamentos).mockReturnValue({
+        data: [mockOrcamentoCompleto],
+        isLoading: false,
+      } as any);
+      vi.mocked(useItensServico).mockReturnValue({
+        data: mockItensServico,
+        isLoading: false,
+      } as any);
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          custoFixoMensal: 0,
+          impostoMaterial: 0,
+          impostoServico: 0,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<Relatorios />, { wrapper: createWrapper() });
+
+      // Não deve mostrar seção de lucro líquido
+      expect(screen.queryByText('Lucro Líquido da Empresa')).not.toBeInTheDocument();
+    });
+
+    it('deve mostrar informações de impostos na explicação do cálculo', () => {
+      vi.mocked(useOrcamentos).mockReturnValue({
+        data: [mockOrcamentoCompleto],
+        isLoading: false,
+      } as any);
+      vi.mocked(useItensServico).mockReturnValue({
+        data: mockItensServico,
+        isLoading: false,
+      } as any);
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          custoFixoMensal: 5000,
+          impostoMaterial: 10,
+          impostoServico: 15,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<Relatorios />, { wrapper: createWrapper() });
+
+      // Deve mostrar informação de impostos no resumo da seção de lucro líquido
+      expect(screen.getByText(/Impostos: 10% material, 15% serviço/)).toBeInTheDocument();
+    });
+
+    it('deve calcular lucro considerando impostos na fórmula', () => {
+      vi.mocked(useOrcamentos).mockReturnValue({
+        data: [mockOrcamentoCompleto],
+        isLoading: false,
+      } as any);
+      vi.mocked(useItensServico).mockReturnValue({
+        data: mockItensServico,
+        isLoading: false,
+      } as any);
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 10,
+          impostoServico: 15,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<Relatorios />, { wrapper: createWrapper() });
+
+      // A fórmula de lucro deve incluir impostos
+      // "Venda - Custo - Imposto"
+      expect(screen.getAllByText(/Venda - Custo - Imposto/).length).toBeGreaterThan(0);
+    });
+
+    it('deve mostrar subvalue correto indicando que impostos estão incluídos', () => {
+      vi.mocked(useOrcamentos).mockReturnValue({
+        data: [mockOrcamentoCompleto],
+        isLoading: false,
+      } as any);
+      vi.mocked(useItensServico).mockReturnValue({
+        data: mockItensServico,
+        isLoading: false,
+      } as any);
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 10,
+          impostoServico: 15,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<Relatorios />, { wrapper: createWrapper() });
+
+      // Subvalues devem indicar que impostos estão incluídos
+      expect(screen.getByText(/10% sobre venda/)).toBeInTheDocument();
+      expect(screen.getByText(/15% sobre venda/)).toBeInTheDocument();
+    });
+
+    it('deve mostrar card de impostos no Total Geral quando configurados', () => {
+      vi.mocked(useOrcamentos).mockReturnValue({
+        data: [mockOrcamentoCompleto],
+        isLoading: false,
+      } as any);
+      vi.mocked(useItensServico).mockReturnValue({
+        data: mockItensServico,
+        isLoading: false,
+      } as any);
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 10,
+          impostoServico: 15,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<Relatorios />, { wrapper: createWrapper() });
+
+      // Deve ter texto "Material + Serviço" no subvalue dos impostos totais
+      expect(screen.getByText('Material + Serviço')).toBeInTheDocument();
+    });
+
+    it('deve considerar impostos zerados corretamente', () => {
+      vi.mocked(useOrcamentos).mockReturnValue({
+        data: [mockOrcamentoCompleto],
+        isLoading: false,
+      } as any);
+      vi.mocked(useItensServico).mockReturnValue({
+        data: mockItensServico,
+        isLoading: false,
+      } as any);
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 0,
+          impostoServico: 0,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<Relatorios />, { wrapper: createWrapper() });
+
+      // A análise de lucro deve funcionar normalmente sem impostos
+      expect(screen.getByText(/Análise de Lucro/)).toBeInTheDocument();
+      // Não deve mostrar "Imposto" como label de card
+      const impostoLabels = screen.queryAllByText('Imposto');
+      expect(impostoLabels.length).toBe(0);
+    });
+
+    it('deve funcionar com custo fixo e impostos combinados', () => {
+      vi.mocked(useOrcamentos).mockReturnValue({
+        data: [mockOrcamentoCompleto],
+        isLoading: false,
+      } as any);
+      vi.mocked(useItensServico).mockReturnValue({
+        data: mockItensServico,
+        isLoading: false,
+      } as any);
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          custoFixoMensal: 10000,
+          impostoMaterial: 8,
+          impostoServico: 12,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<Relatorios />, { wrapper: createWrapper() });
+
+      // Deve mostrar tanto a seção de análise de lucro quanto lucro líquido
+      expect(screen.getByText(/Análise de Lucro/)).toBeInTheDocument();
+      expect(screen.getByText('Lucro Líquido da Empresa')).toBeInTheDocument();
+      // Deve mostrar os impostos configurados
+      expect(screen.getByText(/Impostos: 8% material, 12% serviço/)).toBeInTheDocument();
+    });
+
+    it('deve mostrar explicação do cálculo de impostos no lucro líquido', () => {
+      vi.mocked(useOrcamentos).mockReturnValue({
+        data: [mockOrcamentoCompleto],
+        isLoading: false,
+      } as any);
+      vi.mocked(useItensServico).mockReturnValue({
+        data: mockItensServico,
+        isLoading: false,
+      } as any);
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          custoFixoMensal: 5000,
+          impostoMaterial: 10,
+          impostoServico: 15,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<Relatorios />, { wrapper: createWrapper() });
+
+      // Deve ter explicação sobre como os impostos são calculados
+      // Pode haver múltiplos elementos com "Impostos:", então usamos getAllByText
+      expect(screen.getAllByText(/Impostos:/).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Calculados sobre as vendas de material.*e serviço/)).toBeInTheDocument();
+    });
   });
 });

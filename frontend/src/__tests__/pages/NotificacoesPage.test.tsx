@@ -212,7 +212,7 @@ describe('NotificacoesPage', () => {
       render(<NotificacoesPage />, { wrapper: createWrapper() });
 
       expect(screen.getByText('Cliente Teste')).toBeInTheDocument();
-      expect(screen.getByText('Orcamento #1001')).toBeInTheDocument();
+      expect(screen.getByText('Orçamento #1001')).toBeInTheDocument();
       expect(screen.getByText('Extintor ABC 6kg - Vencimento da validade')).toBeInTheDocument();
       expect(screen.getByText('VALIDADE')).toBeInTheDocument();
     });

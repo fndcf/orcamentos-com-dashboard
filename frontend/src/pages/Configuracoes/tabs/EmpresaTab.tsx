@@ -33,6 +33,9 @@ export function EmpresaTab() {
     parcelamentoValorMinimo: 1000,
     parcelamentoJurosAPartirDe: 3,
     parcelamentoTaxaJuros: 2.5,
+    custoFixoMensal: 0,
+    impostoMaterial: 0,
+    impostoServico: 0,
   });
   const [empresaFormDirty, setEmpresaFormDirty] = useState(false);
   const [empresaSaving, setEmpresaSaving] = useState(false);
@@ -51,6 +54,9 @@ export function EmpresaTab() {
         parcelamentoValorMinimo: configuracoesGerais.parcelamentoValorMinimo ?? 1000,
         parcelamentoJurosAPartirDe: configuracoesGerais.parcelamentoJurosAPartirDe ?? 3,
         parcelamentoTaxaJuros: configuracoesGerais.parcelamentoTaxaJuros ?? 2.5,
+        custoFixoMensal: configuracoesGerais.custoFixoMensal ?? 0,
+        impostoMaterial: configuracoesGerais.impostoMaterial ?? 0,
+        impostoServico: configuracoesGerais.impostoServico ?? 0,
       });
       setEmpresaFormDirty(false);
     }
@@ -147,6 +153,9 @@ export function EmpresaTab() {
         parcelamentoValorMinimo: configuracoesGerais.parcelamentoValorMinimo ?? 1000,
         parcelamentoJurosAPartirDe: configuracoesGerais.parcelamentoJurosAPartirDe ?? 3,
         parcelamentoTaxaJuros: configuracoesGerais.parcelamentoTaxaJuros ?? 2.5,
+        custoFixoMensal: configuracoesGerais.custoFixoMensal ?? 0,
+        impostoMaterial: configuracoesGerais.impostoMaterial ?? 0,
+        impostoServico: configuracoesGerais.impostoServico ?? 0,
       });
       setEmpresaFormDirty(false);
     }
@@ -294,6 +303,63 @@ export function EmpresaTab() {
             style={{ maxWidth: 100 }}
           />
           <HelpText>Percentual de juros por parcela após o limite</HelpText>
+        </FormGroup>
+      </FormRow>
+
+      {/* Custo Fixo Mensal */}
+      <div style={{ marginBottom: 16, marginTop: 32, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
+        <h2>Custo Fixo da Empresa</h2>
+        <p className="description">
+          Configure o custo fixo mensal da empresa para cálculo do lucro líquido nos relatórios.
+        </p>
+      </div>
+
+      <FormGroup style={{ marginBottom: 24, maxWidth: 250 }}>
+        <Label>Custo Fixo Mensal (R$)</Label>
+        <Input
+          type="number"
+          value={empresaForm.custoFixoMensal ?? 0}
+          onChange={(e) => handleEmpresaFormChange('custoFixoMensal', parseFloat(e.target.value) || 0)}
+          min="0"
+          step="100"
+        />
+        <HelpText>Valor usado para calcular o lucro líquido nos relatórios</HelpText>
+      </FormGroup>
+
+      {/* Impostos */}
+      <div style={{ marginBottom: 16, marginTop: 32, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
+        <h2>Impostos</h2>
+        <p className="description">
+          Configure os percentuais de impostos que incidem sobre material e serviço para cálculo do lucro real.
+        </p>
+      </div>
+
+      <FormRow style={{ marginBottom: 24 }}>
+        <FormGroup>
+          <Label>Imposto sobre Material (%)</Label>
+          <Input
+            type="number"
+            value={empresaForm.impostoMaterial ?? 0}
+            onChange={(e) => handleEmpresaFormChange('impostoMaterial', parseFloat(e.target.value) || 0)}
+            min="0"
+            max="100"
+            step="0.1"
+            style={{ maxWidth: 120 }}
+          />
+          <HelpText>Percentual de imposto sobre vendas de material</HelpText>
+        </FormGroup>
+        <FormGroup>
+          <Label>Imposto sobre Serviço (%)</Label>
+          <Input
+            type="number"
+            value={empresaForm.impostoServico ?? 0}
+            onChange={(e) => handleEmpresaFormChange('impostoServico', parseFloat(e.target.value) || 0)}
+            min="0"
+            max="100"
+            step="0.1"
+            style={{ maxWidth: 120 }}
+          />
+          <HelpText>Percentual de imposto sobre mão de obra/serviços</HelpText>
         </FormGroup>
       </FormRow>
 

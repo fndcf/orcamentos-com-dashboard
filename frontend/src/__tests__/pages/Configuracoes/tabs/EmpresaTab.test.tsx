@@ -417,4 +417,214 @@ describe('EmpresaTab', () => {
       expect(screen.getByDisplayValue('30')).toBeInTheDocument();
     });
   });
+
+  describe('Configurações de Impostos', () => {
+    it('deve renderizar seção de impostos', () => {
+      render(<EmpresaTab />, { wrapper: createWrapper() });
+
+      expect(screen.getByText('Impostos')).toBeInTheDocument();
+      expect(
+        screen.getByText(/Configure os percentuais de impostos/)
+      ).toBeInTheDocument();
+    });
+
+    it('deve renderizar campos de imposto sobre material e serviço', () => {
+      render(<EmpresaTab />, { wrapper: createWrapper() });
+
+      expect(screen.getByText('Imposto sobre Material (%)')).toBeInTheDocument();
+      expect(screen.getByText('Imposto sobre Serviço (%)')).toBeInTheDocument();
+    });
+
+    it('deve preencher campos de impostos com valores existentes', () => {
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 10,
+          impostoServico: 15,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<EmpresaTab />, { wrapper: createWrapper() });
+
+      expect(screen.getByDisplayValue('10')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('15')).toBeInTheDocument();
+    });
+
+    it('deve usar 0 como valor default para impostos quando não definidos', () => {
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: mockConfiguracoesGerais, // Sem impostoMaterial e impostoServico
+        isLoading: false,
+      } as any);
+
+      render(<EmpresaTab />, { wrapper: createWrapper() });
+
+      // Deve haver campos com valor 0 para impostos
+      const zeroInputs = screen.getAllByDisplayValue('0');
+      expect(zeroInputs.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('deve atualizar campo imposto sobre material', () => {
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 0,
+          impostoServico: 0,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<EmpresaTab />, { wrapper: createWrapper() });
+
+      // Encontrar o input pelo label
+      const impostoMaterialLabel = screen.getByText('Imposto sobre Material (%)');
+      const formGroup = impostoMaterialLabel.closest('div');
+      const input = formGroup?.querySelector('input');
+
+      fireEvent.change(input!, { target: { value: '12.5' } });
+
+      expect(screen.getByDisplayValue('12.5')).toBeInTheDocument();
+    });
+
+    it('deve atualizar campo imposto sobre serviço', () => {
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 0,
+          impostoServico: 0,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<EmpresaTab />, { wrapper: createWrapper() });
+
+      // Encontrar o input pelo label
+      const impostoServicoLabel = screen.getByText('Imposto sobre Serviço (%)');
+      const formGroup = impostoServicoLabel.closest('div');
+      const input = formGroup?.querySelector('input');
+
+      fireEvent.change(input!, { target: { value: '18' } });
+
+      expect(screen.getByDisplayValue('18')).toBeInTheDocument();
+    });
+
+    it('deve marcar formulário como dirty ao alterar impostos', () => {
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 5,
+          impostoServico: 10,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<EmpresaTab />, { wrapper: createWrapper() });
+
+      // Inicialmente o botão Salvar deve estar desabilitado
+      const salvarButton = screen.getByRole('button', { name: 'Salvar Alterações' });
+      expect(salvarButton).toBeDisabled();
+
+      // Encontrar e alterar o input de imposto sobre material
+      const impostoMaterialLabel = screen.getByText('Imposto sobre Material (%)');
+      const formGroup = impostoMaterialLabel.closest('div');
+      const input = formGroup?.querySelector('input');
+
+      fireEvent.change(input!, { target: { value: '8' } });
+
+      // Agora o botão Salvar deve estar habilitado
+      expect(salvarButton).not.toBeDisabled();
+    });
+
+    it('deve salvar impostos junto com outras configurações', async () => {
+      mockMutateAsync.mockResolvedValue({});
+
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 5,
+          impostoServico: 10,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<EmpresaTab />, { wrapper: createWrapper() });
+
+      // Alterar imposto sobre material
+      const impostoMaterialLabel = screen.getByText('Imposto sobre Material (%)');
+      const formGroup = impostoMaterialLabel.closest('div');
+      const input = formGroup?.querySelector('input');
+
+      fireEvent.change(input!, { target: { value: '12' } });
+
+      const salvarButton = screen.getByRole('button', { name: 'Salvar Alterações' });
+      fireEvent.click(salvarButton);
+
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledWith(
+          expect.objectContaining({
+            impostoMaterial: 12,
+            impostoServico: 10,
+          })
+        );
+      });
+    });
+
+    it('deve restaurar valores de impostos ao cancelar', async () => {
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 8,
+          impostoServico: 12,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<EmpresaTab />, { wrapper: createWrapper() });
+
+      // Alterar imposto sobre material
+      const impostoMaterialLabel = screen.getByText('Imposto sobre Material (%)');
+      const formGroup = impostoMaterialLabel.closest('div');
+      const input = formGroup?.querySelector('input');
+
+      fireEvent.change(input!, { target: { value: '20' } });
+      expect(screen.getByDisplayValue('20')).toBeInTheDocument();
+
+      // Cancelar
+      const cancelarButton = screen.getByRole('button', { name: 'Cancelar' });
+      fireEvent.click(cancelarButton);
+
+      await waitFor(() => {
+        // Valor original deve ser restaurado
+        expect(screen.getByDisplayValue('8')).toBeInTheDocument();
+      });
+    });
+
+    it('deve aceitar valores decimais para impostos', () => {
+      vi.mocked(useConfiguracoesGerais).mockReturnValue({
+        data: {
+          ...mockConfiguracoesGerais,
+          impostoMaterial: 0,
+          impostoServico: 0,
+        },
+        isLoading: false,
+      } as any);
+
+      render(<EmpresaTab />, { wrapper: createWrapper() });
+
+      const impostoMaterialLabel = screen.getByText('Imposto sobre Material (%)');
+      const formGroup = impostoMaterialLabel.closest('div');
+      const input = formGroup?.querySelector('input');
+
+      fireEvent.change(input!, { target: { value: '9.75' } });
+
+      expect(screen.getByDisplayValue('9.75')).toBeInTheDocument();
+    });
+
+    it('deve mostrar texto de ajuda para campos de impostos', () => {
+      render(<EmpresaTab />, { wrapper: createWrapper() });
+
+      expect(screen.getByText('Percentual de imposto sobre vendas de material')).toBeInTheDocument();
+      expect(screen.getByText('Percentual de imposto sobre mão de obra/serviços')).toBeInTheDocument();
+    });
+  });
 });

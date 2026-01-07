@@ -526,10 +526,32 @@ describe('orcamentoService', () => {
     });
 
     it('deve atualizar data de validade', async () => {
-      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
-      (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...mockOrcamentoCompleto, ...data }));
+      // Criar mock com data específica diferente da que vamos atualizar
+      const dataOriginal = new Date('2024-06-01T00:00:00.000Z');
+      const mockComDataEspecifica = {
+        id: 'o1',
+        numero: 1,
+        versao: 0,
+        tipo: 'completo' as const,
+        clienteId: 'c1',
+        clienteNome: 'Empresa Teste',
+        clienteCnpj: '12345678901234',
+        status: 'aberto' as const,
+        dataEmissao: new Date(),
+        dataValidade: dataOriginal,
+        servicoId: 's1',
+        servicoDescricao: 'Serviço de Manutenção',
+        itensCompleto: mockOrcamentoCompleto.itensCompleto,
+        valorTotal: 1500,
+        valorTotalMaoDeObra: 500,
+        valorTotalMaterial: 1000,
+        createdAt: new Date(),
+      };
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockComDataEspecifica);
+      (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...mockComDataEspecifica, ...data }));
 
-      const novaData = new Date('2025-01-01');
+      // Data nova diferente da original
+      const novaData = new Date('2025-01-01T00:00:00.000Z');
 
       await orcamentoService.atualizar('o1', { dataValidade: novaData });
 

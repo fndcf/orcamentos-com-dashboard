@@ -133,4 +133,58 @@ describe('configuracoesGeraisService', () => {
       expect(configuracoesGeraisRepository.update).toHaveBeenCalledWith(dados);
     });
   });
+
+  describe('impostos', () => {
+    it('deve atualizar imposto sobre material', async () => {
+      const dados = { impostoMaterial: 10 };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      const resultado = await configuracoesGeraisService.atualizar(dados);
+
+      expect(configuracoesGeraisRepository.update).toHaveBeenCalledWith(dados);
+      expect(resultado.impostoMaterial).toBe(10);
+    });
+
+    it('deve atualizar imposto sobre serviço', async () => {
+      const dados = { impostoServico: 15 };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      const resultado = await configuracoesGeraisService.atualizar(dados);
+
+      expect(configuracoesGeraisRepository.update).toHaveBeenCalledWith(dados);
+      expect(resultado.impostoServico).toBe(15);
+    });
+
+    it('deve atualizar ambos os impostos simultaneamente', async () => {
+      const dados = { impostoMaterial: 8.5, impostoServico: 12.5 };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      const resultado = await configuracoesGeraisService.atualizar(dados);
+
+      expect(configuracoesGeraisRepository.update).toHaveBeenCalledWith(dados);
+      expect(resultado.impostoMaterial).toBe(8.5);
+      expect(resultado.impostoServico).toBe(12.5);
+    });
+
+    it('deve aceitar imposto zero', async () => {
+      const dados = { impostoMaterial: 0, impostoServico: 0 };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      const resultado = await configuracoesGeraisService.atualizar(dados);
+
+      expect(configuracoesGeraisRepository.update).toHaveBeenCalledWith(dados);
+      expect(resultado.impostoMaterial).toBe(0);
+      expect(resultado.impostoServico).toBe(0);
+    });
+
+    it('deve aceitar valores decimais para impostos', async () => {
+      const dados = { impostoMaterial: 5.75, impostoServico: 9.25 };
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      const resultado = await configuracoesGeraisService.atualizar(dados);
+
+      expect(resultado.impostoMaterial).toBe(5.75);
+      expect(resultado.impostoServico).toBe(9.25);
+    });
+  });
 });

@@ -84,5 +84,26 @@ describe('configuracoesGeraisController', () => {
 
       expect(mockNext).toHaveBeenCalledWith(error);
     });
+
+    it('deve atualizar impostos com sucesso', async () => {
+      const dadosAtualizacao = { impostoMaterial: 10, impostoServico: 15 };
+      const configuracoes = {
+        diasValidadeOrcamento: 30,
+        nomeEmpresa: 'Empresa Teste',
+        cnpjEmpresa: '12345678901234',
+        enderecoEmpresa: 'Rua Teste, 123',
+        telefoneEmpresa: '11999999999',
+        emailEmpresa: 'teste@empresa.com',
+        impostoMaterial: 10,
+        impostoServico: 15,
+      };
+      mockReq.body = dadosAtualizacao;
+      (configuracoesGeraisService.atualizar as jest.Mock).mockResolvedValue(configuracoes);
+
+      await configuracoesGeraisController.atualizar(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(configuracoesGeraisService.atualizar).toHaveBeenCalledWith(dadosAtualizacao);
+      expect(jsonMock).toHaveBeenCalledWith(configuracoes);
+    });
   });
 });

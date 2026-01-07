@@ -18,8 +18,12 @@ import {
 } from "recharts";
 import { useOrcamentos } from "../hooks/useOrcamentos";
 import { useItensServico } from "../hooks/useItensServico";
+import { useConfiguracoesGerais } from "../hooks/useConfiguracoesGerais";
 import { Loading, Button } from "../components/ui";
-import { formatCurrency, formatOrcamentoNumeroSimples } from "../utils/constants";
+import {
+  formatCurrency,
+  formatOrcamentoNumeroSimples,
+} from "../utils/constants";
 import { OrcamentoStatus } from "../types";
 import Footer from "@/components/layout/Footer";
 
@@ -697,10 +701,12 @@ interface OrcamentoAnalise {
 export function Relatorios() {
   const { data: orcamentos, isLoading: loadingOrcamentos } = useOrcamentos();
   const { data: itensServico } = useItensServico();
+  const { data: configuracoesGerais } = useConfiguracoesGerais();
 
   // Estado para modal de análise individual
   const [modalOrcamentoOpen, setModalOrcamentoOpen] = useState(false);
-  const [orcamentoSelecionado, setOrcamentoSelecionado] = useState<OrcamentoAnalise | null>(null);
+  const [orcamentoSelecionado, setOrcamentoSelecionado] =
+    useState<OrcamentoAnalise | null>(null);
 
   // Handler para abrir modal com orçamento selecionado
   const handleOrcamentoClick = useCallback((orc: OrcamentoAnalise) => {
@@ -714,13 +720,13 @@ export function Relatorios() {
     setOrcamentoSelecionado(null);
   }, []);
 
-  // Filtros de data - padrão: últimos 3 meses
+  // Filtros de data - padrão: último 1 mês
   const hoje = new Date();
-  const tresMesesAtras = new Date(hoje);
-  tresMesesAtras.setMonth(tresMesesAtras.getMonth() - 3);
+  const umMesAtras = new Date(hoje);
+  umMesAtras.setMonth(umMesAtras.getMonth() - 1);
 
   const [dataInicio, setDataInicio] = useState(
-    tresMesesAtras.toISOString().split("T")[0]
+    umMesAtras.toISOString().split("T")[0]
   );
   const [dataFim, setDataFim] = useState(hoje.toISOString().split("T")[0]);
 
@@ -910,13 +916,20 @@ export function Relatorios() {
       return null;
     }
 
+    // Obter percentuais de impostos das configurações
+    const impostoMaterialPercent = configuracoesGerais?.impostoMaterial || 0;
+    const impostoServicoPercent = configuracoesGerais?.impostoServico || 0;
+
     // Criar mapa de custos e valores de venda por descrição do item (normalizada)
-    const itensPorDescricao: Record<string, {
-      valorUnitario: number;
-      valorMaoDeObraUnitario: number;
-      valorCusto: number;
-      valorMaoDeObraCusto: number;
-    }> = {};
+    const itensPorDescricao: Record<
+      string,
+      {
+        valorUnitario: number;
+        valorMaoDeObraUnitario: number;
+        valorCusto: number;
+        valorMaoDeObraCusto: number;
+      }
+    > = {};
     itensServico.forEach((item) => {
       const key = item.descricao.toLowerCase().trim();
       itensPorDescricao[key] = {
@@ -927,13 +940,18 @@ export function Relatorios() {
       };
     });
 
-    const orcamentosAceitos = orcamentosFiltrados.filter((o) => o.status === "aceito");
+    const orcamentosAceitos = orcamentosFiltrados.filter(
+      (o) => o.status === "aceito"
+    );
 
     // Função para verificar se um item tem custo cadastrado
     const itemTemCusto = (descricao: string): boolean => {
       const key = descricao.toLowerCase().trim();
       const itemInfo = itensPorDescricao[key];
-      return !!(itemInfo && (itemInfo.valorCusto > 0 || itemInfo.valorMaoDeObraCusto > 0));
+      return !!(
+        itemInfo &&
+        (itemInfo.valorCusto > 0 || itemInfo.valorMaoDeObraCusto > 0)
+      );
     };
 
     // Função para obter valores de um item
@@ -978,11 +996,17 @@ export function Relatorios() {
       }
 
       if (todosItensTemCusto) {
-        const lucroMaterial = vendaMaterial - custoMaterial;
-        const lucroMaoDeObra = vendaMaoDeObra - custoMaoDeObra;
+        // Calcular impostos sobre as vendas
+        const impostoMaterial = vendaMaterial * (impostoMaterialPercent / 100);
+        const impostoServico = vendaMaoDeObra * (impostoServicoPercent / 100);
+
+        // Lucro = Venda - Custo - Imposto
+        const lucroMaterial = vendaMaterial - custoMaterial - impostoMaterial;
+        const lucroMaoDeObra = vendaMaoDeObra - custoMaoDeObra - impostoServico;
         const lucroTotal = lucroMaterial + lucroMaoDeObra;
         const valorTotalVenda = vendaMaterial + vendaMaoDeObra;
-        const margem = valorTotalVenda > 0 ? (lucroTotal / valorTotalVenda) * 100 : 0;
+        const margem =
+          valorTotalVenda > 0 ? (lucroTotal / valorTotalVenda) * 100 : 0;
 
         orcamentosComCustoCompleto.push({
           numero: orc.numero,
@@ -1007,15 +1031,35 @@ export function Relatorios() {
     });
 
     // Calcular totais
-    const totalVendaMaterial = orcamentosComCustoCompleto.reduce((sum, o) => sum + o.vendaMaterial, 0);
-    const totalVendaMaoDeObra = orcamentosComCustoCompleto.reduce((sum, o) => sum + o.vendaMaoDeObra, 0);
-    const totalCustoMaterial = orcamentosComCustoCompleto.reduce((sum, o) => sum + o.custoMaterial, 0);
-    const totalCustoMaoDeObra = orcamentosComCustoCompleto.reduce((sum, o) => sum + o.custoMaoDeObra, 0);
-    const totalLucroMaterial = totalVendaMaterial - totalCustoMaterial;
-    const totalLucroMaoDeObra = totalVendaMaoDeObra - totalCustoMaoDeObra;
+    const totalVendaMaterial = orcamentosComCustoCompleto.reduce(
+      (sum, o) => sum + o.vendaMaterial,
+      0
+    );
+    const totalVendaMaoDeObra = orcamentosComCustoCompleto.reduce(
+      (sum, o) => sum + o.vendaMaoDeObra,
+      0
+    );
+    const totalCustoMaterial = orcamentosComCustoCompleto.reduce(
+      (sum, o) => sum + o.custoMaterial,
+      0
+    );
+    const totalCustoMaoDeObra = orcamentosComCustoCompleto.reduce(
+      (sum, o) => sum + o.custoMaoDeObra,
+      0
+    );
+
+    // Calcular impostos totais
+    const totalImpostoMaterial = totalVendaMaterial * (impostoMaterialPercent / 100);
+    const totalImpostoServico = totalVendaMaoDeObra * (impostoServicoPercent / 100);
+    const totalImpostos = totalImpostoMaterial + totalImpostoServico;
+
+    // Lucro = Venda - Custo - Imposto
+    const totalLucroMaterial = totalVendaMaterial - totalCustoMaterial - totalImpostoMaterial;
+    const totalLucroMaoDeObra = totalVendaMaoDeObra - totalCustoMaoDeObra - totalImpostoServico;
     const lucroTotal = totalLucroMaterial + totalLucroMaoDeObra;
     const valorTotalVenda = totalVendaMaterial + totalVendaMaoDeObra;
-    const margemLucro = valorTotalVenda > 0 ? (lucroTotal / valorTotalVenda) * 100 : 0;
+    const margemLucro =
+      valorTotalVenda > 0 ? (lucroTotal / valorTotalVenda) * 100 : 0;
 
     // Ordenar por lucro total (maior primeiro)
     orcamentosComCustoCompleto.sort((a, b) => b.lucroTotal - a.lucroTotal);
@@ -1025,6 +1069,11 @@ export function Relatorios() {
       totalVendaMaoDeObra,
       totalCustoMaterial,
       totalCustoMaoDeObra,
+      totalImpostoMaterial,
+      totalImpostoServico,
+      totalImpostos,
+      impostoMaterialPercent,
+      impostoServicoPercent,
       totalLucroMaterial,
       totalLucroMaoDeObra,
       lucroTotal,
@@ -1033,7 +1082,77 @@ export function Relatorios() {
       orcamentosSemCustoCompleto,
       totalOrcamentosAceitos: orcamentosAceitos.length,
     };
-  }, [orcamentosFiltrados, itensServico]);
+  }, [orcamentosFiltrados, itensServico, configuracoesGerais]);
+
+  // Cálculo do Lucro Líquido (considerando custo fixo proporcional ao período e impostos)
+  const lucroLiquido = useMemo(() => {
+    const custoFixoMensal = configuracoesGerais?.custoFixoMensal || 0;
+    const impostoMaterialPercent = configuracoesGerais?.impostoMaterial || 0;
+    const impostoServicoPercent = configuracoesGerais?.impostoServico || 0;
+
+    // Exibe se houver custo fixo OU impostos configurados
+    if (custoFixoMensal === 0 && impostoMaterialPercent === 0 && impostoServicoPercent === 0) {
+      return null;
+    }
+
+    // Calcular número de meses no período selecionado
+    const inicio = new Date(dataInicio);
+    const fim = new Date(dataFim);
+    const diffTime = Math.abs(fim.getTime() - inicio.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir o dia final
+    const mesesPeriodo = diffDays / 30; // Aproximação de meses
+
+    // Custo fixo proporcional ao período
+    const custoFixoProporcional = custoFixoMensal * mesesPeriodo;
+
+    // Valor total de orçamentos aceitos no período
+    const valorTotalAceitos = orcamentosFiltrados
+      .filter((o) => o.status === "aceito")
+      .reduce((sum, o) => sum + o.valorTotal, 0);
+
+    // Lucro bruto (se tiver análise de lucro com custos de itens - já inclui impostos)
+    const lucroBruto = analiseLucro?.lucroTotal || 0;
+    const temAnaliseLucro = analiseLucro && analiseLucro.orcamentos.length > 0;
+
+    // Impostos totais da análise de lucro (se disponível)
+    const totalImpostos = analiseLucro?.totalImpostos || 0;
+
+    // Lucro líquido = Lucro bruto (já com impostos descontados) - Custo fixo proporcional
+    // Se não tiver análise de lucro, calcula impostos sobre o total de vendas
+    let lucroLiquidoValor: number;
+    let impostosCalculados = 0;
+
+    if (temAnaliseLucro) {
+      // Análise de lucro já tem os impostos descontados no lucroTotal
+      lucroLiquidoValor = lucroBruto - custoFixoProporcional;
+      impostosCalculados = totalImpostos;
+    } else {
+      // Sem análise de lucro, precisamos calcular impostos aproximados
+      // Usamos a média dos impostos sobre o valor total
+      const taxaMediaImposto = (impostoMaterialPercent + impostoServicoPercent) / 2;
+      impostosCalculados = valorTotalAceitos * (taxaMediaImposto / 100);
+      lucroLiquidoValor = valorTotalAceitos - impostosCalculados - custoFixoProporcional;
+    }
+
+    return {
+      custoFixoMensal,
+      mesesPeriodo,
+      custoFixoProporcional,
+      valorTotalAceitos,
+      lucroBruto: temAnaliseLucro ? lucroBruto : null,
+      lucroLiquido: lucroLiquidoValor,
+      temAnaliseLucro,
+      totalImpostos: impostosCalculados,
+      impostoMaterialPercent,
+      impostoServicoPercent,
+    };
+  }, [
+    orcamentosFiltrados,
+    analiseLucro,
+    configuracoesGerais,
+    dataInicio,
+    dataFim,
+  ]);
 
   // Exportar para CSV
   const exportarCSV = () => {
@@ -1307,69 +1426,136 @@ export function Relatorios() {
       {analiseLucro && (
         <ChartsRow>
           <FullWidthChart>
-            <h3>Análise de Lucro ({analiseLucro.orcamentos.length}/{analiseLucro.totalOrcamentosAceitos} aceitos)</h3>
+            <h3>
+              Análise de Lucro ({analiseLucro.orcamentos.length}/
+              {analiseLucro.totalOrcamentosAceitos} aceitos)
+            </h3>
 
             {/* Cards de resumo - Material */}
-            <SectionTitle>Material</SectionTitle>
+            <SectionTitle>Material {analiseLucro.impostoMaterialPercent > 0 && `(Imposto: ${analiseLucro.impostoMaterialPercent}%)`}</SectionTitle>
             <LucroStatsGrid>
               <StatCard $color="#3498db">
                 <div className="label">Venda</div>
-                <div className="value">{formatCurrency(analiseLucro.totalVendaMaterial)}</div>
+                <div className="value">
+                  {formatCurrency(analiseLucro.totalVendaMaterial)}
+                </div>
               </StatCard>
               <StatCard $color="#e74c3c">
                 <div className="label">Custo</div>
-                <div className="value">{formatCurrency(analiseLucro.totalCustoMaterial)}</div>
+                <div className="value">
+                  {formatCurrency(analiseLucro.totalCustoMaterial)}
+                </div>
               </StatCard>
-              <StatCard $color={analiseLucro.totalLucroMaterial >= 0 ? "#27ae60" : "#e74c3c"}>
+              {analiseLucro.impostoMaterialPercent > 0 && (
+                <StatCard $color="#f39c12">
+                  <div className="label">Imposto</div>
+                  <div className="value">
+                    {formatCurrency(analiseLucro.totalImpostoMaterial)}
+                  </div>
+                  <div className="subvalue">{analiseLucro.impostoMaterialPercent}% sobre venda</div>
+                </StatCard>
+              )}
+              <StatCard
+                $color={
+                  analiseLucro.totalLucroMaterial >= 0 ? "#27ae60" : "#e74c3c"
+                }
+              >
                 <div className="label">Lucro</div>
                 <div className="value">
                   {analiseLucro.totalLucroMaterial >= 0 ? (
-                    <LucroPositivo>{formatCurrency(analiseLucro.totalLucroMaterial)}</LucroPositivo>
+                    <LucroPositivo>
+                      {formatCurrency(analiseLucro.totalLucroMaterial)}
+                    </LucroPositivo>
                   ) : (
-                    <LucroNegativo>{formatCurrency(analiseLucro.totalLucroMaterial)}</LucroNegativo>
+                    <LucroNegativo>
+                      {formatCurrency(analiseLucro.totalLucroMaterial)}
+                    </LucroNegativo>
                   )}
                 </div>
+                <div className="subvalue">Venda - Custo{analiseLucro.impostoMaterialPercent > 0 && " - Imposto"}</div>
               </StatCard>
               <StatCard $color="#9b59b6">
                 <div className="label">Margem</div>
                 <div className="value">
-                  <MargemBadge $positiva={analiseLucro.totalVendaMaterial > 0 && analiseLucro.totalLucroMaterial >= 0}>
+                  <MargemBadge
+                    $positiva={
+                      analiseLucro.totalVendaMaterial > 0 &&
+                      analiseLucro.totalLucroMaterial >= 0
+                    }
+                  >
                     {analiseLucro.totalVendaMaterial > 0
-                      ? ((analiseLucro.totalLucroMaterial / analiseLucro.totalVendaMaterial) * 100).toFixed(1)
-                      : "0.0"}%
+                      ? (
+                          (analiseLucro.totalLucroMaterial /
+                            analiseLucro.totalVendaMaterial) *
+                          100
+                        ).toFixed(1)
+                      : "0.0"}
+                    %
                   </MargemBadge>
                 </div>
               </StatCard>
             </LucroStatsGrid>
 
             {/* Cards de resumo - Mão de Obra */}
-            <SectionTitle $marginTop>Mão de Obra</SectionTitle>
+            <SectionTitle $marginTop>Mão de Obra {analiseLucro.impostoServicoPercent > 0 && `(Imposto: ${analiseLucro.impostoServicoPercent}%)`}</SectionTitle>
             <LucroStatsGrid>
               <StatCard $color="#3498db">
                 <div className="label">Venda</div>
-                <div className="value">{formatCurrency(analiseLucro.totalVendaMaoDeObra)}</div>
+                <div className="value">
+                  {formatCurrency(analiseLucro.totalVendaMaoDeObra)}
+                </div>
               </StatCard>
               <StatCard $color="#e74c3c">
                 <div className="label">Custo</div>
-                <div className="value">{formatCurrency(analiseLucro.totalCustoMaoDeObra)}</div>
+                <div className="value">
+                  {formatCurrency(analiseLucro.totalCustoMaoDeObra)}
+                </div>
               </StatCard>
-              <StatCard $color={analiseLucro.totalLucroMaoDeObra >= 0 ? "#27ae60" : "#e74c3c"}>
+              {analiseLucro.impostoServicoPercent > 0 && (
+                <StatCard $color="#f39c12">
+                  <div className="label">Imposto</div>
+                  <div className="value">
+                    {formatCurrency(analiseLucro.totalImpostoServico)}
+                  </div>
+                  <div className="subvalue">{analiseLucro.impostoServicoPercent}% sobre venda</div>
+                </StatCard>
+              )}
+              <StatCard
+                $color={
+                  analiseLucro.totalLucroMaoDeObra >= 0 ? "#27ae60" : "#e74c3c"
+                }
+              >
                 <div className="label">Lucro</div>
                 <div className="value">
                   {analiseLucro.totalLucroMaoDeObra >= 0 ? (
-                    <LucroPositivo>{formatCurrency(analiseLucro.totalLucroMaoDeObra)}</LucroPositivo>
+                    <LucroPositivo>
+                      {formatCurrency(analiseLucro.totalLucroMaoDeObra)}
+                    </LucroPositivo>
                   ) : (
-                    <LucroNegativo>{formatCurrency(analiseLucro.totalLucroMaoDeObra)}</LucroNegativo>
+                    <LucroNegativo>
+                      {formatCurrency(analiseLucro.totalLucroMaoDeObra)}
+                    </LucroNegativo>
                   )}
                 </div>
+                <div className="subvalue">Venda - Custo{analiseLucro.impostoServicoPercent > 0 && " - Imposto"}</div>
               </StatCard>
               <StatCard $color="#9b59b6">
                 <div className="label">Margem</div>
                 <div className="value">
-                  <MargemBadge $positiva={analiseLucro.totalVendaMaoDeObra > 0 && analiseLucro.totalLucroMaoDeObra >= 0}>
+                  <MargemBadge
+                    $positiva={
+                      analiseLucro.totalVendaMaoDeObra > 0 &&
+                      analiseLucro.totalLucroMaoDeObra >= 0
+                    }
+                  >
                     {analiseLucro.totalVendaMaoDeObra > 0
-                      ? ((analiseLucro.totalLucroMaoDeObra / analiseLucro.totalVendaMaoDeObra) * 100).toFixed(1)
-                      : "0.0"}%
+                      ? (
+                          (analiseLucro.totalLucroMaoDeObra /
+                            analiseLucro.totalVendaMaoDeObra) *
+                          100
+                        ).toFixed(1)
+                      : "0.0"}
+                    %
                   </MargemBadge>
                 </div>
               </StatCard>
@@ -1380,21 +1566,47 @@ export function Relatorios() {
             <LucroStatsGrid>
               <StatCard $color="#27ae60">
                 <div className="label">Venda</div>
-                <div className="value">{formatCurrency(analiseLucro.totalVendaMaterial + analiseLucro.totalVendaMaoDeObra)}</div>
+                <div className="value">
+                  {formatCurrency(
+                    analiseLucro.totalVendaMaterial +
+                      analiseLucro.totalVendaMaoDeObra
+                  )}
+                </div>
               </StatCard>
               <StatCard $color="#e74c3c">
                 <div className="label">Custo</div>
-                <div className="value">{formatCurrency(analiseLucro.totalCustoMaterial + analiseLucro.totalCustoMaoDeObra)}</div>
+                <div className="value">
+                  {formatCurrency(
+                    analiseLucro.totalCustoMaterial +
+                      analiseLucro.totalCustoMaoDeObra
+                  )}
+                </div>
               </StatCard>
-              <StatCard $color={analiseLucro.lucroTotal >= 0 ? "#27ae60" : "#e74c3c"}>
+              {analiseLucro.totalImpostos > 0 && (
+                <StatCard $color="#f39c12">
+                  <div className="label">Impostos</div>
+                  <div className="value">
+                    {formatCurrency(analiseLucro.totalImpostos)}
+                  </div>
+                  <div className="subvalue">Material + Serviço</div>
+                </StatCard>
+              )}
+              <StatCard
+                $color={analiseLucro.lucroTotal >= 0 ? "#27ae60" : "#e74c3c"}
+              >
                 <div className="label">Lucro</div>
                 <div className="value">
                   {analiseLucro.lucroTotal >= 0 ? (
-                    <LucroPositivo>{formatCurrency(analiseLucro.lucroTotal)}</LucroPositivo>
+                    <LucroPositivo>
+                      {formatCurrency(analiseLucro.lucroTotal)}
+                    </LucroPositivo>
                   ) : (
-                    <LucroNegativo>{formatCurrency(analiseLucro.lucroTotal)}</LucroNegativo>
+                    <LucroNegativo>
+                      {formatCurrency(analiseLucro.lucroTotal)}
+                    </LucroNegativo>
                   )}
                 </div>
+                <div className="subvalue">Venda - Custo{analiseLucro.totalImpostos > 0 && " - Impostos"}</div>
               </StatCard>
               <StatCard $color="#9b59b6">
                 <div className="label">Margem</div>
@@ -1407,7 +1619,10 @@ export function Relatorios() {
             </LucroStatsGrid>
 
             {/* Detalhamento por Orçamento */}
-            <SectionTitle $marginTop style={{ marginTop: '24px', color: 'var(--text-primary)' }}>
+            <SectionTitle
+              $marginTop
+              style={{ marginTop: "24px", color: "var(--text-primary)" }}
+            >
               Detalhamento por Orçamento
             </SectionTitle>
 
@@ -1436,17 +1651,34 @@ export function Relatorios() {
                             onClick={() => handleOrcamentoClick(orc)}
                             title="Clique para ver detalhes"
                           >
-                            <td className="rank">{formatOrcamentoNumeroSimples(orc.numero, orc.dataEmissao)}</td>
+                            <td className="rank">
+                              {formatOrcamentoNumeroSimples(
+                                orc.numero,
+                                orc.dataEmissao
+                              )}
+                            </td>
                             <td className="cliente">{orc.clienteNome}</td>
-                            <td className="value">{formatCurrency(orc.vendaMaterial)}</td>
-                            <td className="value">{formatCurrency(orc.custoMaterial)}</td>
-                            <td className="value">{formatCurrency(orc.vendaMaoDeObra)}</td>
-                            <td className="value">{formatCurrency(orc.custoMaoDeObra)}</td>
+                            <td className="value">
+                              {formatCurrency(orc.vendaMaterial)}
+                            </td>
+                            <td className="value">
+                              {formatCurrency(orc.custoMaterial)}
+                            </td>
+                            <td className="value">
+                              {formatCurrency(orc.vendaMaoDeObra)}
+                            </td>
+                            <td className="value">
+                              {formatCurrency(orc.custoMaoDeObra)}
+                            </td>
                             <td className="value">
                               {orc.lucroTotal >= 0 ? (
-                                <LucroPositivo>{formatCurrency(orc.lucroTotal)}</LucroPositivo>
+                                <LucroPositivo>
+                                  {formatCurrency(orc.lucroTotal)}
+                                </LucroPositivo>
                               ) : (
-                                <LucroNegativo>{formatCurrency(orc.lucroTotal)}</LucroNegativo>
+                                <LucroNegativo>
+                                  {formatCurrency(orc.lucroTotal)}
+                                </LucroNegativo>
                               )}
                             </td>
                             <td className="value">
@@ -1469,7 +1701,12 @@ export function Relatorios() {
                       onClick={() => handleOrcamentoClick(orc)}
                     >
                       <div className="header">
-                        <span className="numero">{formatOrcamentoNumeroSimples(orc.numero, orc.dataEmissao)}</span>
+                        <span className="numero">
+                          {formatOrcamentoNumeroSimples(
+                            orc.numero,
+                            orc.dataEmissao
+                          )}
+                        </span>
                         <span className="cliente">{orc.clienteNome}</span>
                         <span className="margem">
                           <MargemBadge $positiva={orc.margem >= 0}>
@@ -1480,28 +1717,40 @@ export function Relatorios() {
                       <div className="values-list">
                         <div className="value-row">
                           <span className="label">Venda Material</span>
-                          <span className="value">{formatCurrency(orc.vendaMaterial)}</span>
+                          <span className="value">
+                            {formatCurrency(orc.vendaMaterial)}
+                          </span>
                         </div>
                         <div className="value-row">
                           <span className="label">Custo Material</span>
-                          <span className="value">{formatCurrency(orc.custoMaterial)}</span>
+                          <span className="value">
+                            {formatCurrency(orc.custoMaterial)}
+                          </span>
                         </div>
                         <div className="value-row">
                           <span className="label">Venda M.O.</span>
-                          <span className="value">{formatCurrency(orc.vendaMaoDeObra)}</span>
+                          <span className="value">
+                            {formatCurrency(orc.vendaMaoDeObra)}
+                          </span>
                         </div>
                         <div className="value-row">
                           <span className="label">Custo M.O.</span>
-                          <span className="value">{formatCurrency(orc.custoMaoDeObra)}</span>
+                          <span className="value">
+                            {formatCurrency(orc.custoMaoDeObra)}
+                          </span>
                         </div>
                       </div>
                       <div className="lucro-row">
                         <span className="lucro-label">Lucro Total</span>
                         <span className="lucro-value">
                           {orc.lucroTotal >= 0 ? (
-                            <LucroPositivo>{formatCurrency(orc.lucroTotal)}</LucroPositivo>
+                            <LucroPositivo>
+                              {formatCurrency(orc.lucroTotal)}
+                            </LucroPositivo>
                           ) : (
-                            <LucroNegativo>{formatCurrency(orc.lucroTotal)}</LucroNegativo>
+                            <LucroNegativo>
+                              {formatCurrency(orc.lucroTotal)}
+                            </LucroNegativo>
                           )}
                         </span>
                       </div>
@@ -1517,7 +1766,167 @@ export function Relatorios() {
 
             {analiseLucro.orcamentosSemCustoCompleto > 0 && (
               <InfoText>
-                * {analiseLucro.orcamentosSemCustoCompleto} orçamento(s) não incluídos (itens sem custo).
+                * {analiseLucro.orcamentosSemCustoCompleto} orçamento(s) não
+                incluídos (itens sem custo).
+              </InfoText>
+            )}
+          </FullWidthChart>
+        </ChartsRow>
+      )}
+
+      {/* Lucro Líquido (com custo fixo da empresa e impostos) */}
+      {lucroLiquido && (
+        <ChartsRow>
+          <FullWidthChart>
+            <h3>Lucro Líquido da Empresa</h3>
+            <InfoText style={{ marginTop: 0, marginBottom: 16 }}>
+              Período de {lucroLiquido.mesesPeriodo.toFixed(1)} meses
+              {lucroLiquido.custoFixoMensal > 0 && ` • Custo fixo mensal: ${formatCurrency(lucroLiquido.custoFixoMensal)}`}
+              {(lucroLiquido.impostoMaterialPercent > 0 || lucroLiquido.impostoServicoPercent > 0) &&
+                ` • Impostos: ${lucroLiquido.impostoMaterialPercent}% material, ${lucroLiquido.impostoServicoPercent}% serviço`}
+            </InfoText>
+
+            <div
+              style={{
+                background: "var(--background-secondary)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                padding: 16,
+                marginBottom: 20,
+                fontSize: 14,
+                lineHeight: 1.6,
+              }}
+            >
+              <strong style={{ display: "block", marginBottom: 8 }}>
+                Como o cálculo é feito:
+              </strong>
+              <ol style={{ margin: 0, paddingLeft: 20 }}>
+                <li>
+                  <strong>Período:</strong> O número de dias entre as datas
+                  selecionadas é dividido por 30 para calcular os meses do
+                  período (
+                  {Math.ceil(
+                    Math.abs(
+                      new Date(dataFim).getTime() -
+                        new Date(dataInicio).getTime()
+                    ) /
+                      (1000 * 60 * 60 * 24)
+                  ) + 1}{" "}
+                  dias ÷ 30 = {lucroLiquido.mesesPeriodo.toFixed(2)} meses)
+                </li>
+                {lucroLiquido.custoFixoMensal > 0 && (
+                  <li>
+                    <strong>Custo Fixo Proporcional:</strong> O custo fixo mensal
+                    configurado é multiplicado pelo período (
+                    {formatCurrency(lucroLiquido.custoFixoMensal)} ×{" "}
+                    {lucroLiquido.mesesPeriodo.toFixed(2)} ={" "}
+                    {formatCurrency(lucroLiquido.custoFixoProporcional)})
+                  </li>
+                )}
+                {lucroLiquido.totalImpostos > 0 && (
+                  <li>
+                    <strong>Impostos:</strong> {lucroLiquido.temAnaliseLucro
+                      ? `Calculados sobre as vendas de material (${lucroLiquido.impostoMaterialPercent}%) e serviço (${lucroLiquido.impostoServicoPercent}%) = ${formatCurrency(lucroLiquido.totalImpostos)}`
+                      : `Média dos impostos aplicada sobre a receita total = ${formatCurrency(lucroLiquido.totalImpostos)}`
+                    }
+                  </li>
+                )}
+                {lucroLiquido.temAnaliseLucro ? (
+                  <li>
+                    <strong>Lucro Líquido:</strong> O lucro bruto (vendas - custos - impostos) menos o custo fixo proporcional (
+                    {formatCurrency(lucroLiquido.lucroBruto || 0)}
+                    {lucroLiquido.custoFixoProporcional > 0 && ` - ${formatCurrency(lucroLiquido.custoFixoProporcional)}`}
+                    {" = "}
+                    {formatCurrency(lucroLiquido.lucroLiquido)})
+                  </li>
+                ) : (
+                  <li>
+                    <strong>Lucro Líquido:</strong> A receita total menos impostos e custo fixo (
+                    {formatCurrency(lucroLiquido.valorTotalAceitos)}
+                    {lucroLiquido.totalImpostos > 0 && ` - ${formatCurrency(lucroLiquido.totalImpostos)}`}
+                    {lucroLiquido.custoFixoProporcional > 0 && ` - ${formatCurrency(lucroLiquido.custoFixoProporcional)}`}
+                    {" = "}
+                    {formatCurrency(lucroLiquido.lucroLiquido)})
+                  </li>
+                )}
+              </ol>
+            </div>
+
+            <LucroStatsGrid>
+              <StatCard $color="#27ae60">
+                <div className="label">Receita (Aceitos)</div>
+                <div className="value">
+                  {formatCurrency(lucroLiquido.valorTotalAceitos)}
+                </div>
+              </StatCard>
+
+              {lucroLiquido.lucroBruto !== null && (
+                <StatCard $color="#3498db">
+                  <div className="label">Lucro Bruto</div>
+                  <div className="value">
+                    {lucroLiquido.lucroBruto >= 0 ? (
+                      <LucroPositivo>
+                        {formatCurrency(lucroLiquido.lucroBruto)}
+                      </LucroPositivo>
+                    ) : (
+                      <LucroNegativo>
+                        {formatCurrency(lucroLiquido.lucroBruto)}
+                      </LucroNegativo>
+                    )}
+                  </div>
+                  <div className="subvalue">Vendas - Custos - Impostos</div>
+                </StatCard>
+              )}
+
+              {lucroLiquido.totalImpostos > 0 && !lucroLiquido.temAnaliseLucro && (
+                <StatCard $color="#f39c12">
+                  <div className="label">Impostos</div>
+                  <div className="value">
+                    {formatCurrency(lucroLiquido.totalImpostos)}
+                  </div>
+                  <div className="subvalue">Média dos impostos configurados</div>
+                </StatCard>
+              )}
+
+              {lucroLiquido.custoFixoProporcional > 0 && (
+                <StatCard $color="#e74c3c">
+                  <div className="label">Custo Fixo (Período)</div>
+                  <div className="value">
+                    {formatCurrency(lucroLiquido.custoFixoProporcional)}
+                  </div>
+                  <div className="subvalue">
+                    {lucroLiquido.mesesPeriodo.toFixed(1)} meses ×{" "}
+                    {formatCurrency(lucroLiquido.custoFixoMensal)}
+                  </div>
+                </StatCard>
+              )}
+
+              <StatCard
+                $color={lucroLiquido.lucroLiquido >= 0 ? "#27ae60" : "#e74c3c"}
+              >
+                <div className="label">Lucro Líquido</div>
+                <div className="value">
+                  {lucroLiquido.lucroLiquido >= 0 ? (
+                    <LucroPositivo>
+                      {formatCurrency(lucroLiquido.lucroLiquido)}
+                    </LucroPositivo>
+                  ) : (
+                    <LucroNegativo>
+                      {formatCurrency(lucroLiquido.lucroLiquido)}
+                    </LucroNegativo>
+                  )}
+                </div>
+                <div className="subvalue">
+                  {lucroLiquido.temAnaliseLucro
+                    ? `Lucro bruto${lucroLiquido.custoFixoProporcional > 0 ? " - Custo fixo" : ""}`
+                    : `Receita${lucroLiquido.totalImpostos > 0 ? " - Impostos" : ""}${lucroLiquido.custoFixoProporcional > 0 ? " - Custo fixo" : ""}`}
+                </div>
+              </StatCard>
+            </LucroStatsGrid>
+
+            {!lucroLiquido.temAnaliseLucro && (
+              <InfoText>
+                * Para um cálculo mais preciso dos impostos por categoria, cadastre os custos dos itens de serviço.
               </InfoText>
             )}
           </FullWidthChart>
@@ -1528,15 +1937,30 @@ export function Relatorios() {
       <Modal
         isOpen={modalOrcamentoOpen}
         onClose={handleCloseModal}
-        title={`Análise de Lucro - Orçamento ${orcamentoSelecionado ? formatOrcamentoNumeroSimples(orcamentoSelecionado.numero, orcamentoSelecionado.dataEmissao) : ''}`}
+        title={`Análise de Lucro - Orçamento ${
+          orcamentoSelecionado
+            ? formatOrcamentoNumeroSimples(
+                orcamentoSelecionado.numero,
+                orcamentoSelecionado.dataEmissao
+              )
+            : ""
+        }`}
         size="large"
       >
         {orcamentoSelecionado && (
           <ModalContent>
             <ModalHeader>
               <div className="orcamento-info">
-                <div className="numero">Orçamento {formatOrcamentoNumeroSimples(orcamentoSelecionado.numero, orcamentoSelecionado.dataEmissao)}</div>
-                <div className="cliente">{orcamentoSelecionado.clienteNome}</div>
+                <div className="numero">
+                  Orçamento{" "}
+                  {formatOrcamentoNumeroSimples(
+                    orcamentoSelecionado.numero,
+                    orcamentoSelecionado.dataEmissao
+                  )}
+                </div>
+                <div className="cliente">
+                  {orcamentoSelecionado.clienteNome}
+                </div>
               </div>
               <div className="margem-geral">
                 <div className="label">Margem Geral</div>
@@ -1550,33 +1974,68 @@ export function Relatorios() {
 
             {/* Seção Material */}
             <ModalSection>
-              <ModalSectionTitle>Material</ModalSectionTitle>
+              <ModalSectionTitle>
+                Material
+                {(configuracoesGerais?.impostoMaterial || 0) > 0 && ` (Imposto: ${configuracoesGerais?.impostoMaterial}%)`}
+              </ModalSectionTitle>
               <ModalStatsGrid>
                 <ModalStatCard $color="#3498db">
                   <div className="label">Venda</div>
-                  <div className="value">{formatCurrency(orcamentoSelecionado.vendaMaterial)}</div>
+                  <div className="value">
+                    {formatCurrency(orcamentoSelecionado.vendaMaterial)}
+                  </div>
                 </ModalStatCard>
                 <ModalStatCard $color="#e74c3c">
                   <div className="label">Custo</div>
-                  <div className="value">{formatCurrency(orcamentoSelecionado.custoMaterial)}</div>
+                  <div className="value">
+                    {formatCurrency(orcamentoSelecionado.custoMaterial)}
+                  </div>
                 </ModalStatCard>
-                <ModalStatCard $color={orcamentoSelecionado.lucroMaterial >= 0 ? "#27ae60" : "#e74c3c"}>
+                {(configuracoesGerais?.impostoMaterial || 0) > 0 && (
+                  <ModalStatCard $color="#f39c12">
+                    <div className="label">Imposto</div>
+                    <div className="value">
+                      {formatCurrency(orcamentoSelecionado.vendaMaterial * ((configuracoesGerais?.impostoMaterial || 0) / 100))}
+                    </div>
+                  </ModalStatCard>
+                )}
+                <ModalStatCard
+                  $color={
+                    orcamentoSelecionado.lucroMaterial >= 0
+                      ? "#27ae60"
+                      : "#e74c3c"
+                  }
+                >
                   <div className="label">Lucro</div>
                   <div className="value">
                     {orcamentoSelecionado.lucroMaterial >= 0 ? (
-                      <LucroPositivo>{formatCurrency(orcamentoSelecionado.lucroMaterial)}</LucroPositivo>
+                      <LucroPositivo>
+                        {formatCurrency(orcamentoSelecionado.lucroMaterial)}
+                      </LucroPositivo>
                     ) : (
-                      <LucroNegativo>{formatCurrency(orcamentoSelecionado.lucroMaterial)}</LucroNegativo>
+                      <LucroNegativo>
+                        {formatCurrency(orcamentoSelecionado.lucroMaterial)}
+                      </LucroNegativo>
                     )}
                   </div>
                 </ModalStatCard>
                 <ModalStatCard $color="#9b59b6">
                   <div className="label">Margem</div>
                   <div className="value">
-                    <MargemBadge $positiva={orcamentoSelecionado.vendaMaterial > 0 && orcamentoSelecionado.lucroMaterial >= 0}>
+                    <MargemBadge
+                      $positiva={
+                        orcamentoSelecionado.vendaMaterial > 0 &&
+                        orcamentoSelecionado.lucroMaterial >= 0
+                      }
+                    >
                       {orcamentoSelecionado.vendaMaterial > 0
-                        ? ((orcamentoSelecionado.lucroMaterial / orcamentoSelecionado.vendaMaterial) * 100).toFixed(1)
-                        : "0.0"}%
+                        ? (
+                            (orcamentoSelecionado.lucroMaterial /
+                              orcamentoSelecionado.vendaMaterial) *
+                            100
+                          ).toFixed(1)
+                        : "0.0"}
+                      %
                     </MargemBadge>
                   </div>
                 </ModalStatCard>
@@ -1585,33 +2044,68 @@ export function Relatorios() {
 
             {/* Seção Mão de Obra */}
             <ModalSection>
-              <ModalSectionTitle>Mão de Obra</ModalSectionTitle>
+              <ModalSectionTitle>
+                Mão de Obra
+                {(configuracoesGerais?.impostoServico || 0) > 0 && ` (Imposto: ${configuracoesGerais?.impostoServico}%)`}
+              </ModalSectionTitle>
               <ModalStatsGrid>
                 <ModalStatCard $color="#3498db">
                   <div className="label">Venda</div>
-                  <div className="value">{formatCurrency(orcamentoSelecionado.vendaMaoDeObra)}</div>
+                  <div className="value">
+                    {formatCurrency(orcamentoSelecionado.vendaMaoDeObra)}
+                  </div>
                 </ModalStatCard>
                 <ModalStatCard $color="#e74c3c">
                   <div className="label">Custo</div>
-                  <div className="value">{formatCurrency(orcamentoSelecionado.custoMaoDeObra)}</div>
+                  <div className="value">
+                    {formatCurrency(orcamentoSelecionado.custoMaoDeObra)}
+                  </div>
                 </ModalStatCard>
-                <ModalStatCard $color={orcamentoSelecionado.lucroMaoDeObra >= 0 ? "#27ae60" : "#e74c3c"}>
+                {(configuracoesGerais?.impostoServico || 0) > 0 && (
+                  <ModalStatCard $color="#f39c12">
+                    <div className="label">Imposto</div>
+                    <div className="value">
+                      {formatCurrency(orcamentoSelecionado.vendaMaoDeObra * ((configuracoesGerais?.impostoServico || 0) / 100))}
+                    </div>
+                  </ModalStatCard>
+                )}
+                <ModalStatCard
+                  $color={
+                    orcamentoSelecionado.lucroMaoDeObra >= 0
+                      ? "#27ae60"
+                      : "#e74c3c"
+                  }
+                >
                   <div className="label">Lucro</div>
                   <div className="value">
                     {orcamentoSelecionado.lucroMaoDeObra >= 0 ? (
-                      <LucroPositivo>{formatCurrency(orcamentoSelecionado.lucroMaoDeObra)}</LucroPositivo>
+                      <LucroPositivo>
+                        {formatCurrency(orcamentoSelecionado.lucroMaoDeObra)}
+                      </LucroPositivo>
                     ) : (
-                      <LucroNegativo>{formatCurrency(orcamentoSelecionado.lucroMaoDeObra)}</LucroNegativo>
+                      <LucroNegativo>
+                        {formatCurrency(orcamentoSelecionado.lucroMaoDeObra)}
+                      </LucroNegativo>
                     )}
                   </div>
                 </ModalStatCard>
                 <ModalStatCard $color="#9b59b6">
                   <div className="label">Margem</div>
                   <div className="value">
-                    <MargemBadge $positiva={orcamentoSelecionado.vendaMaoDeObra > 0 && orcamentoSelecionado.lucroMaoDeObra >= 0}>
+                    <MargemBadge
+                      $positiva={
+                        orcamentoSelecionado.vendaMaoDeObra > 0 &&
+                        orcamentoSelecionado.lucroMaoDeObra >= 0
+                      }
+                    >
                       {orcamentoSelecionado.vendaMaoDeObra > 0
-                        ? ((orcamentoSelecionado.lucroMaoDeObra / orcamentoSelecionado.vendaMaoDeObra) * 100).toFixed(1)
-                        : "0.0"}%
+                        ? (
+                            (orcamentoSelecionado.lucroMaoDeObra /
+                              orcamentoSelecionado.vendaMaoDeObra) *
+                            100
+                          ).toFixed(1)
+                        : "0.0"}
+                      %
                     </MargemBadge>
                   </div>
                 </ModalStatCard>
@@ -1625,22 +2119,47 @@ export function Relatorios() {
                 <ModalStatCard $color="#27ae60">
                   <div className="label">Venda</div>
                   <div className="value">
-                    {formatCurrency(orcamentoSelecionado.vendaMaterial + orcamentoSelecionado.vendaMaoDeObra)}
+                    {formatCurrency(
+                      orcamentoSelecionado.vendaMaterial +
+                        orcamentoSelecionado.vendaMaoDeObra
+                    )}
                   </div>
                 </ModalStatCard>
                 <ModalStatCard $color="#e74c3c">
                   <div className="label">Custo</div>
                   <div className="value">
-                    {formatCurrency(orcamentoSelecionado.custoMaterial + orcamentoSelecionado.custoMaoDeObra)}
+                    {formatCurrency(
+                      orcamentoSelecionado.custoMaterial +
+                        orcamentoSelecionado.custoMaoDeObra
+                    )}
                   </div>
                 </ModalStatCard>
-                <ModalStatCard $color={orcamentoSelecionado.lucroTotal >= 0 ? "#27ae60" : "#e74c3c"}>
+                {((configuracoesGerais?.impostoMaterial || 0) > 0 || (configuracoesGerais?.impostoServico || 0) > 0) && (
+                  <ModalStatCard $color="#f39c12">
+                    <div className="label">Impostos</div>
+                    <div className="value">
+                      {formatCurrency(
+                        orcamentoSelecionado.vendaMaterial * ((configuracoesGerais?.impostoMaterial || 0) / 100) +
+                        orcamentoSelecionado.vendaMaoDeObra * ((configuracoesGerais?.impostoServico || 0) / 100)
+                      )}
+                    </div>
+                  </ModalStatCard>
+                )}
+                <ModalStatCard
+                  $color={
+                    orcamentoSelecionado.lucroTotal >= 0 ? "#27ae60" : "#e74c3c"
+                  }
+                >
                   <div className="label">Lucro</div>
                   <div className="value">
                     {orcamentoSelecionado.lucroTotal >= 0 ? (
-                      <LucroPositivo>{formatCurrency(orcamentoSelecionado.lucroTotal)}</LucroPositivo>
+                      <LucroPositivo>
+                        {formatCurrency(orcamentoSelecionado.lucroTotal)}
+                      </LucroPositivo>
                     ) : (
-                      <LucroNegativo>{formatCurrency(orcamentoSelecionado.lucroTotal)}</LucroNegativo>
+                      <LucroNegativo>
+                        {formatCurrency(orcamentoSelecionado.lucroTotal)}
+                      </LucroNegativo>
                     )}
                   </div>
                 </ModalStatCard>

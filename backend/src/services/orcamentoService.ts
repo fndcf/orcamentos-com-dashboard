@@ -32,6 +32,16 @@ function isEqual(a: any, b: any): boolean {
     return a === b;
   }
 
+  // Se são objetos Date, comparar timestamps
+  if (a instanceof Date && b instanceof Date) {
+    return a.getTime() === b.getTime();
+  }
+
+  // Se apenas um é Date, não são iguais
+  if (a instanceof Date || b instanceof Date) {
+    return false;
+  }
+
   // Se são arrays
   if (Array.isArray(a) && Array.isArray(b)) {
     if (a.length !== b.length) return false;
