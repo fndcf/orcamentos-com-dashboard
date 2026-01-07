@@ -247,7 +247,7 @@ describe('NovoClienteForm', () => {
       });
     });
 
-    it('deve buscar e preencher dados do CNPJ', async () => {
+    it('deve buscar e preencher dados do CNPJ em maiusculas', async () => {
       mockBuscarCnpjMutateAsync.mockResolvedValue({
         razao_social: 'Empresa Teste LTDA',
         nome_fantasia: 'Empresa Teste',
@@ -278,9 +278,10 @@ describe('NovoClienteForm', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Dados preenchidos automaticamente!')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('Empresa Teste LTDA')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('Empresa Teste')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('Sao Paulo')).toBeInTheDocument();
+        // Dados da API são convertidos para maiúsculas
+        expect(screen.getByDisplayValue('EMPRESA TESTE LTDA')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('EMPRESA TESTE')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('SAO PAULO')).toBeInTheDocument();
         expect(screen.getByDisplayValue('SP')).toBeInTheDocument();
       });
     });
@@ -455,7 +456,7 @@ describe('NovoClienteForm', () => {
       });
     });
 
-    it('deve salvar cliente com sucesso', async () => {
+    it('deve salvar cliente com sucesso em maiusculas', async () => {
       mockCriarMutateAsync.mockResolvedValue({ id: 'novo-cliente-id' });
 
       render(
@@ -476,10 +477,11 @@ describe('NovoClienteForm', () => {
       fireEvent.click(salvarButton);
 
       await waitFor(() => {
+        // Valores são salvos em maiúsculas
         expect(mockCriarMutateAsync).toHaveBeenCalledWith(
           expect.objectContaining({
             cnpj: '12345678000190',
-            razaoSocial: 'Empresa Teste LTDA',
+            razaoSocial: 'EMPRESA TESTE LTDA',
             tipoPessoa: 'juridica',
           })
         );
@@ -594,7 +596,7 @@ describe('NovoClienteForm', () => {
   });
 
   describe('Preenchimento de campos', () => {
-    it('deve preencher todos os campos do formulario', () => {
+    it('deve preencher todos os campos do formulario em maiusculas (exceto email)', () => {
       render(
         <NovoClienteForm
           onClienteCriado={mockOnClienteCriado}
@@ -608,19 +610,21 @@ describe('NovoClienteForm', () => {
       fireEvent.change(screen.getByLabelText('Nome Fantasia'), { target: { value: 'Fantasia' } });
       fireEvent.change(screen.getByLabelText('Endereço'), { target: { value: 'Rua Teste' } });
       fireEvent.change(screen.getByLabelText('Cidade'), { target: { value: 'Cidade Teste' } });
-      fireEvent.change(screen.getByLabelText('Estado'), { target: { value: 'SP' } });
+      fireEvent.change(screen.getByLabelText('Estado'), { target: { value: 'sp' } });
       fireEvent.change(screen.getByLabelText('CEP'), { target: { value: '01234567' } });
       fireEvent.change(screen.getByLabelText('Telefone'), { target: { value: '11999999999' } });
       fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@test.com' } });
 
       expect(screen.getByDisplayValue('12345678000190')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Empresa')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Fantasia')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Rua Teste')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Cidade Teste')).toBeInTheDocument();
+      // Campos são convertidos para maiúsculas
+      expect(screen.getByDisplayValue('EMPRESA')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('FANTASIA')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('RUA TESTE')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('CIDADE TESTE')).toBeInTheDocument();
       expect(screen.getByDisplayValue('SP')).toBeInTheDocument();
       expect(screen.getByDisplayValue('01234567')).toBeInTheDocument();
       expect(screen.getByDisplayValue('11999999999')).toBeInTheDocument();
+      // Email mantém minúsculas
       expect(screen.getByDisplayValue('test@test.com')).toBeInTheDocument();
     });
   });
@@ -659,8 +663,9 @@ describe('NovoClienteForm', () => {
       fireEvent.click(buscarButton);
 
       await waitFor(() => {
-        expect(screen.getByDisplayValue('Empresa Nova')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('Cidade Existente')).toBeInTheDocument();
+        // Valores são convertidos para maiúsculas
+        expect(screen.getByDisplayValue('EMPRESA NOVA')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('CIDADE EXISTENTE')).toBeInTheDocument();
       });
     });
   });

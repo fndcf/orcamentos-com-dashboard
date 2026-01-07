@@ -138,7 +138,9 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    // Converter para maiúsculas todos os campos exceto email
+    const finalValue = name === 'email' ? value : value.toUpperCase();
+    setForm((prev) => ({ ...prev, [name]: finalValue }));
   };
 
   const handleDocumentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,19 +181,23 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
   };
 
   const preencherComDadosBrasilAPI = (dados: BrasilAPICNPJ) => {
-    setForm((prev) => ({
-      ...prev,
-      razaoSocial: dados.razao_social || prev.razaoSocial,
-      nomeFantasia: dados.nome_fantasia || prev.nomeFantasia,
-      endereco: dados.logradouro
+    setForm((prev) => {
+      const endereco = dados.logradouro
         ? `${dados.logradouro}, ${dados.numero}${dados.complemento ? `, ${dados.complemento}` : ''}, ${dados.bairro}`
-        : prev.endereco,
-      cidade: dados.municipio || prev.cidade,
-      estado: dados.uf || prev.estado,
-      cep: dados.cep?.replace(/\D/g, '') || prev.cep,
-      telefone: dados.telefone?.replace(/\D/g, '').slice(0, 11) || prev.telefone,
-      email: dados.email || prev.email,
-    }));
+        : prev.endereco;
+
+      return {
+        ...prev,
+        razaoSocial: (dados.razao_social || prev.razaoSocial).toUpperCase(),
+        nomeFantasia: (dados.nome_fantasia || prev.nomeFantasia).toUpperCase(),
+        endereco: endereco.toUpperCase(),
+        cidade: (dados.municipio || prev.cidade).toUpperCase(),
+        estado: (dados.uf || prev.estado).toUpperCase(),
+        cep: dados.cep?.replace(/\D/g, '') || prev.cep,
+        telefone: dados.telefone?.replace(/\D/g, '').slice(0, 11) || prev.telefone,
+        email: dados.email || prev.email,
+      };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

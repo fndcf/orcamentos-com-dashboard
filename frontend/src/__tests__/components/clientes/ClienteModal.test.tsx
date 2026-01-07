@@ -315,7 +315,7 @@ describe('ClienteModal', () => {
     expect(cpfInput).toHaveValue('12345678901');
   });
 
-  it('deve atualizar campos ao digitar', () => {
+  it('deve atualizar campos ao digitar em maiúsculas', () => {
     render(
       <ClienteModal
         isOpen={true}
@@ -328,7 +328,8 @@ describe('ClienteModal', () => {
     const cidadeInput = screen.getByPlaceholderText('Cidade');
     fireEvent.change(cidadeInput, { target: { value: 'Rio de Janeiro' } });
 
-    expect(cidadeInput).toHaveValue('Rio de Janeiro');
+    // Deve converter para maiúsculas automaticamente
+    expect(cidadeInput).toHaveValue('RIO DE JANEIRO');
   });
 
   it('deve mostrar Atualizar para cliente existente', () => {
