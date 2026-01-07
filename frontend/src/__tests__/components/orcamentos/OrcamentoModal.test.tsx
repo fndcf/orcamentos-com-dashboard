@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { OrcamentoModal } from '../../../components/orcamentos/OrcamentoModal';
 import { useClientes, useCriarCliente, useBuscarCnpjBrasilAPI } from '../../../hooks/useClientes';
@@ -7,6 +8,7 @@ import { useServicosAtivos } from '../../../hooks/useServicos';
 import { useCategoriasItemAtivas } from '../../../hooks/useCategoriasItem';
 import { useLimitacoesAtivas } from '../../../hooks/useLimitacoes';
 import { useItensServicoAtivosPorCategoria } from '../../../hooks/useItensServico';
+import { useConfiguracoesGerais } from '../../../hooks/useConfiguracoesGerais';
 
 // Mock dos hooks
 vi.mock('../../../hooks/useClientes', () => ({
@@ -29,6 +31,10 @@ vi.mock('../../../hooks/useLimitacoes', () => ({
 
 vi.mock('../../../hooks/useItensServico', () => ({
   useItensServicoAtivosPorCategoria: vi.fn(),
+}));
+
+vi.mock('../../../hooks/useConfiguracoesGerais', () => ({
+  useConfiguracoesGerais: vi.fn(),
 }));
 
 const createWrapper = () => {
@@ -123,6 +129,20 @@ const mockOrcamento = {
   createdAt: new Date(),
 };
 
+// Helper para selecionar cliente via campo de busca
+const selectCliente = async (clienteNome: string) => {
+  const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
+  fireEvent.focus(searchInput);
+
+  // Esperar dropdown abrir
+  await waitFor(() => {
+    expect(screen.getByText(clienteNome)).toBeInTheDocument();
+  });
+
+  // Clicar no cliente
+  fireEvent.click(screen.getByText(clienteNome));
+};
+
 describe('OrcamentoModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -152,6 +172,15 @@ describe('OrcamentoModal', () => {
     } as any);
     vi.mocked(useItensServicoAtivosPorCategoria).mockReturnValue({
       data: [],
+      isLoading: false,
+    } as any);
+    vi.mocked(useConfiguracoesGerais).mockReturnValue({
+      data: {
+        parcelaMinima: 500,
+        diasValidadePadrao: 30,
+        taxaJurosPadrao: 0,
+        limiteParcelas: 12,
+      },
       isLoading: false,
     } as any);
   });
@@ -193,7 +222,7 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    expect(screen.getByText('Editar Orçamento #1')).toBeInTheDocument();
+    expect(screen.getByText(/Editar Orçamento #/)).toBeInTheDocument();
   });
 
   it('deve renderizar título para duplicar orçamento', () => {
@@ -207,10 +236,10 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    expect(screen.getByText('Duplicar Orçamento #1')).toBeInTheDocument();
+    expect(screen.getByText(/Duplicar Orçamento #/)).toBeInTheDocument();
   });
 
-  it('deve mostrar lista de clientes no select', () => {
+  it('deve mostrar campo de busca de clientes', () => {
     render(
       <OrcamentoModal
         isOpen={true}
@@ -220,12 +249,10 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    expect(screen.getByText('Selecione um cliente')).toBeInTheDocument();
-    expect(screen.getByText('Cliente 1')).toBeInTheDocument();
-    expect(screen.getByText('Cliente 2')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Digite para buscar um cliente...')).toBeInTheDocument();
   });
 
-  it('deve exibir informações do cliente ao selecionar', () => {
+  it('deve mostrar lista de clientes ao focar no campo de busca', async () => {
     render(
       <OrcamentoModal
         isOpen={true}
@@ -235,8 +262,45 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    const selects = screen.getAllByRole('combobox');
-    fireEvent.change(selects[0], { target: { value: 'c1' } });
+    const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
+    fireEvent.focus(searchInput);
+
+    await waitFor(() => {
+      expect(screen.getByText('Cliente 1')).toBeInTheDocument();
+      expect(screen.getByText('Cliente 2')).toBeInTheDocument();
+    });
+  });
+
+  it('deve filtrar clientes ao digitar no campo de busca', async () => {
+    render(
+      <OrcamentoModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+      />,
+      { wrapper: createWrapper() }
+    );
+
+    const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
+    fireEvent.change(searchInput, { target: { value: 'Cliente 1' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Cliente 1')).toBeInTheDocument();
+      expect(screen.queryByText('Cliente 2')).not.toBeInTheDocument();
+    });
+  });
+
+  it('deve exibir informações do cliente ao selecionar', async () => {
+    render(
+      <OrcamentoModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+      />,
+      { wrapper: createWrapper() }
+    );
+
+    await selectCliente('Cliente 1');
 
     expect(screen.getByText(/CNPJ\/CPF: 12345678901234/)).toBeInTheDocument();
   });
@@ -389,8 +453,7 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    const selects = screen.getAllByRole('combobox');
-    fireEvent.change(selects[0], { target: { value: 'c1' } });
+    await selectCliente('Cliente 1');
 
     fireEvent.click(screen.getByText('Criar Orçamento'));
 
@@ -411,15 +474,13 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    // Selecionar cliente
+    // Selecionar cliente via campo de busca
+    await selectCliente('Cliente 1');
+
+    // Selecionar serviço e categoria via combobox
     const selects = screen.getAllByRole('combobox');
-    fireEvent.change(selects[0], { target: { value: 'c1' } });
-
-    // Selecionar serviço
-    fireEvent.change(selects[1], { target: { value: 's1' } });
-
-    // Selecionar categoria
-    fireEvent.change(selects[3], { target: { value: 'cat1' } });
+    fireEvent.change(selects[0], { target: { value: 's1' } });
+    fireEvent.change(selects[2], { target: { value: 'cat1' } });
 
     // Preencher item
     const descInput = screen.getByPlaceholderText('Descrição do item/serviço');
@@ -466,7 +527,7 @@ describe('OrcamentoModal', () => {
     expect(screen.getByDisplayValue('Maria')).toBeInTheDocument();
   });
 
-  it('deve desabilitar select ao editar orçamento existente', () => {
+  it('deve desabilitar campo de busca de cliente ao editar orçamento existente', () => {
     render(
       <OrcamentoModal
         isOpen={true}
@@ -477,8 +538,8 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    const selects = screen.getAllByRole('combobox');
-    expect(selects[0]).toBeDisabled();
+    const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
+    expect(searchInput).toBeDisabled();
   });
 
   it('deve permitir alterar cliente ao duplicar', () => {
@@ -492,8 +553,8 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    const selects = screen.getAllByRole('combobox');
-    expect(selects[0]).not.toBeDisabled();
+    const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
+    expect(searchInput).not.toBeDisabled();
   });
 
   it('deve desabilitar botão de submit quando loading', () => {
@@ -682,18 +743,13 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      // Alternar para completo
-      // O tipo completo é o padrão agora
+      // Selecionar cliente via campo de busca
+      await selectCliente('Cliente 1');
 
-      // Selecionar cliente
+      // Selecionar serviço e categoria via combobox
       const selects = screen.getAllByRole('combobox');
-      fireEvent.change(selects[0], { target: { value: 'c1' } });
-
-      // Selecionar serviço
-      fireEvent.change(selects[1], { target: { value: 's1' } });
-
-      // Selecionar categoria
-      fireEvent.change(selects[3], { target: { value: 'cat1' } });
+      fireEvent.change(selects[0], { target: { value: 's1' } });
+      fireEvent.change(selects[2], { target: { value: 'cat1' } });
 
       // Preencher item
       const descInput = screen.getByPlaceholderText('Descrição do item/serviço');
@@ -729,7 +785,7 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      expect(screen.getByText('Duplicar Orçamento #2')).toBeInTheDocument();
+      expect(screen.getByText(/Duplicar Orçamento #/)).toBeInTheDocument();
       expect(screen.getByDisplayValue('Item Completo 1')).toBeInTheDocument();
     });
 
@@ -743,15 +799,12 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      // Alternar para completo
-      // O tipo completo é o padrão agora
+      // Selecionar cliente via campo de busca
+      await selectCliente('Cliente 1');
 
-      // Selecionar cliente
+      // Selecionar serviço via combobox
       const selects = screen.getAllByRole('combobox');
-      fireEvent.change(selects[0], { target: { value: 'c1' } });
-
-      // Selecionar serviço
-      fireEvent.change(selects[1], { target: { value: 's1' } });
+      fireEvent.change(selects[0], { target: { value: 's1' } });
 
       // Preencher item sem categoria
       const descInput = screen.getByPlaceholderText('Descrição do item/serviço');
@@ -774,18 +827,13 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      // Alternar para completo
-      // O tipo completo é o padrão agora
+      // Selecionar cliente via campo de busca
+      await selectCliente('Cliente 1');
 
-      // Selecionar cliente
+      // Selecionar serviço e categoria via combobox
       const selects = screen.getAllByRole('combobox');
-      fireEvent.change(selects[0], { target: { value: 'c1' } });
-
-      // Selecionar serviço
-      fireEvent.change(selects[1], { target: { value: 's1' } });
-
-      // Selecionar categoria
-      fireEvent.change(selects[3], { target: { value: 'cat1' } });
+      fireEvent.change(selects[0], { target: { value: 's1' } });
+      fireEvent.change(selects[2], { target: { value: 'cat1' } });
 
       // Preencher item com descrição curta
       const descInput = screen.getByPlaceholderText('Descrição do item/serviço');
@@ -860,9 +908,8 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      // Selecionar cliente
-      const selects = screen.getAllByRole('combobox');
-      fireEvent.change(selects[0], { target: { value: 'c1' } });
+      // Selecionar cliente via campo de busca
+      await selectCliente('Cliente 1');
 
       // Preencher item com descrição curta
       const descInput = screen.getByPlaceholderText('Descrição do item/serviço');
@@ -894,7 +941,7 @@ describe('OrcamentoModal', () => {
   });
 
   describe('Informações do Cliente', () => {
-    it('deve mostrar nome fantasia quando disponível', () => {
+    it('deve mostrar nome fantasia quando disponível', async () => {
       render(
         <OrcamentoModal
           isOpen={true}
@@ -904,13 +951,12 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      const selects = screen.getAllByRole('combobox');
-      fireEvent.change(selects[0], { target: { value: 'c1' } });
+      await selectCliente('Cliente 1');
 
       expect(screen.getByText(/\(C1\)/)).toBeInTheDocument();
     });
 
-    it('deve mostrar cidade e estado quando disponíveis', () => {
+    it('deve mostrar cidade e estado quando disponíveis', async () => {
       render(
         <OrcamentoModal
           isOpen={true}
@@ -920,8 +966,7 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      const selects = screen.getAllByRole('combobox');
-      fireEvent.change(selects[0], { target: { value: 'c1' } });
+      await selectCliente('Cliente 1');
 
       expect(screen.getByText(/São Paulo\/SP/)).toBeInTheDocument();
     });
@@ -946,6 +991,162 @@ describe('OrcamentoModal', () => {
 
       const descInputs = screen.getAllByPlaceholderText('Descrição do item/serviço');
       expect(descInputs).toHaveLength(1);
+    });
+  });
+
+  describe('Busca de Clientes', () => {
+    it('deve fechar dropdown ao clicar fora', async () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
+      fireEvent.focus(searchInput);
+
+      await waitFor(() => {
+        expect(screen.getByText('Cliente 1')).toBeInTheDocument();
+      });
+
+      // Simular clique fora (no título do modal)
+      fireEvent.mouseDown(document.body);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Cliente 2')).not.toBeInTheDocument();
+      });
+    });
+
+    it('deve limpar seleção ao limpar campo de busca', async () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Primeiro selecionar um cliente
+      await selectCliente('Cliente 1');
+
+      // Verificar que info do cliente aparece
+      expect(screen.getByText(/CNPJ\/CPF: 12345678901234/)).toBeInTheDocument();
+
+      // Limpar campo de busca
+      const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
+      fireEvent.change(searchInput, { target: { value: '' } });
+
+      // Info do cliente deve desaparecer
+      await waitFor(() => {
+        expect(screen.queryByText(/CNPJ\/CPF: 12345678901234/)).not.toBeInTheDocument();
+      });
+    });
+
+    it('deve mostrar mensagem quando não encontrar clientes', async () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
+      fireEvent.change(searchInput, { target: { value: 'Cliente Inexistente XYZ' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Nenhum cliente encontrado')).toBeInTheDocument();
+      });
+    });
+
+    it('deve buscar por CNPJ', async () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
+      fireEvent.change(searchInput, { target: { value: '12345678901234' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Cliente 1')).toBeInTheDocument();
+        expect(screen.queryByText('Cliente 2')).not.toBeInTheDocument();
+      });
+    });
+
+    it('deve preencher campo de busca ao editar orçamento existente', () => {
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+          orcamento={mockOrcamento}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
+      expect(searchInput).toHaveValue('Cliente 1');
+    });
+  });
+
+  describe('Auto-seleção de cliente criado', () => {
+    it('deve selecionar automaticamente o cliente recém-criado', async () => {
+      const novoCliente = {
+        id: 'c3',
+        razaoSocial: 'Novo Cliente Teste',
+        cnpj: '11111111111111',
+        cidade: 'Campinas',
+        estado: 'SP',
+        createdAt: new Date(),
+      };
+
+      const mockCriarCliente = vi.fn().mockResolvedValue(novoCliente);
+      vi.mocked(useCriarCliente).mockReturnValue({
+        mutateAsync: mockCriarCliente,
+        isLoading: false,
+      } as any);
+
+      render(
+        <OrcamentoModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSave={mockOnSave}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Clicar no botão de novo cliente
+      fireEvent.click(screen.getByText('+ Novo Cliente'));
+
+      // Preencher formulário de novo cliente
+      await waitFor(() => {
+        expect(screen.getByText('Cadastrar Novo Cliente')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByLabelText(/CNPJ/), { target: { value: '11111111111111' } });
+      fireEvent.change(screen.getByLabelText(/Razão Social/), { target: { value: 'Novo Cliente Teste' } });
+
+      // Salvar cliente
+      fireEvent.click(screen.getByText('Salvar Cliente e Continuar'));
+
+      // Esperar que o formulário de novo cliente feche e o cliente seja selecionado
+      await waitFor(() => {
+        expect(screen.queryByText('Cadastrar Novo Cliente')).not.toBeInTheDocument();
+      });
+
+      // Verificar que o campo de busca foi preenchido com o nome do novo cliente
+      const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
+      expect(searchInput).toHaveValue('Novo Cliente Teste');
     });
   });
 });

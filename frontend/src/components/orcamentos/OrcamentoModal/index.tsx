@@ -20,7 +20,6 @@ import {
   InputGroup,
   Label,
   TextArea,
-  Select,
   ErrorText,
   InputRow,
 } from "../../ui";
@@ -40,6 +39,12 @@ import {
   ButtonGroup,
   CompletoSection,
   CheckboxOption,
+  ClienteSearchContainer,
+  ClienteSearchInput,
+  ClienteSearchDropdownButton,
+  ClienteSearchDropdown,
+  ClienteSearchOption,
+  ClienteSearchEmpty,
 } from "./styles";
 
 interface OrcamentoModalProps {
@@ -73,7 +78,7 @@ export function OrcamentoModal({
   duplicarDe,
   loading,
 }: OrcamentoModalProps) {
-  const { data: clientes, refetch: refetchClientes } = useClientes();
+  const { data: clientes } = useClientes();
   const { data: servicosAtivos } = useServicosAtivos();
   const { data: categoriasAtivas } = useCategoriasItemAtivas();
   const { data: limitacoesAtivas } = useLimitacoesAtivas();
@@ -118,10 +123,53 @@ export function OrcamentoModal({
   // Estado para novo cliente inline
   const [mostrarNovoCliente, setMostrarNovoCliente] = useState(false);
 
+  // Estados para busca de cliente
+  const [clienteSearchText, setClienteSearchText] = useState("");
+  const [clienteDropdownOpen, setClienteDropdownOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const clienteSearchRef = useRef<HTMLDivElement>(null);
+  const clienteInputRef = useRef<HTMLInputElement>(null);
+
   const formRef = useRef<HTMLFormElement>(null);
+  const isInitializedRef = useRef(false);
+
+  // Filtrar clientes baseado na busca
+  const clientesFiltrados = useMemo(() => {
+    if (!clientes) return [];
+    if (!clienteSearchText.trim()) return clientes;
+    const searchLower = clienteSearchText.toLowerCase();
+    return clientes.filter(
+      (c) =>
+        c.razaoSocial.toLowerCase().includes(searchLower) ||
+        c.nomeFantasia?.toLowerCase().includes(searchLower) ||
+        c.cnpj?.toLowerCase().includes(searchLower)
+    );
+  }, [clientes, clienteSearchText]);
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        clienteSearchRef.current &&
+        !clienteSearchRef.current.contains(event.target as Node)
+      ) {
+        setClienteDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
+      // Se já foi inicializado enquanto o modal está aberto, não resetar
+      // Isso evita que o cliente selecionado seja perdido quando a lista de clientes é atualizada
+      if (isInitializedRef.current) {
+        return;
+      }
+      isInitializedRef.current = true;
+
       if (orcamento) {
         // Editando orçamento existente
         setClienteId(orcamento.clienteId);
@@ -159,6 +207,7 @@ export function OrcamentoModal({
         // Buscar cliente selecionado
         const cliente = clientes?.find((c) => c.id === orcamento.clienteId);
         setClienteSelecionado(cliente || null);
+        setClienteSearchText(cliente?.razaoSocial || "");
         setMostrarNovoCliente(false);
       } else if (duplicarDe) {
         // Duplicando orçamento - pré-preenche mas permite alterar cliente
@@ -197,11 +246,13 @@ export function OrcamentoModal({
         // Buscar cliente selecionado
         const cliente = clientes?.find((c) => c.id === duplicarDe.clienteId);
         setClienteSelecionado(cliente || null);
+        setClienteSearchText(cliente?.razaoSocial || "");
         setMostrarNovoCliente(false);
       } else {
         // Novo orçamento
         setClienteId("");
         setClienteSelecionado(null);
+        setClienteSearchText("");
         setServicoId("");
         setItensCompleto([{ ...emptyItemCompleto }]);
         setLimitacoesSelecionadas([]);
@@ -220,15 +271,60 @@ export function OrcamentoModal({
         setMostrarNovoCliente(false);
       }
       setErrors({});
+      setClienteDropdownOpen(false);
+      setHighlightedIndex(-1);
+    } else {
+      // Quando o modal fecha, resetar a flag para a próxima abertura
+      isInitializedRef.current = false;
     }
   }, [isOpen, orcamento, duplicarDe, clientes, limitacoesAtivas]);
 
-  const handleClienteChange = (id: string) => {
-    setClienteId(id);
-    const cliente = clientes?.find((c) => c.id === id);
-    setClienteSelecionado(cliente || null);
-    if (id) {
-      setMostrarNovoCliente(false);
+  const handleClienteSelect = (cliente: Cliente) => {
+    setClienteId(cliente.id!);
+    setClienteSelecionado(cliente);
+    setClienteSearchText(cliente.razaoSocial);
+    setClienteDropdownOpen(false);
+    setHighlightedIndex(-1);
+    setMostrarNovoCliente(false);
+  };
+
+  const handleClienteSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setClienteSearchText(value);
+    setClienteDropdownOpen(true);
+    setHighlightedIndex(-1);
+    // Se limpar o campo, limpar a seleção
+    if (!value.trim()) {
+      setClienteId("");
+      setClienteSelecionado(null);
+    }
+  };
+
+  const handleClienteSearchFocus = () => {
+    if (!mostrarNovoCliente && !(orcamento && !duplicarDe)) {
+      setClienteDropdownOpen(true);
+    }
+  };
+
+  const handleClienteSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!clienteDropdownOpen) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        prev < clientesFiltrados.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+    } else if (e.key === "Enter" && highlightedIndex >= 0) {
+      e.preventDefault();
+      const cliente = clientesFiltrados[highlightedIndex];
+      if (cliente) {
+        handleClienteSelect(cliente);
+      }
+    } else if (e.key === "Escape") {
+      setClienteDropdownOpen(false);
     }
   };
 
@@ -237,14 +333,19 @@ export function OrcamentoModal({
     if (!mostrarNovoCliente) {
       setClienteId("");
       setClienteSelecionado(null);
+      setClienteSearchText("");
+      setClienteDropdownOpen(false);
     }
   };
 
-  const handleClienteCriado = async (novoCliente: Cliente) => {
-    await refetchClientes();
+  const handleClienteCriado = (novoCliente: Cliente) => {
+    // O useCriarCliente já invalida a query de clientes, então não precisamos refetch
+    // Apenas setamos os estados com o cliente recém-criado
     setClienteId(novoCliente.id!);
     setClienteSelecionado(novoCliente);
+    setClienteSearchText(novoCliente.razaoSocial);
     setMostrarNovoCliente(false);
+    setClienteDropdownOpen(false);
   };
 
   // Handlers para itens completos
@@ -512,19 +613,66 @@ export function OrcamentoModal({
         <InputGroup id="clienteSelect">
           <Label>Cliente *</Label>
           <ClienteSelect>
-            <Select
-              value={clienteId}
-              onChange={(e) => handleClienteChange(e.target.value)}
-              style={{ flex: 1 }}
-              disabled={(!!orcamento && !duplicarDe) || mostrarNovoCliente}
-            >
-              <option value="">Selecione um cliente</option>
-              {clientes?.map((cliente) => (
-                <option key={cliente.id} value={cliente.id}>
-                  {cliente.razaoSocial}
-                </option>
-              ))}
-            </Select>
+            <ClienteSearchContainer ref={clienteSearchRef}>
+              <ClienteSearchInput
+                ref={clienteInputRef}
+                type="text"
+                placeholder="Digite para buscar um cliente..."
+                value={clienteSearchText}
+                onChange={handleClienteSearchChange}
+                onFocus={handleClienteSearchFocus}
+                onKeyDown={handleClienteSearchKeyDown}
+                $disabled={(!!orcamento && !duplicarDe) || mostrarNovoCliente}
+                disabled={(!!orcamento && !duplicarDe) || mostrarNovoCliente}
+              />
+              <ClienteSearchDropdownButton
+                type="button"
+                onClick={() => {
+                  if (!(!!orcamento && !duplicarDe) && !mostrarNovoCliente) {
+                    setClienteDropdownOpen(!clienteDropdownOpen);
+                  }
+                }}
+                $disabled={(!!orcamento && !duplicarDe) || mostrarNovoCliente}
+                disabled={(!!orcamento && !duplicarDe) || mostrarNovoCliente}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  style={{
+                    transform: clienteDropdownOpen ? "rotate(180deg)" : "none",
+                  }}
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </ClienteSearchDropdownButton>
+
+              {clienteDropdownOpen && !mostrarNovoCliente && (
+                <ClienteSearchDropdown>
+                  {clientesFiltrados.length > 0 ? (
+                    clientesFiltrados.map((cliente, index) => (
+                      <ClienteSearchOption
+                        key={cliente.id}
+                        $highlighted={index === highlightedIndex}
+                        onClick={() => handleClienteSelect(cliente)}
+                      >
+                        <div className="nome">{cliente.razaoSocial}</div>
+                        <div className="info">
+                          {cliente.cnpj}
+                          {cliente.cidade && ` • ${cliente.cidade}`}
+                          {cliente.estado && `/${cliente.estado}`}
+                        </div>
+                      </ClienteSearchOption>
+                    ))
+                  ) : (
+                    <ClienteSearchEmpty>
+                      Nenhum cliente encontrado
+                    </ClienteSearchEmpty>
+                  )}
+                </ClienteSearchDropdown>
+              )}
+            </ClienteSearchContainer>
             {(!orcamento || duplicarDe) && (
               <ToggleButton
                 type="button"

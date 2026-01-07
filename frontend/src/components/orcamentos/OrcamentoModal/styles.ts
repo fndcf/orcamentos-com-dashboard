@@ -906,3 +906,105 @@ export const CheckboxOption = styled.label`
     line-height: 1.4;
   }
 `;
+
+// Componente de Select com busca para clientes
+export const ClienteSearchContainer = styled.div`
+  position: relative;
+  flex: 1;
+`;
+
+export const ClienteSearchInput = styled.input<{ $hasValue?: boolean; $disabled?: boolean }>`
+  width: 100%;
+  padding: 10px 36px 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background: ${({ $disabled }) => $disabled ? 'var(--background)' : 'var(--surface)'};
+  color: var(--text-primary);
+  cursor: ${({ $disabled }) => $disabled ? 'not-allowed' : 'text'};
+  opacity: ${({ $disabled }) => $disabled ? 0.7 : 1};
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+
+  &::placeholder {
+    color: var(--text-secondary);
+  }
+`;
+
+export const ClienteSearchDropdownButton = styled.button<{ $disabled?: boolean }>`
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: ${({ $disabled }) => $disabled ? 'not-allowed' : 'pointer'};
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: ${({ $disabled }) => $disabled ? 0.5 : 1};
+
+  svg {
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+    transition: transform 0.2s;
+  }
+
+  &:hover:not(:disabled) svg {
+    color: var(--primary);
+  }
+`;
+
+export const ClienteSearchDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  margin-top: 4px;
+`;
+
+export const ClienteSearchOption = styled.div<{ $highlighted?: boolean }>`
+  padding: 12px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  background: ${({ $highlighted }) => $highlighted ? 'rgba(255, 107, 53, 0.1)' : 'transparent'};
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: rgba(255, 107, 53, 0.1);
+  }
+
+  .nome {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .info {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+`;
+
+export const ClienteSearchEmpty = styled.div`
+  padding: 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+`;

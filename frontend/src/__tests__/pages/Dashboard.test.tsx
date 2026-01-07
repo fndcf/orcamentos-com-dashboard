@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { Dashboard } from '../../pages/Dashboard';
 import { useOrcamentos } from '../../hooks/useOrcamentos';
 import { useClientes } from '../../hooks/useClientes';
+import { formatOrcamentoNumero } from '../../utils/constants';
 
 // Mock dos hooks
 vi.mock('../../hooks/useOrcamentos', () => ({
@@ -213,7 +214,8 @@ describe('Dashboard', () => {
     render(<Dashboard />, { wrapper: createWrapper() });
 
     expect(screen.getByText('Orçamentos Recentes')).toBeInTheDocument();
-    expect(screen.getByText('#1')).toBeInTheDocument();
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    expect(screen.getByText(orc1Numero)).toBeInTheDocument();
     expect(screen.getByText('Cliente 1')).toBeInTheDocument();
   });
 
@@ -229,7 +231,8 @@ describe('Dashboard', () => {
 
     render(<Dashboard />, { wrapper: createWrapper() });
 
-    const orcamentoItem = screen.getByText('#1').closest('div[title="Clique para ver detalhes"]');
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orcamentoItem = screen.getByText(orc1Numero).closest('div[title="Clique para ver detalhes"]');
     if (orcamentoItem) {
       fireEvent.click(orcamentoItem);
     }
@@ -251,7 +254,8 @@ describe('Dashboard', () => {
 
     render(<Dashboard />, { wrapper: createWrapper() });
 
-    const orcamentoItem = screen.getByText('#1').closest('div[title="Clique para ver detalhes"]');
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orcamentoItem = screen.getByText(orc1Numero).closest('div[title="Clique para ver detalhes"]');
     if (orcamentoItem) {
       fireEvent.click(orcamentoItem);
     }

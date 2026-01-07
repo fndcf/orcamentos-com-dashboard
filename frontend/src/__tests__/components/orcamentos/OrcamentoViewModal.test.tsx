@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { OrcamentoViewModal } from '../../../components/orcamentos/OrcamentoViewModal';
+import { formatOrcamentoNumero } from '../../../utils/constants';
 
 // Mock do OrcamentoPDF
 vi.mock('../../../components/orcamentos/OrcamentoPDF', () => ({
@@ -111,7 +112,8 @@ describe('OrcamentoViewModal', () => {
     );
 
     expect(screen.getByText('Detalhes do Orçamento')).toBeInTheDocument();
-    expect(screen.getByText('Orçamento #1')).toBeInTheDocument();
+    const orcNumero = formatOrcamentoNumero(mockOrcamento.numero, mockOrcamento.dataEmissao, mockOrcamento.versao);
+    expect(screen.getByText(`Orçamento ${orcNumero}`)).toBeInTheDocument();
     expect(screen.getByText('Aberto')).toBeInTheDocument();
   });
 

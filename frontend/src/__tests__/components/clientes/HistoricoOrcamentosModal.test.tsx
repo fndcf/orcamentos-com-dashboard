@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { HistoricoOrcamentosModal } from '../../../components/clientes/HistoricoOrcamentosModal';
 import { useOrcamentosPorCliente } from '../../../hooks/useOrcamentos';
+import { formatOrcamentoNumero } from '../../../utils/constants';
 
 // Mock do hook
 vi.mock('../../../hooks/useOrcamentos', () => ({
@@ -209,8 +210,10 @@ describe('HistoricoOrcamentosModal', () => {
       { wrapper: createWrapper() }
     );
 
-    expect(screen.getByText('Orçamento #1')).toBeInTheDocument();
-    expect(screen.getByText('Orçamento #2_v01')).toBeInTheDocument();
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
+    expect(screen.getByText(`Orçamento ${orc1Numero}`)).toBeInTheDocument();
+    expect(screen.getByText(`Orçamento ${orc2Numero}`)).toBeInTheDocument();
   });
 
   it('deve exibir quantidade de itens corretamente', () => {

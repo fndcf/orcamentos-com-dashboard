@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OrcamentoCompletoPDFDocument, gerarPDFOrcamento, gerarPDFExecucao } from '../../../components/orcamentos/OrcamentoPDF';
 import { pdf } from '@react-pdf/renderer';
 import { Orcamento } from '../../../types';
+import { formatOrcamentoNumero } from '../../../utils/constants';
 
 // Mock do @react-pdf/renderer
 vi.mock('@react-pdf/renderer', async () => {
@@ -134,7 +135,8 @@ describe('OrcamentoPDF', () => {
 
       await gerarPDFOrcamento(mockOrcamento);
 
-      expect(downloadName).toBe('orcamento-1.pdf');
+      const expectedNumero = formatOrcamentoNumero(mockOrcamento.numero, mockOrcamento.dataEmissao, mockOrcamento.versao).replace("#", "");
+      expect(downloadName).toBe(`orcamento-${expectedNumero}.pdf`);
 
       createElementSpy.mockRestore();
       appendChildSpy.mockRestore();
@@ -598,7 +600,8 @@ describe('OrcamentoPDF', () => {
       expect(pdf).toHaveBeenCalled();
       expect(mockCreateObjectURL).toHaveBeenCalled();
       expect(linkClickSpy).toHaveBeenCalled();
-      expect(downloadName).toBe('ordem-execucao-3.pdf');
+      const expectedNumero = formatOrcamentoNumero(mockOrcamentoAceito.numero, mockOrcamentoAceito.dataEmissao, mockOrcamentoAceito.versao).replace("#", "");
+      expect(downloadName).toBe(`ordem-execucao-${expectedNumero}.pdf`);
       expect(mockRevokeObjectURL).toHaveBeenCalled();
 
       createElementSpy.mockRestore();

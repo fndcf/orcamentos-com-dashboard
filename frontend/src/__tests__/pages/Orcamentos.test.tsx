@@ -11,6 +11,7 @@ import {
   useExcluirOrcamento,
   useVerificarExpirados,
 } from '../../hooks/useOrcamentos';
+import { formatOrcamentoNumero } from '../../utils/constants';
 
 // Mock dos hooks
 vi.mock('../../hooks/useOrcamentos', () => ({
@@ -172,9 +173,11 @@ describe('Orcamentos', () => {
     render(<Orcamentos />, { wrapper: createWrapper() });
 
     // Pode haver múltiplos elementos devido ao layout mobile/desktop
-    expect(screen.getAllByText('#1')[0]).toBeInTheDocument();
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
+    expect(screen.getAllByText(orc1Numero)[0]).toBeInTheDocument();
     expect(screen.getAllByText('Cliente 1')[0]).toBeInTheDocument();
-    expect(screen.getAllByText('#2')[0]).toBeInTheDocument();
+    expect(screen.getAllByText(orc2Numero)[0]).toBeInTheDocument();
     expect(screen.getAllByText('Cliente 2')[0]).toBeInTheDocument();
   });
 
@@ -189,8 +192,10 @@ describe('Orcamentos', () => {
     const searchInput = screen.getByPlaceholderText('Buscar por número ou cliente...');
     fireEvent.change(searchInput, { target: { value: '1' } });
 
-    expect(screen.getAllByText('#1')[0]).toBeInTheDocument();
-    expect(screen.queryByText('#2')).not.toBeInTheDocument();
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
+    expect(screen.getAllByText(orc1Numero)[0]).toBeInTheDocument();
+    expect(screen.queryByText(orc2Numero)).not.toBeInTheDocument();
   });
 
   it('deve filtrar orçamentos por cliente', () => {
@@ -204,8 +209,10 @@ describe('Orcamentos', () => {
     const searchInput = screen.getByPlaceholderText('Buscar por número ou cliente...');
     fireEvent.change(searchInput, { target: { value: 'Cliente 2' } });
 
-    expect(screen.queryByText('#1')).not.toBeInTheDocument();
-    expect(screen.getAllByText('#2')[0]).toBeInTheDocument();
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
+    expect(screen.queryByText(orc1Numero)).not.toBeInTheDocument();
+    expect(screen.getAllByText(orc2Numero)[0]).toBeInTheDocument();
   });
 
   it('deve filtrar orçamentos por status', () => {
@@ -220,9 +227,12 @@ describe('Orcamentos', () => {
     fireEvent.change(statusSelect, { target: { value: 'aceito' } });
 
     // Após filtrar por aceito, só deve aparecer o orçamento #2
-    expect(screen.queryByText('#1')).not.toBeInTheDocument();
-    expect(screen.getAllByText('#2')[0]).toBeInTheDocument();
-    expect(screen.queryByText('#3')).not.toBeInTheDocument();
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
+    const orc3Numero = formatOrcamentoNumero(mockOrcamentos[2].numero, mockOrcamentos[2].dataEmissao, mockOrcamentos[2].versao);
+    expect(screen.queryByText(orc1Numero)).not.toBeInTheDocument();
+    expect(screen.getAllByText(orc2Numero)[0]).toBeInTheDocument();
+    expect(screen.queryByText(orc3Numero)).not.toBeInTheDocument();
   });
 
   it('deve abrir modal para novo orçamento', async () => {
@@ -262,8 +272,9 @@ describe('Orcamentos', () => {
 
     render(<Orcamentos />, { wrapper: createWrapper() });
 
-    // Pode haver múltiplos elementos #1 (mobile/desktop), pegar o primeiro link clicável
-    const orcamentoLinks = screen.getAllByText('#1');
+    // Pode haver múltiplos elementos com o número do orçamento (mobile/desktop), pegar o primeiro link clicável
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orcamentoLinks = screen.getAllByText(orc1Numero);
     const orcamentoLink = orcamentoLinks[0].closest('div[title="Clique para ver detalhes"]');
     if (orcamentoLink) {
       fireEvent.click(orcamentoLink);
@@ -497,7 +508,8 @@ describe('Orcamentos', () => {
     render(<Orcamentos />, { wrapper: createWrapper() });
 
     // Abrir view modal
-    const orcamentoLinks = screen.getAllByText('#1');
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orcamentoLinks = screen.getAllByText(orc1Numero);
     const orcamentoLink = orcamentoLinks[0].closest('div[title="Clique para ver detalhes"]');
     if (orcamentoLink) {
       fireEvent.click(orcamentoLink);
@@ -510,6 +522,7 @@ describe('Orcamentos', () => {
     // Verificar que as opções estão disponíveis no modal
     const viewModal = screen.getByTestId('orcamento-view-modal');
     expect(viewModal).toBeInTheDocument();
+    // O mock do view modal usa #{orcamento.numero} então mantemos essa verificação
     expect(screen.getByText('Visualizar #1')).toBeInTheDocument();
   });
 
@@ -543,10 +556,14 @@ describe('Orcamentos', () => {
     fireEvent.change(statusSelect, { target: { value: 'expirado' } });
 
     // Após filtrar por expirado, só deve aparecer o orçamento #4
-    expect(screen.queryByText('#1')).not.toBeInTheDocument();
-    expect(screen.queryByText('#2')).not.toBeInTheDocument();
-    expect(screen.queryByText('#3')).not.toBeInTheDocument();
-    expect(screen.getAllByText('#4')[0]).toBeInTheDocument();
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
+    const orc3Numero = formatOrcamentoNumero(mockOrcamentos[2].numero, mockOrcamentos[2].dataEmissao, mockOrcamentos[2].versao);
+    const orc4Numero = formatOrcamentoNumero(mockOrcamentos[3].numero, mockOrcamentos[3].dataEmissao, mockOrcamentos[3].versao);
+    expect(screen.queryByText(orc1Numero)).not.toBeInTheDocument();
+    expect(screen.queryByText(orc2Numero)).not.toBeInTheDocument();
+    expect(screen.queryByText(orc3Numero)).not.toBeInTheDocument();
+    expect(screen.getAllByText(orc4Numero)[0]).toBeInTheDocument();
   });
 
   it('deve filtrar por status recusado', () => {
@@ -561,10 +578,14 @@ describe('Orcamentos', () => {
     fireEvent.change(statusSelect, { target: { value: 'recusado' } });
 
     // Após filtrar por recusado, só deve aparecer o orçamento #3
-    expect(screen.queryByText('#1')).not.toBeInTheDocument();
-    expect(screen.queryByText('#2')).not.toBeInTheDocument();
-    expect(screen.getAllByText('#3')[0]).toBeInTheDocument();
-    expect(screen.queryByText('#4')).not.toBeInTheDocument();
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
+    const orc3Numero = formatOrcamentoNumero(mockOrcamentos[2].numero, mockOrcamentos[2].dataEmissao, mockOrcamentos[2].versao);
+    const orc4Numero = formatOrcamentoNumero(mockOrcamentos[3].numero, mockOrcamentos[3].dataEmissao, mockOrcamentos[3].versao);
+    expect(screen.queryByText(orc1Numero)).not.toBeInTheDocument();
+    expect(screen.queryByText(orc2Numero)).not.toBeInTheDocument();
+    expect(screen.getAllByText(orc3Numero)[0]).toBeInTheDocument();
+    expect(screen.queryByText(orc4Numero)).not.toBeInTheDocument();
   });
 
   it('deve abrir modal de edição a partir do view modal', async () => {
@@ -576,7 +597,8 @@ describe('Orcamentos', () => {
     render(<Orcamentos />, { wrapper: createWrapper() });
 
     // Abrir view modal
-    const orcamentoLinks = screen.getAllByText('#1');
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orcamentoLinks = screen.getAllByText(orc1Numero);
     const orcamentoLink = orcamentoLinks[0].closest('div[title="Clique para ver detalhes"]');
     if (orcamentoLink) {
       fireEvent.click(orcamentoLink);
@@ -595,6 +617,7 @@ describe('Orcamentos', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('orcamento-modal')).toBeInTheDocument();
+      // O mock usa #{orcamento.numero}
       expect(screen.getByText('Editar #1')).toBeInTheDocument();
     });
   });
@@ -608,7 +631,8 @@ describe('Orcamentos', () => {
     render(<Orcamentos />, { wrapper: createWrapper() });
 
     // Abrir view modal
-    const orcamentoLinks = screen.getAllByText('#1');
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orcamentoLinks = screen.getAllByText(orc1Numero);
     const orcamentoLink = orcamentoLinks[0].closest('div[title="Clique para ver detalhes"]');
     if (orcamentoLink) {
       fireEvent.click(orcamentoLink);
@@ -627,6 +651,7 @@ describe('Orcamentos', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('orcamento-modal')).toBeInTheDocument();
+      // O mock usa #{orcamento.numero}
       expect(screen.getByText('Duplicar #1')).toBeInTheDocument();
     });
   });
@@ -643,9 +668,13 @@ describe('Orcamentos', () => {
     fireEvent.change(statusSelect, { target: { value: 'aceito' } });
 
     // Após filtrar por aceito, só deve aparecer o orçamento #2
-    expect(screen.queryByText('#1')).not.toBeInTheDocument();
-    expect(screen.getAllByText('#2')[0]).toBeInTheDocument();
-    expect(screen.queryByText('#3')).not.toBeInTheDocument();
-    expect(screen.queryByText('#4')).not.toBeInTheDocument();
+    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
+    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
+    const orc3Numero = formatOrcamentoNumero(mockOrcamentos[2].numero, mockOrcamentos[2].dataEmissao, mockOrcamentos[2].versao);
+    const orc4Numero = formatOrcamentoNumero(mockOrcamentos[3].numero, mockOrcamentos[3].dataEmissao, mockOrcamentos[3].versao);
+    expect(screen.queryByText(orc1Numero)).not.toBeInTheDocument();
+    expect(screen.getAllByText(orc2Numero)[0]).toBeInTheDocument();
+    expect(screen.queryByText(orc3Numero)).not.toBeInTheDocument();
+    expect(screen.queryByText(orc4Numero)).not.toBeInTheDocument();
   });
 });
