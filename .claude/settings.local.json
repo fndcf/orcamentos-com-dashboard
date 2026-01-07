@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm test:*)",
+      "Bash(npx tsc:*)",
+      "Bash(cat:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run test:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(find:*)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(cd:*)",
+      "Bash(wc:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(if exist .env ren .env .env.local)",
+      "Bash(npx firebase deploy:*)",
+      "Bash(curl:*)",
+      "Bash(grep:*)",
+      "Bash(npm run deploy:*)",
+      "Bash(npm run lint)",
+      "Bash(npx firebase functions:log:*)",
+      "Bash(npx firebase:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
