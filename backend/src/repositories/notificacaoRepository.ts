@@ -8,6 +8,7 @@ const mapDocToNotificacao = (doc: FirebaseFirestore.DocumentSnapshot): Notificac
   id: doc.id,
   ...doc.data(),
   dataVencimento: doc.data()?.dataVencimento?.toDate(),
+  orcamentoDataEmissao: doc.data()?.orcamentoDataEmissao?.toDate?.() || doc.data()?.orcamentoDataEmissao,
   createdAt: doc.data()?.createdAt?.toDate(),
 } as Notificacao);
 
@@ -22,23 +23,13 @@ export const notificacaoRepository = {
       .orderBy('dataVencimento', 'asc')
       .get();
 
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      dataVencimento: doc.data().dataVencimento?.toDate(),
-      createdAt: doc.data().createdAt?.toDate(),
-    })) as Notificacao[];
+    return snapshot.docs.map(mapDocToNotificacao);
   },
 
   async findById(id: string): Promise<Notificacao | null> {
     const doc = await db.collection(COLLECTION).doc(id).get();
     if (!doc.exists) return null;
-    return {
-      id: doc.id,
-      ...doc.data(),
-      dataVencimento: doc.data()?.dataVencimento?.toDate(),
-      createdAt: doc.data()?.createdAt?.toDate(),
-    } as Notificacao;
+    return mapDocToNotificacao(doc);
   },
 
   async findByOrcamentoId(orcamentoId: string): Promise<Notificacao[]> {
@@ -48,12 +39,7 @@ export const notificacaoRepository = {
       .orderBy('dataVencimento', 'asc')
       .get();
 
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      dataVencimento: doc.data().dataVencimento?.toDate(),
-      createdAt: doc.data().createdAt?.toDate(),
-    })) as Notificacao[];
+    return snapshot.docs.map(mapDocToNotificacao);
   },
 
   async findNaoLidas(): Promise<Notificacao[]> {
@@ -63,12 +49,7 @@ export const notificacaoRepository = {
       .orderBy('dataVencimento', 'asc')
       .get();
 
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      dataVencimento: doc.data().dataVencimento?.toDate(),
-      createdAt: doc.data().createdAt?.toDate(),
-    })) as Notificacao[];
+    return snapshot.docs.map(mapDocToNotificacao);
   },
 
   async findProximas(dias: number = 30): Promise<Notificacao[]> {
@@ -83,12 +64,7 @@ export const notificacaoRepository = {
       .orderBy('dataVencimento', 'asc')
       .get();
 
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      dataVencimento: doc.data().dataVencimento?.toDate(),
-      createdAt: doc.data().createdAt?.toDate(),
-    })) as Notificacao[];
+    return snapshot.docs.map(mapDocToNotificacao);
   },
 
   async findVencidas(): Promise<Notificacao[]> {
@@ -102,12 +78,7 @@ export const notificacaoRepository = {
       .orderBy('dataVencimento', 'asc')
       .get();
 
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      dataVencimento: doc.data().dataVencimento?.toDate(),
-      createdAt: doc.data().createdAt?.toDate(),
-    })) as Notificacao[];
+    return snapshot.docs.map(mapDocToNotificacao);
   },
 
   async create(data: Omit<Notificacao, 'id' | 'createdAt'>): Promise<Notificacao> {
@@ -155,12 +126,7 @@ export const notificacaoRepository = {
     await docRef.update({ lida: true });
 
     const updated = await docRef.get();
-    return {
-      id: updated.id,
-      ...updated.data(),
-      dataVencimento: updated.data()?.dataVencimento?.toDate(),
-      createdAt: updated.data()?.createdAt?.toDate(),
-    } as Notificacao;
+    return mapDocToNotificacao(updated);
   },
 
   async marcarTodasComoLidas(): Promise<number> {
@@ -235,12 +201,7 @@ export const notificacaoRepository = {
       .orderBy('dataVencimento', 'asc')
       .get();
 
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      dataVencimento: doc.data().dataVencimento?.toDate(),
-      createdAt: doc.data().createdAt?.toDate(),
-    })) as Notificacao[];
+    return snapshot.docs.map(mapDocToNotificacao);
   },
 
   // ========== MÉTODOS PAGINADOS ==========

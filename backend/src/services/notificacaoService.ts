@@ -212,6 +212,7 @@ export const notificacaoService = {
       ativas: ativas.length,
     };
   },
+
 };
 
 /**

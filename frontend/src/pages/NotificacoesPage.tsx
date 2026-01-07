@@ -517,12 +517,10 @@ export function NotificacoesPage() {
                       </NotificacaoCliente>
                       <NotificacaoOrcamento>
                         Orçamento{" "}
-                        {notificacao.orcamentoDataEmissao
-                          ? formatOrcamentoNumeroSimples(
-                              notificacao.orcamentoNumero,
-                              notificacao.orcamentoDataEmissao
-                            )
-                          : `#${notificacao.orcamentoNumero}`}
+                        {formatOrcamentoNumeroSimples(
+                          notificacao.orcamentoNumero,
+                          notificacao.orcamentoDataEmissao
+                        )}
                       </NotificacaoOrcamento>
                     </NotificacaoInfo>
                     <NotificacaoMeta>

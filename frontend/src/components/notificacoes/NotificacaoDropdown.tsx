@@ -372,12 +372,10 @@ export function NotificacaoDropdown() {
                     <NotificacaoHeader>
                       <NotificacaoCliente>
                         {notificacao.clienteNome} - Orç.{" "}
-                        {notificacao.orcamentoDataEmissao
-                          ? formatOrcamentoNumeroSimples(
-                              notificacao.orcamentoNumero,
-                              notificacao.orcamentoDataEmissao
-                            )
-                          : `#${notificacao.orcamentoNumero}`}
+                        {formatOrcamentoNumeroSimples(
+                          notificacao.orcamentoNumero,
+                          notificacao.orcamentoDataEmissao
+                        )}
                       </NotificacaoCliente>
                       <NotificacaoData $vencida={vencida}>
                         {diasParaVencimento(notificacao.dataVencimento)}

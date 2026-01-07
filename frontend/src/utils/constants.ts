@@ -94,9 +94,17 @@ export const formatOrcamentoNumero = (
 // Exemplo: #260084 (ano 2026, número 84)
 export const formatOrcamentoNumeroSimples = (
   numero: number,
-  dataEmissao: Date | string
+  dataEmissao: Date | string | undefined | null
 ): string => {
-  const ano = new Date(dataEmissao).getFullYear().toString().slice(-2);
+  // Se dataEmissao for inválida, retorna apenas o número
+  if (!dataEmissao) {
+    return `#${numero}`;
+  }
+  const date = new Date(dataEmissao);
+  if (isNaN(date.getTime())) {
+    return `#${numero}`;
+  }
+  const ano = date.getFullYear().toString().slice(-2);
   const numeroFormatado = String(numero).padStart(4, '0');
   return `#${ano}${numeroFormatado}`;
 };
