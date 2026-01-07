@@ -12,6 +12,7 @@ import {
   useNotificacaoResumo,
 } from "../hooks/useNotificacoes";
 import { Notificacao } from "../types";
+import { formatOrcamentoNumeroSimples } from "../utils/constants";
 import Footer from "@/components/layout/Footer";
 
 const Container = styled.div`
@@ -515,7 +516,13 @@ export function NotificacoesPage() {
                         {notificacao.clienteNome}
                       </NotificacaoCliente>
                       <NotificacaoOrcamento>
-                        Orcamento #{notificacao.orcamentoNumero}
+                        Orçamento{" "}
+                        {notificacao.orcamentoDataEmissao
+                          ? formatOrcamentoNumeroSimples(
+                              notificacao.orcamentoNumero,
+                              notificacao.orcamentoDataEmissao
+                            )
+                          : `#${notificacao.orcamentoNumero}`}
                       </NotificacaoOrcamento>
                     </NotificacaoInfo>
                     <NotificacaoMeta>

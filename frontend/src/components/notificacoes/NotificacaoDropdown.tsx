@@ -8,6 +8,7 @@ import {
   useMarcarTodasNotificacoesComoLidas,
 } from "../../hooks/useNotificacoes";
 import { Notificacao } from "../../types";
+import { formatOrcamentoNumeroSimples } from "../../utils/constants";
 
 const Container = styled.div`
   position: relative;
@@ -370,8 +371,13 @@ export function NotificacaoDropdown() {
                   >
                     <NotificacaoHeader>
                       <NotificacaoCliente>
-                        {notificacao.clienteNome} - Orç. #
-                        {notificacao.orcamentoNumero}
+                        {notificacao.clienteNome} - Orç.{" "}
+                        {notificacao.orcamentoDataEmissao
+                          ? formatOrcamentoNumeroSimples(
+                              notificacao.orcamentoNumero,
+                              notificacao.orcamentoDataEmissao
+                            )
+                          : `#${notificacao.orcamentoNumero}`}
                       </NotificacaoCliente>
                       <NotificacaoData $vencida={vencida}>
                         {diasParaVencimento(notificacao.dataVencimento)}

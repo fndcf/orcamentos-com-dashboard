@@ -126,6 +126,7 @@ export const notificacaoService = {
             notificacoesParaCriar.push({
               orcamentoId: orcamento.id!,
               orcamentoNumero: orcamento.numero,
+              orcamentoDataEmissao: orcamento.dataEmissao,
               clienteId: orcamento.clienteId,
               clienteNome: orcamento.clienteNome,
               itemDescricao: descricao,

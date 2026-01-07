@@ -188,6 +188,7 @@ export interface Notificacao {
   id?: string;
   orcamentoId: string;
   orcamentoNumero: number;
+  orcamentoDataEmissao?: Date; // Data de emissão do orçamento para formatação do número
   clienteId: string;
   clienteNome: string;
   itemDescricao: string;

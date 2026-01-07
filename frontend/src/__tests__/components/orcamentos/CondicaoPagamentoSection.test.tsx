@@ -12,6 +12,11 @@ const mockOnParcelamentoDadosChange = vi.fn();
 const mockOnDescontoAVistaChange = vi.fn();
 
 const defaultConfiguracoes: ConfiguracoesGerais = {
+  diasValidadeOrcamento: 30,
+  nomeEmpresa: 'Empresa Teste',
+  cnpjEmpresa: '12.345.678/0001-00',
+  enderecoEmpresa: 'Rua Teste, 123',
+  telefoneEmpresa: '(11) 99999-9999',
   parcelamentoMaxParcelas: 6,
   parcelamentoValorMinimo: 1000,
   parcelamentoJurosAPartirDe: 3,

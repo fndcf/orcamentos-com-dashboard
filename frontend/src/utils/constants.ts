@@ -89,3 +89,14 @@ export const formatOrcamentoNumero = (
   const versaoFormatada = `_v${String(versao).padStart(2, '0')}`;
   return `#${ano}${numeroFormatado}${versaoFormatada}`;
 };
+
+// Formatação simplificada do número do orçamento (sem versão) para relatórios
+// Exemplo: #260084 (ano 2026, número 84)
+export const formatOrcamentoNumeroSimples = (
+  numero: number,
+  dataEmissao: Date | string
+): string => {
+  const ano = new Date(dataEmissao).getFullYear().toString().slice(-2);
+  const numeroFormatado = String(numero).padStart(4, '0');
+  return `#${ano}${numeroFormatado}`;
+};

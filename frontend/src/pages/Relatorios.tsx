@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import styled from "styled-components";
+import { Modal } from "../components/ui";
 import {
   BarChart,
   Bar,
@@ -18,7 +19,7 @@ import {
 import { useOrcamentos } from "../hooks/useOrcamentos";
 import { useItensServico } from "../hooks/useItensServico";
 import { Loading, Button } from "../components/ui";
-import { formatCurrency } from "../utils/constants";
+import { formatCurrency, formatOrcamentoNumeroSimples } from "../utils/constants";
 import { OrcamentoStatus } from "../types";
 import Footer from "@/components/layout/Footer";
 
@@ -549,6 +550,119 @@ const DesktopTableWrapper = styled.div`
   }
 `;
 
+// Styled components para linhas clicáveis
+const ClickableTableRow = styled.tr`
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover td {
+    background: var(--primary-light, rgba(37, 99, 235, 0.1));
+  }
+`;
+
+const ClickableMobileCard = styled(MobileCard)`
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+// Styled components para o modal de análise individual
+const ModalContent = styled.div`
+  padding: 8px 0;
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+
+  .orcamento-info {
+    .numero {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .cliente {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+  }
+
+  .margem-geral {
+    text-align: right;
+
+    .label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+
+    .value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+  }
+`;
+
+const ModalSection = styled.div`
+  margin-bottom: 20px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
+const ModalSectionTitle = styled.h4`
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+`;
+
+const ModalStatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+`;
+
+const ModalStatCard = styled.div<{ $color?: string }>`
+  background: var(--background);
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 3px solid ${({ $color }) => $color || "var(--primary)"};
+
+  .label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+`;
+
 const COLORS = {
   aberto: "#3498db",
   aceito: "#27ae60",
@@ -563,9 +677,42 @@ const STATUS_LABELS: Record<OrcamentoStatus, string> = {
   expirado: "Expirados",
 };
 
+// Tipo para orçamento selecionado no modal
+interface OrcamentoAnalise {
+  numero: number;
+  clienteNome: string;
+  dataAceite: string;
+  dataEmissao: string;
+  versao: number;
+  vendaMaterial: number;
+  vendaMaoDeObra: number;
+  custoMaterial: number;
+  custoMaoDeObra: number;
+  lucroMaterial: number;
+  lucroMaoDeObra: number;
+  lucroTotal: number;
+  margem: number;
+}
+
 export function Relatorios() {
   const { data: orcamentos, isLoading: loadingOrcamentos } = useOrcamentos();
   const { data: itensServico } = useItensServico();
+
+  // Estado para modal de análise individual
+  const [modalOrcamentoOpen, setModalOrcamentoOpen] = useState(false);
+  const [orcamentoSelecionado, setOrcamentoSelecionado] = useState<OrcamentoAnalise | null>(null);
+
+  // Handler para abrir modal com orçamento selecionado
+  const handleOrcamentoClick = useCallback((orc: OrcamentoAnalise) => {
+    setOrcamentoSelecionado(orc);
+    setModalOrcamentoOpen(true);
+  }, []);
+
+  // Handler para fechar modal
+  const handleCloseModal = useCallback(() => {
+    setModalOrcamentoOpen(false);
+    setOrcamentoSelecionado(null);
+  }, []);
 
   // Filtros de data - padrão: últimos 3 meses
   const hoje = new Date();
@@ -803,19 +950,7 @@ export function Relatorios() {
     };
 
     // Filtrar apenas orçamentos onde TODOS os itens têm custo cadastrado
-    const orcamentosComCustoCompleto: Array<{
-      numero: number;
-      clienteNome: string;
-      dataAceite: string;
-      vendaMaterial: number;
-      vendaMaoDeObra: number;
-      custoMaterial: number;
-      custoMaoDeObra: number;
-      lucroMaterial: number;
-      lucroMaoDeObra: number;
-      lucroTotal: number;
-      margem: number;
-    }> = [];
+    const orcamentosComCustoCompleto: OrcamentoAnalise[] = [];
 
     let orcamentosSemCustoCompleto = 0;
 
@@ -855,6 +990,8 @@ export function Relatorios() {
           dataAceite: orc.dataAceite
             ? new Date(orc.dataAceite).toLocaleDateString("pt-BR")
             : new Date(orc.dataEmissao).toLocaleDateString("pt-BR"),
+          dataEmissao: orc.dataEmissao as string,
+          versao: orc.versao || 0,
           vendaMaterial,
           vendaMaoDeObra,
           custoMaterial,
@@ -1294,8 +1431,12 @@ export function Relatorios() {
                       </thead>
                       <tbody>
                         {analiseLucro.orcamentos.map((orc, index) => (
-                          <tr key={index}>
-                            <td className="rank">{orc.numero}</td>
+                          <ClickableTableRow
+                            key={index}
+                            onClick={() => handleOrcamentoClick(orc)}
+                            title="Clique para ver detalhes"
+                          >
+                            <td className="rank">{formatOrcamentoNumeroSimples(orc.numero, orc.dataEmissao)}</td>
                             <td className="cliente">{orc.clienteNome}</td>
                             <td className="value">{formatCurrency(orc.vendaMaterial)}</td>
                             <td className="value">{formatCurrency(orc.custoMaterial)}</td>
@@ -1313,7 +1454,7 @@ export function Relatorios() {
                                 {orc.margem.toFixed(1)}%
                               </MargemBadge>
                             </td>
-                          </tr>
+                          </ClickableTableRow>
                         ))}
                       </tbody>
                     </LucroTable>
@@ -1323,9 +1464,12 @@ export function Relatorios() {
                 {/* Cards Mobile */}
                 <MobileCardList>
                   {analiseLucro.orcamentos.map((orc, index) => (
-                    <MobileCard key={index}>
+                    <ClickableMobileCard
+                      key={index}
+                      onClick={() => handleOrcamentoClick(orc)}
+                    >
                       <div className="header">
-                        <span className="numero">#{orc.numero}</span>
+                        <span className="numero">{formatOrcamentoNumeroSimples(orc.numero, orc.dataEmissao)}</span>
                         <span className="cliente">{orc.clienteNome}</span>
                         <span className="margem">
                           <MargemBadge $positiva={orc.margem >= 0}>
@@ -1361,7 +1505,7 @@ export function Relatorios() {
                           )}
                         </span>
                       </div>
-                    </MobileCard>
+                    </ClickableMobileCard>
                   ))}
                 </MobileCardList>
               </>
@@ -1379,6 +1523,140 @@ export function Relatorios() {
           </FullWidthChart>
         </ChartsRow>
       )}
+
+      {/* Modal de Análise Individual do Orçamento */}
+      <Modal
+        isOpen={modalOrcamentoOpen}
+        onClose={handleCloseModal}
+        title={`Análise de Lucro - Orçamento ${orcamentoSelecionado ? formatOrcamentoNumeroSimples(orcamentoSelecionado.numero, orcamentoSelecionado.dataEmissao) : ''}`}
+        size="large"
+      >
+        {orcamentoSelecionado && (
+          <ModalContent>
+            <ModalHeader>
+              <div className="orcamento-info">
+                <div className="numero">Orçamento {formatOrcamentoNumeroSimples(orcamentoSelecionado.numero, orcamentoSelecionado.dataEmissao)}</div>
+                <div className="cliente">{orcamentoSelecionado.clienteNome}</div>
+              </div>
+              <div className="margem-geral">
+                <div className="label">Margem Geral</div>
+                <div className="value">
+                  <MargemBadge $positiva={orcamentoSelecionado.margem >= 0}>
+                    {orcamentoSelecionado.margem.toFixed(1)}%
+                  </MargemBadge>
+                </div>
+              </div>
+            </ModalHeader>
+
+            {/* Seção Material */}
+            <ModalSection>
+              <ModalSectionTitle>Material</ModalSectionTitle>
+              <ModalStatsGrid>
+                <ModalStatCard $color="#3498db">
+                  <div className="label">Venda</div>
+                  <div className="value">{formatCurrency(orcamentoSelecionado.vendaMaterial)}</div>
+                </ModalStatCard>
+                <ModalStatCard $color="#e74c3c">
+                  <div className="label">Custo</div>
+                  <div className="value">{formatCurrency(orcamentoSelecionado.custoMaterial)}</div>
+                </ModalStatCard>
+                <ModalStatCard $color={orcamentoSelecionado.lucroMaterial >= 0 ? "#27ae60" : "#e74c3c"}>
+                  <div className="label">Lucro</div>
+                  <div className="value">
+                    {orcamentoSelecionado.lucroMaterial >= 0 ? (
+                      <LucroPositivo>{formatCurrency(orcamentoSelecionado.lucroMaterial)}</LucroPositivo>
+                    ) : (
+                      <LucroNegativo>{formatCurrency(orcamentoSelecionado.lucroMaterial)}</LucroNegativo>
+                    )}
+                  </div>
+                </ModalStatCard>
+                <ModalStatCard $color="#9b59b6">
+                  <div className="label">Margem</div>
+                  <div className="value">
+                    <MargemBadge $positiva={orcamentoSelecionado.vendaMaterial > 0 && orcamentoSelecionado.lucroMaterial >= 0}>
+                      {orcamentoSelecionado.vendaMaterial > 0
+                        ? ((orcamentoSelecionado.lucroMaterial / orcamentoSelecionado.vendaMaterial) * 100).toFixed(1)
+                        : "0.0"}%
+                    </MargemBadge>
+                  </div>
+                </ModalStatCard>
+              </ModalStatsGrid>
+            </ModalSection>
+
+            {/* Seção Mão de Obra */}
+            <ModalSection>
+              <ModalSectionTitle>Mão de Obra</ModalSectionTitle>
+              <ModalStatsGrid>
+                <ModalStatCard $color="#3498db">
+                  <div className="label">Venda</div>
+                  <div className="value">{formatCurrency(orcamentoSelecionado.vendaMaoDeObra)}</div>
+                </ModalStatCard>
+                <ModalStatCard $color="#e74c3c">
+                  <div className="label">Custo</div>
+                  <div className="value">{formatCurrency(orcamentoSelecionado.custoMaoDeObra)}</div>
+                </ModalStatCard>
+                <ModalStatCard $color={orcamentoSelecionado.lucroMaoDeObra >= 0 ? "#27ae60" : "#e74c3c"}>
+                  <div className="label">Lucro</div>
+                  <div className="value">
+                    {orcamentoSelecionado.lucroMaoDeObra >= 0 ? (
+                      <LucroPositivo>{formatCurrency(orcamentoSelecionado.lucroMaoDeObra)}</LucroPositivo>
+                    ) : (
+                      <LucroNegativo>{formatCurrency(orcamentoSelecionado.lucroMaoDeObra)}</LucroNegativo>
+                    )}
+                  </div>
+                </ModalStatCard>
+                <ModalStatCard $color="#9b59b6">
+                  <div className="label">Margem</div>
+                  <div className="value">
+                    <MargemBadge $positiva={orcamentoSelecionado.vendaMaoDeObra > 0 && orcamentoSelecionado.lucroMaoDeObra >= 0}>
+                      {orcamentoSelecionado.vendaMaoDeObra > 0
+                        ? ((orcamentoSelecionado.lucroMaoDeObra / orcamentoSelecionado.vendaMaoDeObra) * 100).toFixed(1)
+                        : "0.0"}%
+                    </MargemBadge>
+                  </div>
+                </ModalStatCard>
+              </ModalStatsGrid>
+            </ModalSection>
+
+            {/* Seção Total Geral */}
+            <ModalSection>
+              <ModalSectionTitle>Total Geral</ModalSectionTitle>
+              <ModalStatsGrid>
+                <ModalStatCard $color="#27ae60">
+                  <div className="label">Venda</div>
+                  <div className="value">
+                    {formatCurrency(orcamentoSelecionado.vendaMaterial + orcamentoSelecionado.vendaMaoDeObra)}
+                  </div>
+                </ModalStatCard>
+                <ModalStatCard $color="#e74c3c">
+                  <div className="label">Custo</div>
+                  <div className="value">
+                    {formatCurrency(orcamentoSelecionado.custoMaterial + orcamentoSelecionado.custoMaoDeObra)}
+                  </div>
+                </ModalStatCard>
+                <ModalStatCard $color={orcamentoSelecionado.lucroTotal >= 0 ? "#27ae60" : "#e74c3c"}>
+                  <div className="label">Lucro</div>
+                  <div className="value">
+                    {orcamentoSelecionado.lucroTotal >= 0 ? (
+                      <LucroPositivo>{formatCurrency(orcamentoSelecionado.lucroTotal)}</LucroPositivo>
+                    ) : (
+                      <LucroNegativo>{formatCurrency(orcamentoSelecionado.lucroTotal)}</LucroNegativo>
+                    )}
+                  </div>
+                </ModalStatCard>
+                <ModalStatCard $color="#9b59b6">
+                  <div className="label">Margem</div>
+                  <div className="value">
+                    <MargemBadge $positiva={orcamentoSelecionado.margem >= 0}>
+                      {orcamentoSelecionado.margem.toFixed(1)}%
+                    </MargemBadge>
+                  </div>
+                </ModalStatCard>
+              </ModalStatsGrid>
+            </ModalSection>
+          </ModalContent>
+        )}
+      </Modal>
 
       {/* Footer */}
       <Footer />
