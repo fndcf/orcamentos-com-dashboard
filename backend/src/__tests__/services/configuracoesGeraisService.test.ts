@@ -1,14 +1,25 @@
 import { configuracoesGeraisService } from '../../services/configuracoesGeraisService';
 import { configuracoesGeraisRepository } from '../../repositories/configuracoesGeraisRepository';
+import { historicoValoresRepository } from '../../repositories/historicoValoresRepository';
 import { ValidationError } from '../../utils/errors';
 import { ConfiguracoesGerais } from '../../models';
 
-// Mock do repository
+// Mock dos repositories
 jest.mock('../../repositories/configuracoesGeraisRepository');
+jest.mock('../../repositories/historicoValoresRepository');
 
 describe('configuracoesGeraisService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Mock do historicoValoresRepository
+    (historicoValoresRepository.salvarHistoricoConfiguracao as jest.Mock).mockResolvedValue({
+      id: 'historico-1',
+      dataVigencia: new Date(),
+      custoFixoMensal: 0,
+      impostoMaterial: 0,
+      impostoServico: 0,
+      createdAt: new Date(),
+    });
   });
 
   const mockConfiguracoes: ConfiguracoesGerais = {
@@ -18,6 +29,9 @@ describe('configuracoesGeraisService', () => {
     enderecoEmpresa: 'Rua Teste, 123',
     telefoneEmpresa: '11999999999',
     emailEmpresa: 'teste@empresa.com',
+    custoFixoMensal: 0,
+    impostoMaterial: 0,
+    impostoServico: 0,
   };
 
   describe('buscar', () => {
@@ -32,6 +46,11 @@ describe('configuracoesGeraisService', () => {
   });
 
   describe('atualizar', () => {
+    beforeEach(() => {
+      // Configurar mock do get para todos os testes de atualização
+      (configuracoesGeraisRepository.get as jest.Mock).mockResolvedValue(mockConfiguracoes);
+    });
+
     it('deve atualizar configurações com sucesso', async () => {
       const dados = { diasValidadeOrcamento: 60 };
       (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
@@ -137,6 +156,7 @@ describe('configuracoesGeraisService', () => {
   describe('impostos', () => {
     it('deve atualizar imposto sobre material', async () => {
       const dados = { impostoMaterial: 10 };
+      (configuracoesGeraisRepository.get as jest.Mock).mockResolvedValue(mockConfiguracoes);
       (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
 
       const resultado = await configuracoesGeraisService.atualizar(dados);
@@ -147,6 +167,7 @@ describe('configuracoesGeraisService', () => {
 
     it('deve atualizar imposto sobre serviço', async () => {
       const dados = { impostoServico: 15 };
+      (configuracoesGeraisRepository.get as jest.Mock).mockResolvedValue(mockConfiguracoes);
       (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
 
       const resultado = await configuracoesGeraisService.atualizar(dados);
@@ -157,6 +178,7 @@ describe('configuracoesGeraisService', () => {
 
     it('deve atualizar ambos os impostos simultaneamente', async () => {
       const dados = { impostoMaterial: 8.5, impostoServico: 12.5 };
+      (configuracoesGeraisRepository.get as jest.Mock).mockResolvedValue(mockConfiguracoes);
       (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
 
       const resultado = await configuracoesGeraisService.atualizar(dados);
@@ -168,6 +190,7 @@ describe('configuracoesGeraisService', () => {
 
     it('deve aceitar imposto zero', async () => {
       const dados = { impostoMaterial: 0, impostoServico: 0 };
+      (configuracoesGeraisRepository.get as jest.Mock).mockResolvedValue(mockConfiguracoes);
       (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
 
       const resultado = await configuracoesGeraisService.atualizar(dados);
@@ -179,12 +202,33 @@ describe('configuracoesGeraisService', () => {
 
     it('deve aceitar valores decimais para impostos', async () => {
       const dados = { impostoMaterial: 5.75, impostoServico: 9.25 };
+      (configuracoesGeraisRepository.get as jest.Mock).mockResolvedValue(mockConfiguracoes);
       (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
 
       const resultado = await configuracoesGeraisService.atualizar(dados);
 
       expect(resultado.impostoMaterial).toBe(5.75);
       expect(resultado.impostoServico).toBe(9.25);
+    });
+
+    it('deve salvar histórico quando imposto mudar', async () => {
+      const dados = { impostoMaterial: 15 };
+      (configuracoesGeraisRepository.get as jest.Mock).mockResolvedValue(mockConfiguracoes);
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      await configuracoesGeraisService.atualizar(dados);
+
+      expect(historicoValoresRepository.salvarHistoricoConfiguracao).toHaveBeenCalled();
+    });
+
+    it('não deve salvar histórico quando outros campos mudarem', async () => {
+      const dados = { nomeEmpresa: 'Nova Empresa' };
+      (configuracoesGeraisRepository.get as jest.Mock).mockResolvedValue(mockConfiguracoes);
+      (configuracoesGeraisRepository.update as jest.Mock).mockResolvedValue({ ...mockConfiguracoes, ...dados });
+
+      await configuracoesGeraisService.atualizar(dados);
+
+      expect(historicoValoresRepository.salvarHistoricoConfiguracao).not.toHaveBeenCalled();
     });
   });
 });

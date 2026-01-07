@@ -1,7 +1,33 @@
 import { itemServicoRepository } from '../repositories/itemServicoRepository';
 import { categoriaItemRepository } from '../repositories/categoriaItemRepository';
+import { historicoValoresRepository } from '../repositories/historicoValoresRepository';
 import { ItemServico } from '../models';
 import { AppError, ValidationError, NotFoundError } from '../utils/errors';
+
+// Função auxiliar para verificar se os valores mudaram
+function valoresMudaram(
+  existente: ItemServico,
+  novosValores: {
+    valorUnitario?: number;
+    valorMaoDeObraUnitario?: number;
+    valorCusto?: number;
+    valorMaoDeObraCusto?: number;
+  }
+): boolean {
+  if (novosValores.valorUnitario !== undefined && novosValores.valorUnitario !== (existente.valorUnitario || 0)) {
+    return true;
+  }
+  if (novosValores.valorMaoDeObraUnitario !== undefined && novosValores.valorMaoDeObraUnitario !== (existente.valorMaoDeObraUnitario || 0)) {
+    return true;
+  }
+  if (novosValores.valorCusto !== undefined && novosValores.valorCusto !== (existente.valorCusto || 0)) {
+    return true;
+  }
+  if (novosValores.valorMaoDeObraCusto !== undefined && novosValores.valorMaoDeObraCusto !== (existente.valorMaoDeObraCusto || 0)) {
+    return true;
+  }
+  return false;
+}
 
 export const itemServicoService = {
   async listar(): Promise<ItemServico[]> {
@@ -92,7 +118,28 @@ export const itemServicoService = {
     if (data.valorCusto !== undefined) itemData.valorCusto = data.valorCusto;
     if (data.valorMaoDeObraCusto !== undefined) itemData.valorMaoDeObraCusto = data.valorMaoDeObraCusto;
 
-    return itemServicoRepository.create(itemData);
+    const created = await itemServicoRepository.create(itemData);
+
+    // Salvar primeiro registro de histórico se houver valores definidos
+    const temValores =
+      data.valorUnitario !== undefined ||
+      data.valorMaoDeObraUnitario !== undefined ||
+      data.valorCusto !== undefined ||
+      data.valorMaoDeObraCusto !== undefined;
+
+    if (temValores && created.id) {
+      await historicoValoresRepository.salvarHistoricoItem({
+        itemServicoId: created.id,
+        descricao: created.descricao,
+        dataVigencia: new Date(),
+        valorUnitario: data.valorUnitario || 0,
+        valorMaoDeObraUnitario: data.valorMaoDeObraUnitario || 0,
+        valorCusto: data.valorCusto || 0,
+        valorMaoDeObraCusto: data.valorMaoDeObraCusto || 0,
+      });
+    }
+
+    return created;
   },
 
   async atualizar(
@@ -143,9 +190,25 @@ export const itemServicoService = {
     if (data.valorCusto !== undefined) updateData.valorCusto = data.valorCusto;
     if (data.valorMaoDeObraCusto !== undefined) updateData.valorMaoDeObraCusto = data.valorMaoDeObraCusto;
 
+    // Verificar se os valores mudaram para salvar histórico
+    const deveSalvarHistorico = valoresMudaram(existente, data);
+
     const updated = await itemServicoRepository.update(id, updateData);
     if (!updated) {
       throw new Error('Erro ao atualizar item de serviço');
+    }
+
+    // Salvar histórico se os valores mudaram
+    if (deveSalvarHistorico) {
+      await historicoValoresRepository.salvarHistoricoItem({
+        itemServicoId: id,
+        descricao: updated.descricao,
+        dataVigencia: new Date(),
+        valorUnitario: updated.valorUnitario || 0,
+        valorMaoDeObraUnitario: updated.valorMaoDeObraUnitario || 0,
+        valorCusto: updated.valorCusto || 0,
+        valorMaoDeObraCusto: updated.valorMaoDeObraCusto || 0,
+      });
     }
 
     return updated;

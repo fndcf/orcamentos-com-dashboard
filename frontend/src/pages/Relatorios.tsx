@@ -19,12 +19,16 @@ import {
 import { useOrcamentos } from "../hooks/useOrcamentos";
 import { useItensServico } from "../hooks/useItensServico";
 import { useConfiguracoesGerais } from "../hooks/useConfiguracoesGerais";
+import {
+  useHistoricoItens,
+  useHistoricoConfiguracoes,
+} from "../hooks/useHistoricoValores";
 import { Loading, Button } from "../components/ui";
 import {
   formatCurrency,
   formatOrcamentoNumeroSimples,
 } from "../utils/constants";
-import { OrcamentoStatus } from "../types";
+import { OrcamentoStatus, HistoricoValorItem, HistoricoConfiguracao, ItemServico } from "../types";
 import Footer from "@/components/layout/Footer";
 
 const Container = styled.div`
@@ -698,6 +702,83 @@ interface OrcamentoAnalise {
   margem: number;
 }
 
+// Função auxiliar para obter valores vigentes de um item na data de emissão do orçamento
+function obterValoresVigentes(
+  descricao: string,
+  dataEmissao: Date,
+  historicoItens: HistoricoValorItem[],
+  itensServicoAtuais: ItemServico[]
+): { valorCusto: number; valorMaoDeObraCusto: number } {
+  const key = descricao.toLowerCase().trim();
+
+  // Filtrar históricos do item pela descrição
+  const historicosItem = historicoItens
+    .filter((h) => h.descricao.toLowerCase().trim() === key)
+    .sort(
+      (a, b) =>
+        new Date(b.dataVigencia).getTime() - new Date(a.dataVigencia).getTime()
+    );
+
+  // Encontrar o registro vigente na data de emissão
+  // (maior dataVigencia que seja <= dataEmissao)
+  const vigente = historicosItem.find(
+    (h) => new Date(h.dataVigencia) <= dataEmissao
+  );
+
+  if (vigente) {
+    return {
+      valorCusto: vigente.valorCusto,
+      valorMaoDeObraCusto: vigente.valorMaoDeObraCusto,
+    };
+  }
+
+  // Fallback: usar valores atuais do item (para orçamentos antigos sem histórico)
+  const itemAtual = itensServicoAtuais.find(
+    (i) => i.descricao.toLowerCase().trim() === key
+  );
+  if (itemAtual) {
+    return {
+      valorCusto: itemAtual.valorCusto || 0,
+      valorMaoDeObraCusto: itemAtual.valorMaoDeObraCusto || 0,
+    };
+  }
+
+  return { valorCusto: 0, valorMaoDeObraCusto: 0 };
+}
+
+// Função auxiliar para obter configurações vigentes na data de emissão do orçamento
+function obterConfiguracoesVigentes(
+  dataEmissao: Date,
+  historicoConfiguracoes: HistoricoConfiguracao[],
+  configuracoesAtuais: { custoFixoMensal?: number; impostoMaterial?: number; impostoServico?: number } | undefined
+): { custoFixoMensal: number; impostoMaterial: number; impostoServico: number } {
+  // Ordenar por dataVigencia decrescente
+  const historicosOrdenados = [...historicoConfiguracoes].sort(
+    (a, b) =>
+      new Date(b.dataVigencia).getTime() - new Date(a.dataVigencia).getTime()
+  );
+
+  // Encontrar o registro vigente na data de emissão
+  const vigente = historicosOrdenados.find(
+    (h) => new Date(h.dataVigencia) <= dataEmissao
+  );
+
+  if (vigente) {
+    return {
+      custoFixoMensal: vigente.custoFixoMensal,
+      impostoMaterial: vigente.impostoMaterial,
+      impostoServico: vigente.impostoServico,
+    };
+  }
+
+  // Fallback: usar valores atuais das configurações
+  return {
+    custoFixoMensal: configuracoesAtuais?.custoFixoMensal || 0,
+    impostoMaterial: configuracoesAtuais?.impostoMaterial || 0,
+    impostoServico: configuracoesAtuais?.impostoServico || 0,
+  };
+}
+
 export function Relatorios() {
   const { data: orcamentos, isLoading: loadingOrcamentos } = useOrcamentos();
   const { data: itensServico } = useItensServico();
@@ -729,6 +810,13 @@ export function Relatorios() {
     umMesAtras.toISOString().split("T")[0]
   );
   const [dataFim, setDataFim] = useState(hoje.toISOString().split("T")[0]);
+
+  // Buscar históricos de valores para o período selecionado
+  const { data: historicoItens } = useHistoricoItens(dataInicio, dataFim);
+  const { data: historicoConfiguracoes } = useHistoricoConfiguracoes(
+    dataInicio,
+    dataFim
+  );
 
   // Filtrar orçamentos por período
   const orcamentosFiltrados = useMemo(() => {
@@ -910,17 +998,17 @@ export function Relatorios() {
       .slice(0, 10);
   }, [orcamentosFiltrados]);
 
-  // Análise de Lucro por Orçamento - apenas orçamentos onde TODOS os itens têm custo cadastrado
+  // Análise de Lucro por Orçamento - usando valores históricos quando disponíveis
   const analiseLucro = useMemo(() => {
     if (!itensServico || itensServico.length === 0) {
       return null;
     }
 
-    // Obter percentuais de impostos das configurações
-    const impostoMaterialPercent = configuracoesGerais?.impostoMaterial || 0;
-    const impostoServicoPercent = configuracoesGerais?.impostoServico || 0;
+    // Usar configurações atuais para o cálculo dos totais (fallback quando não há histórico)
+    const impostoMaterialPercentAtual = configuracoesGerais?.impostoMaterial || 0;
+    const impostoServicoPercentAtual = configuracoesGerais?.impostoServico || 0;
 
-    // Criar mapa de custos e valores de venda por descrição do item (normalizada)
+    // Criar mapa de custos e valores de venda por descrição do item (normalizada) - para fallback
     const itensPorDescricao: Record<
       string,
       {
@@ -944,9 +1032,22 @@ export function Relatorios() {
       (o) => o.status === "aceito"
     );
 
-    // Função para verificar se um item tem custo cadastrado
-    const itemTemCusto = (descricao: string): boolean => {
+    // Função para verificar se um item tem custo cadastrado (no histórico ou atual)
+    const itemTemCusto = (descricao: string, dataEmissao: Date): boolean => {
       const key = descricao.toLowerCase().trim();
+
+      // Tentar buscar no histórico primeiro
+      if (historicoItens && historicoItens.length > 0) {
+        const valores = obterValoresVigentes(
+          descricao,
+          dataEmissao,
+          historicoItens,
+          itensServico
+        );
+        return valores.valorCusto > 0 || valores.valorMaoDeObraCusto > 0;
+      }
+
+      // Fallback: usar valores atuais
       const itemInfo = itensPorDescricao[key];
       return !!(
         itemInfo &&
@@ -954,8 +1055,27 @@ export function Relatorios() {
       );
     };
 
-    // Função para obter valores de um item
-    const obterValoresItem = (descricao: string, quantidade: number) => {
+    // Função para obter valores de um item - usando histórico quando disponível
+    const obterValoresItemHistorico = (
+      descricao: string,
+      quantidade: number,
+      dataEmissao: Date
+    ) => {
+      // Tentar buscar no histórico primeiro
+      if (historicoItens && historicoItens.length > 0) {
+        const valores = obterValoresVigentes(
+          descricao,
+          dataEmissao,
+          historicoItens,
+          itensServico
+        );
+        return {
+          custoMaterial: valores.valorCusto * quantidade,
+          custoMaoDeObra: valores.valorMaoDeObraCusto * quantidade,
+        };
+      }
+
+      // Fallback: usar valores atuais
       const key = descricao.toLowerCase().trim();
       const itemInfo = itensPorDescricao[key];
       if (itemInfo) {
@@ -973,6 +1093,17 @@ export function Relatorios() {
     let orcamentosSemCustoCompleto = 0;
 
     orcamentosAceitos.forEach((orc) => {
+      const dataEmissaoOrc = new Date(orc.dataEmissao);
+
+      // Obter configurações vigentes na data de emissão do orçamento
+      const configVigente = obterConfiguracoesVigentes(
+        dataEmissaoOrc,
+        historicoConfiguracoes || [],
+        configuracoesGerais
+      );
+      const impostoMaterialPercentOrc = configVigente.impostoMaterial;
+      const impostoServicoPercentOrc = configVigente.impostoServico;
+
       let todosItensTemCusto = true;
       let vendaMaterial = 0;
       let vendaMaoDeObra = 0;
@@ -982,23 +1113,27 @@ export function Relatorios() {
       // Verificar itens do orçamento completo
       if (orc.itensCompleto && orc.itensCompleto.length > 0) {
         for (const item of orc.itensCompleto) {
-          if (!itemTemCusto(item.descricao)) {
+          if (!itemTemCusto(item.descricao, dataEmissaoOrc)) {
             todosItensTemCusto = false;
             break;
           }
           // No orçamento completo, temos separação de material e mão de obra
           vendaMaterial += item.valorTotalMaterial;
           vendaMaoDeObra += item.valorTotalMaoDeObra;
-          const custos = obterValoresItem(item.descricao, item.quantidade);
+          const custos = obterValoresItemHistorico(
+            item.descricao,
+            item.quantidade,
+            dataEmissaoOrc
+          );
           custoMaterial += custos.custoMaterial;
           custoMaoDeObra += custos.custoMaoDeObra;
         }
       }
 
       if (todosItensTemCusto) {
-        // Calcular impostos sobre as vendas
-        const impostoMaterial = vendaMaterial * (impostoMaterialPercent / 100);
-        const impostoServico = vendaMaoDeObra * (impostoServicoPercent / 100);
+        // Calcular impostos sobre as vendas usando configuração vigente na data de emissão
+        const impostoMaterial = vendaMaterial * (impostoMaterialPercentOrc / 100);
+        const impostoServico = vendaMaoDeObra * (impostoServicoPercentOrc / 100);
 
         // Lucro = Venda - Custo - Imposto
         const lucroMaterial = vendaMaterial - custoMaterial - impostoMaterial;
@@ -1048,14 +1183,21 @@ export function Relatorios() {
       0
     );
 
-    // Calcular impostos totais
-    const totalImpostoMaterial = totalVendaMaterial * (impostoMaterialPercent / 100);
-    const totalImpostoServico = totalVendaMaoDeObra * (impostoServicoPercent / 100);
+    // Calcular impostos totais e lucros totais (já calculados por orçamento com valores históricos)
+    const totalLucroMaterial = orcamentosComCustoCompleto.reduce(
+      (sum, o) => sum + o.lucroMaterial,
+      0
+    );
+    const totalLucroMaoDeObra = orcamentosComCustoCompleto.reduce(
+      (sum, o) => sum + o.lucroMaoDeObra,
+      0
+    );
+
+    // Calcular impostos totais baseados nos valores agregados
+    const totalImpostoMaterial = totalVendaMaterial - totalCustoMaterial - totalLucroMaterial;
+    const totalImpostoServico = totalVendaMaoDeObra - totalCustoMaoDeObra - totalLucroMaoDeObra;
     const totalImpostos = totalImpostoMaterial + totalImpostoServico;
 
-    // Lucro = Venda - Custo - Imposto
-    const totalLucroMaterial = totalVendaMaterial - totalCustoMaterial - totalImpostoMaterial;
-    const totalLucroMaoDeObra = totalVendaMaoDeObra - totalCustoMaoDeObra - totalImpostoServico;
     const lucroTotal = totalLucroMaterial + totalLucroMaoDeObra;
     const valorTotalVenda = totalVendaMaterial + totalVendaMaoDeObra;
     const margemLucro =
@@ -1072,8 +1214,8 @@ export function Relatorios() {
       totalImpostoMaterial,
       totalImpostoServico,
       totalImpostos,
-      impostoMaterialPercent,
-      impostoServicoPercent,
+      impostoMaterialPercent: impostoMaterialPercentAtual,
+      impostoServicoPercent: impostoServicoPercentAtual,
       totalLucroMaterial,
       totalLucroMaoDeObra,
       lucroTotal,
@@ -1082,7 +1224,7 @@ export function Relatorios() {
       orcamentosSemCustoCompleto,
       totalOrcamentosAceitos: orcamentosAceitos.length,
     };
-  }, [orcamentosFiltrados, itensServico, configuracoesGerais]);
+  }, [orcamentosFiltrados, itensServico, configuracoesGerais, historicoItens, historicoConfiguracoes]);
 
   // Cálculo do Lucro Líquido (considerando custo fixo proporcional ao período e impostos)
   const lucroLiquido = useMemo(() => {

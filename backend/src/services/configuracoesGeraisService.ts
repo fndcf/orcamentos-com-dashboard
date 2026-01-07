@@ -1,6 +1,33 @@
 import { configuracoesGeraisRepository } from '../repositories/configuracoesGeraisRepository';
+import { historicoValoresRepository } from '../repositories/historicoValoresRepository';
 import { ConfiguracoesGerais } from '../models';
 import { ValidationError } from '../utils/errors';
+
+// Função auxiliar para verificar se os valores de impostos/custo fixo mudaram
+function valoresFinanceirosMudaram(
+  existente: ConfiguracoesGerais,
+  novosValores: Partial<ConfiguracoesGerais>
+): boolean {
+  if (
+    novosValores.custoFixoMensal !== undefined &&
+    novosValores.custoFixoMensal !== (existente.custoFixoMensal || 0)
+  ) {
+    return true;
+  }
+  if (
+    novosValores.impostoMaterial !== undefined &&
+    novosValores.impostoMaterial !== (existente.impostoMaterial || 0)
+  ) {
+    return true;
+  }
+  if (
+    novosValores.impostoServico !== undefined &&
+    novosValores.impostoServico !== (existente.impostoServico || 0)
+  ) {
+    return true;
+  }
+  return false;
+}
 
 export const configuracoesGeraisService = {
   async buscar(): Promise<ConfiguracoesGerais> {
@@ -30,6 +57,22 @@ export const configuracoesGeraisService = {
       }
     }
 
-    return configuracoesGeraisRepository.update(data);
+    // Buscar configurações atuais para verificar se valores financeiros mudaram
+    const existente = await configuracoesGeraisRepository.get();
+    const deveSalvarHistorico = valoresFinanceirosMudaram(existente, data);
+
+    const updated = await configuracoesGeraisRepository.update(data);
+
+    // Salvar histórico se os valores financeiros mudaram
+    if (deveSalvarHistorico) {
+      await historicoValoresRepository.salvarHistoricoConfiguracao({
+        dataVigencia: new Date(),
+        custoFixoMensal: updated.custoFixoMensal || 0,
+        impostoMaterial: updated.impostoMaterial || 0,
+        impostoServico: updated.impostoServico || 0,
+      });
+    }
+
+    return updated;
   },
 };

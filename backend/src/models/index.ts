@@ -218,3 +218,26 @@ export interface PaginatedResponse<T> {
   hasMore: boolean;
   cursor?: string;
 }
+
+// Interface do Histórico de Valores de Item de Serviço
+export interface HistoricoValorItem {
+  id?: string;
+  itemServicoId: string; // ID do item de serviço
+  descricao: string; // Descrição do item (para facilitar consultas)
+  dataVigencia: Date; // Data em que os valores entraram em vigor
+  valorUnitario: number; // Valor de venda unitário
+  valorMaoDeObraUnitario: number; // Valor de venda de mão de obra unitário
+  valorCusto: number; // Custo de material
+  valorMaoDeObraCusto: number; // Custo de mão de obra
+  createdAt: Date; // Quando o registro foi criado
+}
+
+// Interface do Histórico de Configurações (impostos e custo fixo)
+export interface HistoricoConfiguracao {
+  id?: string;
+  dataVigencia: Date; // Data em que os valores entraram em vigor
+  custoFixoMensal: number; // Custo fixo mensal da empresa
+  impostoMaterial: number; // Percentual de imposto sobre material
+  impostoServico: number; // Percentual de imposto sobre serviço
+  createdAt: Date; // Quando o registro foi criado
+}
