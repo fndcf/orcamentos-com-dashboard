@@ -959,14 +959,15 @@ export function OrcamentoCompletoPDFDocument({
             </View>
           )}
           {/* Telefone: prioridade modal > cliente */}
-          {(orcamento.telefone?.trim() || orcamento.clienteTelefone?.trim()) && (
-              <View style={{ marginBottom: 4 }}>
-                <Text style={styles.clienteValue}>
-                  <Text style={{ fontWeight: "bold" }}>Telefone: </Text>
-                  {orcamento.telefone?.trim() || orcamento.clienteTelefone}
-                </Text>
-              </View>
-            )}
+          {(orcamento.telefone?.trim() ||
+            orcamento.clienteTelefone?.trim()) && (
+            <View style={{ marginBottom: 4 }}>
+              <Text style={styles.clienteValue}>
+                <Text style={{ fontWeight: "bold" }}>Telefone: </Text>
+                {orcamento.telefone?.trim() || orcamento.clienteTelefone}
+              </Text>
+            </View>
+          )}
           {orcamento.contato && orcamento.contato.trim() !== "" && (
             <View style={{ marginBottom: 4 }}>
               <Text style={styles.clienteValue}>
@@ -984,14 +985,17 @@ export function OrcamentoCompletoPDFDocument({
               </Text>
             </View>
           )}
-          {orcamento.enderecoServico && orcamento.enderecoServico.trim() !== "" && (
-            <View style={{ marginBottom: 4 }}>
-              <Text style={styles.clienteValue}>
-                <Text style={{ fontWeight: "bold" }}>Endereço do Serviço: </Text>
-                {orcamento.enderecoServico}
-              </Text>
-            </View>
-          )}
+          {orcamento.enderecoServico &&
+            orcamento.enderecoServico.trim() !== "" && (
+              <View style={{ marginBottom: 4 }}>
+                <Text style={styles.clienteValue}>
+                  <Text style={{ fontWeight: "bold" }}>
+                    Endereço do Serviço:{" "}
+                  </Text>
+                  {orcamento.enderecoServico}
+                </Text>
+              </View>
+            )}
           {orcamento.servicoDescricao &&
             orcamento.servicoDescricao.trim() !== "" && (
               <View style={{ marginBottom: 4 }}>
@@ -2021,12 +2025,16 @@ export function OrcamentoCompletoPDFDocument({
               // Filtrar parcelas baseado na seleção
               // Se parcelasSelecionadas está definido, usa a seleção do usuário
               // Caso contrário, mostra apenas as parcelas que NÃO estão abaixo do mínimo
-              const parcelasSelecionadas = orcamento.parcelamentoDados.parcelasSelecionadas;
-              const opcoesParaExibir = parcelasSelecionadas && parcelasSelecionadas.length > 0
-                ? orcamento.parcelamentoDados.opcoes.filter(opcao =>
-                    parcelasSelecionadas.includes(opcao.numeroParcelas)
-                  )
-                : orcamento.parcelamentoDados.opcoes.filter(opcao => !opcao.abaixoDoMinimo);
+              const parcelasSelecionadas =
+                orcamento.parcelamentoDados.parcelasSelecionadas;
+              const opcoesParaExibir =
+                parcelasSelecionadas && parcelasSelecionadas.length > 0
+                  ? orcamento.parcelamentoDados.opcoes.filter((opcao) =>
+                      parcelasSelecionadas.includes(opcao.numeroParcelas)
+                    )
+                  : orcamento.parcelamentoDados.opcoes.filter(
+                      (opcao) => !opcao.abaixoDoMinimo
+                    );
 
               return (
                 <>
@@ -2038,7 +2046,9 @@ export function OrcamentoCompletoPDFDocument({
                     </Text>
                     <Text style={stylesCompleto.parcelamentoRestanteText}>
                       Restante:{" "}
-                      {formatCurrency(orcamento.parcelamentoDados.valorRestante)}
+                      {formatCurrency(
+                        orcamento.parcelamentoDados.valorRestante
+                      )}
                     </Text>
                   </View>
 
@@ -2094,7 +2104,9 @@ export function OrcamentoCompletoPDFDocument({
                           {formatCurrency(opcao.valorParcela)}
                         </Text>
                         <Text style={stylesCompleto.parcelamentoColJuros}>
-                          {opcao.temJuros ? `+${opcao.taxaJuros}%` : "Sem juros"}
+                          {opcao.temJuros
+                            ? `+${opcao.taxaJuros}%`
+                            : "Sem juros"}
                         </Text>
                         <Text style={stylesCompleto.parcelamentoColTotal}>
                           {formatCurrency(opcao.valorTotal)}
@@ -2137,8 +2149,8 @@ export function OrcamentoCompletoPDFDocument({
             <View style={stylesCompleto.prazoItem}>
               <Text style={stylesCompleto.prazoBullet}>•</Text>
               <Text style={stylesCompleto.prazoTexto}>
-                Até {orcamento.prazoVistoriaBombeiros} dias para a vistoria
-                do Corpo de Bombeiros, depois de gerado o protocolo.
+                Até {orcamento.prazoVistoriaBombeiros} dias para a vistoria do
+                Corpo de Bombeiros, depois de gerado o protocolo.
               </Text>
             </View>
           )}
@@ -2182,7 +2194,9 @@ export function OrcamentoCompletoPDFDocument({
             </Text>
             <Text style={styles.footerCnpj}>
               CNPJ: {configuracoes.cnpjEmpresa}
-              {configuracoes.telefoneEmpresa ? ` | Tel: ${configuracoes.telefoneEmpresa}` : ''}
+              {configuracoes.telefoneEmpresa
+                ? ` | Tel: ${configuracoes.telefoneEmpresa}`
+                : ""}
             </Text>
             <Text style={styles.footerEndereco}>
               {configuracoes.enderecoEmpresa}
@@ -2221,7 +2235,7 @@ export async function gerarPDFOrcamento(orcamento: Orcamento): Promise<void> {
     orcamento.dataEmissao,
     orcamento.versao
   ).replace("#", "");
-  link.download = `orcamento-${numeroArquivo}.pdf`;
+  link.download = `Orçamento Flama-${numeroArquivo}.pdf`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -2492,7 +2506,8 @@ function OrdemExecucaoPDFDocument({
           {/* Telefone: prioridade modal > cliente */}
           {(orcamento.telefone?.trim() || orcamento.clienteTelefone) && (
             <Text style={stylesExecucao.clienteInfo}>
-              Telefone: {orcamento.telefone?.trim() || orcamento.clienteTelefone}
+              Telefone:{" "}
+              {orcamento.telefone?.trim() || orcamento.clienteTelefone}
             </Text>
           )}
           {orcamento.contato && (
@@ -2702,8 +2717,10 @@ function OrdemExecucaoPDFDocument({
             </Text>
             <Text style={stylesExecucao.footerInfo}>
               CNPJ: {configuracoes.cnpjEmpresa}
-              {configuracoes.telefoneEmpresa ? ` | Tel: ${configuracoes.telefoneEmpresa}` : ''} |{" "}
-              {configuracoes.enderecoEmpresa}
+              {configuracoes.telefoneEmpresa
+                ? ` | Tel: ${configuracoes.telefoneEmpresa}`
+                : ""}{" "}
+              | {configuracoes.enderecoEmpresa}
             </Text>
           </View>
         )}
