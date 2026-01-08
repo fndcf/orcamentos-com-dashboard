@@ -70,6 +70,14 @@ export function useOrcamentosPorCliente(clienteId: string) {
   );
 }
 
+export function useHistoricoCliente(clienteId: string, limit: number = 5) {
+  return useQuery(
+    ['orcamentos', 'historico', clienteId, limit],
+    () => orcamentoService.getHistoricoCliente(clienteId, limit),
+    { enabled: !!clienteId }
+  );
+}
+
 export function useOrcamentosPorStatus(status: OrcamentoStatus) {
   return useQuery(['orcamentos', 'status', status], () =>
     orcamentoService.buscarPorStatus(status)

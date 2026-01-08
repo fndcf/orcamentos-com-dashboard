@@ -414,4 +414,81 @@ export const orcamentoRepository = {
     const snapshot = await query.get();
     return snapshot.size;
   },
+
+  async getHistoricoCliente(clienteId: string, limit: number = 5): Promise<{
+    orcamentos: Orcamento[];
+    resumo: {
+      total: number;
+      aceitos: number;
+      valorTotalAceitos: number;
+    };
+  }> {
+    try {
+      // Buscar todos os orçamentos do cliente para calcular resumo
+      const snapshot = await collection
+        .where('clienteId', '==', clienteId)
+        .get();
+
+      // Calcular resumo com todos os documentos
+      let total = 0;
+      let aceitos = 0;
+      let valorTotalAceitos = 0;
+
+      const allDocs = snapshot.docs.map(doc => {
+        const data = doc.data();
+        total++;
+        if (data.status === 'aceito') {
+          aceitos++;
+          valorTotalAceitos += data.valorTotal || 0;
+        }
+        return { doc, numero: data.numero || 0 };
+      });
+
+      // Ordenar por número decrescente e pegar apenas os últimos N
+      allDocs.sort((a, b) => b.numero - a.numero);
+      const limitedDocs = allDocs.slice(0, limit);
+
+      const orcamentos = limitedDocs.map(({ doc }) => mapDocToOrcamento(doc));
+
+      return {
+        orcamentos,
+        resumo: {
+          total,
+          aceitos,
+          valorTotalAceitos,
+        },
+      };
+    } catch {
+      // Fallback
+      const snapshot = await collection.where('clienteId', '==', clienteId).get();
+
+      let total = 0;
+      let aceitos = 0;
+      let valorTotalAceitos = 0;
+
+      const allDocs = snapshot.docs.map(doc => {
+        const data = doc.data();
+        total++;
+        if (data.status === 'aceito') {
+          aceitos++;
+          valorTotalAceitos += data.valorTotal || 0;
+        }
+        return { doc, numero: data.numero || 0 };
+      });
+
+      allDocs.sort((a, b) => b.numero - a.numero);
+      const limitedDocs = allDocs.slice(0, limit);
+
+      const orcamentos = limitedDocs.map(({ doc }) => mapDocToOrcamento(doc));
+
+      return {
+        orcamentos,
+        resumo: {
+          total,
+          aceitos,
+          valorTotalAceitos,
+        },
+      };
+    }
+  },
 };

@@ -1099,6 +1099,23 @@ export const ClienteSearchEmpty = styled.div`
   font-size: 0.9rem;
 `;
 
+export const ClienteSearchLoading = styled.div<{ $initial?: boolean }>`
+  padding: 12px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  border-top: ${({ $initial }) => $initial ? 'none' : '1px solid var(--border)'};
+`;
+
+export const ClienteSearchTotal = styled.div`
+  padding: 8px 14px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  background: var(--background);
+  border-top: 1px solid var(--border);
+`;
+
 export const AddItemButtonContainer = styled.div`
   display: flex;
   justify-content: flex-end;

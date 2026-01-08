@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from 'react-query';
 import { clienteService } from '../services/clienteService';
 import { Cliente } from '../types';
 
@@ -21,6 +21,28 @@ export function useClientesPaginados(
     {
       keepPreviousData: true, // Mantém dados anteriores enquanto carrega nova página
       staleTime: 30 * 1000, // 30 segundos
+    }
+  );
+}
+
+// Hook para infinite scroll no dropdown de clientes
+export function useClientesInfiniteScroll(
+  busca?: string,
+  limit: number = 20
+) {
+  return useInfiniteQuery(
+    ['clientes', 'infinite', busca, limit],
+    ({ pageParam = 1 }) => clienteService.listarPaginado(pageParam, limit, { busca }),
+    {
+      getNextPageParam: (lastPage, allPages) => {
+        // Se ainda tem mais páginas, retorna o próximo número de página
+        if (lastPage.hasMore) {
+          return allPages.length + 1;
+        }
+        return undefined;
+      },
+      staleTime: 30 * 1000, // 30 segundos
+      keepPreviousData: true,
     }
   );
 }

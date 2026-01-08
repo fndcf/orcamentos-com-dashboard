@@ -22,6 +22,9 @@ router.get('/dashboard-stats', orcamentoController.dashboardStats);
 // GET /api/orcamentos/cliente/:clienteId - Buscar por cliente
 router.get('/cliente/:clienteId', orcamentoController.buscarPorCliente);
 
+// GET /api/orcamentos/cliente/:clienteId/historico - Histórico do cliente com resumo agregado
+router.get('/cliente/:clienteId/historico', orcamentoController.historicoCliente);
+
 // GET /api/orcamentos/status/:status - Buscar por status
 router.get('/status/:status', orcamentoController.buscarPorStatus);
 

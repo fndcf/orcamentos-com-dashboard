@@ -99,6 +99,27 @@ export const orcamentoService = {
     return response.data.data;
   },
 
+  async getHistoricoCliente(clienteId: string, limit: number = 5): Promise<{
+    orcamentos: Orcamento[];
+    resumo: {
+      total: number;
+      aceitos: number;
+      valorTotalAceitos: number;
+    };
+  }> {
+    const response = await api.get<ApiResponse<{
+      orcamentos: Orcamento[];
+      resumo: {
+        total: number;
+        aceitos: number;
+        valorTotalAceitos: number;
+      };
+    }>>(`/orcamentos/cliente/${clienteId}/historico`, {
+      params: { limit },
+    });
+    return response.data.data;
+  },
+
   async buscarPorStatus(status: OrcamentoStatus): Promise<Orcamento[]> {
     const response = await api.get<ApiResponse<Orcamento[]>>(`/orcamentos/status/${status}`);
     return response.data.data;

@@ -1,6 +1,6 @@
 import styled from 'styled-components';
-import { Cliente, Orcamento, OrcamentoStatus } from '../../types';
-import { useOrcamentosPorCliente } from '../../hooks/useOrcamentos';
+import { Cliente, OrcamentoStatus } from '../../types';
+import { useHistoricoCliente } from '../../hooks/useOrcamentos';
 import { Modal, Loading, EmptyState } from '../ui';
 import { formatCurrency, formatDate, formatOrcamentoNumero } from '../../utils/constants';
 import { gerarPDFOrcamento } from '../orcamentos/OrcamentoPDF';
@@ -247,6 +247,16 @@ const ResumoCard = styled.div<{ $variant?: 'primary' | 'success' | 'default' }>`
   }
 `;
 
+const ListaLimitadaInfo = styled.div`
+  text-align: center;
+  padding: 12px;
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  background: var(--background);
+  border-radius: 6px;
+`;
+
 const statusLabels: Record<OrcamentoStatus, string> = {
   aberto: 'Aberto',
   aceito: 'Aceito',
@@ -260,26 +270,17 @@ interface HistoricoOrcamentosModalProps {
   cliente: Cliente | null;
 }
 
+const LIMITE_ORCAMENTOS = 5;
+
 export function HistoricoOrcamentosModal({
   isOpen,
   onClose,
   cliente,
 }: HistoricoOrcamentosModalProps) {
-  const { data: orcamentos, isLoading } = useOrcamentosPorCliente(cliente?.id || '');
+  const { data: historico, isLoading } = useHistoricoCliente(cliente?.id || '', LIMITE_ORCAMENTOS);
 
-  const calcularResumo = (orcamentos: Orcamento[]) => {
-    const total = orcamentos.length;
-    const aceitos = orcamentos.filter(o => o.status === 'aceito');
-    const valorTotal = aceitos.reduce((acc, o) => acc + o.valorTotal, 0);
-
-    return { total, aceitos: aceitos.length, valorTotal };
-  };
-
-  const resumo = orcamentos ? calcularResumo(orcamentos) : { total: 0, aceitos: 0, valorTotal: 0 };
-
-  const handleGerarPDF = (orcamento: Orcamento) => {
-    gerarPDFOrcamento(orcamento);
-  };
+  const orcamentos = historico?.orcamentos || [];
+  const resumo = historico?.resumo || { total: 0, aceitos: 0, valorTotalAceitos: 0 };
 
   if (!cliente) return null;
 
@@ -298,7 +299,7 @@ export function HistoricoOrcamentosModal({
 
       {isLoading ? (
         <Loading />
-      ) : orcamentos && orcamentos.length > 0 ? (
+      ) : orcamentos.length > 0 ? (
         <>
           <OrcamentosList>
             {orcamentos.map((orcamento) => (
@@ -320,13 +321,19 @@ export function HistoricoOrcamentosModal({
                   <StatusBadge $status={orcamento.status}>
                     {statusLabels[orcamento.status]}
                   </StatusBadge>
-                  <PDFButton onClick={() => handleGerarPDF(orcamento)}>
+                  <PDFButton onClick={() => gerarPDFOrcamento(orcamento)}>
                     Baixar PDF
                   </PDFButton>
                 </OrcamentoRight>
               </OrcamentoCard>
             ))}
           </OrcamentosList>
+
+          {resumo.total > LIMITE_ORCAMENTOS && (
+            <ListaLimitadaInfo>
+              Exibindo os {LIMITE_ORCAMENTOS} últimos orçamentos de {resumo.total} no total
+            </ListaLimitadaInfo>
+          )}
 
           <ResumoSection>
             <ResumoCard $variant="primary">
@@ -339,7 +346,7 @@ export function HistoricoOrcamentosModal({
             </ResumoCard>
             <ResumoCard>
               <div className="label">Valor Total Aceitos</div>
-              <div className="value">{formatCurrency(resumo.valorTotal)}</div>
+              <div className="value">{formatCurrency(resumo.valorTotalAceitos)}</div>
             </ResumoCard>
           </ResumoSection>
         </>

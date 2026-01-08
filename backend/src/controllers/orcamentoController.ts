@@ -52,6 +52,17 @@ export const orcamentoController = {
     }
   },
 
+  async historicoCliente(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { clienteId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 5;
+      const historico = await orcamentoService.getHistoricoCliente(clienteId, limit);
+      res.json({ success: true, data: historico });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async buscarPorStatus(req: Request, res: Response, next: NextFunction) {
     try {
       const { status } = req.params;

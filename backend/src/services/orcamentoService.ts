@@ -133,6 +133,17 @@ export const orcamentoService = {
     return orcamentoRepository.findByClienteId(clienteId);
   },
 
+  async getHistoricoCliente(clienteId: string, limit: number = 5): Promise<{
+    orcamentos: Orcamento[];
+    resumo: {
+      total: number;
+      aceitos: number;
+      valorTotalAceitos: number;
+    };
+  }> {
+    return orcamentoRepository.getHistoricoCliente(clienteId, limit);
+  },
+
   async buscarPorStatus(status: OrcamentoStatus): Promise<Orcamento[]> {
     return orcamentoRepository.findByStatus(status);
   },

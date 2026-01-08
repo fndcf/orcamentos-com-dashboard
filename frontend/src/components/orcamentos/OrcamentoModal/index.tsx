@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Orcamento,
   OrcamentoItemCompleto,
@@ -8,7 +8,7 @@ import {
   DescontoAVistaDados,
 } from "../../../types";
 import { formatOrcamentoNumero } from "../../../utils/constants";
-import { useClientes } from "../../../hooks/useClientes";
+import { useClientesInfiniteScroll, useCliente } from "../../../hooks/useClientes";
 import { useServicosAtivos } from "../../../hooks/useServicos";
 import { useCategoriasItemAtivas } from "../../../hooks/useCategoriasItem";
 import { useLimitacoesAtivas } from "../../../hooks/useLimitacoes";
@@ -45,6 +45,8 @@ import {
   ClienteSearchDropdown,
   ClienteSearchOption,
   ClienteSearchEmpty,
+  ClienteSearchLoading,
+  ClienteSearchTotal,
 } from "./styles";
 
 interface OrcamentoModalProps {
@@ -78,7 +80,6 @@ export function OrcamentoModal({
   duplicarDe,
   loading,
 }: OrcamentoModalProps) {
-  const { data: clientes } = useClientes();
   const { data: servicosAtivos } = useServicosAtivos();
   const { data: categoriasAtivas } = useCategoriasItemAtivas();
   const { data: limitacoesAtivas } = useLimitacoesAtivas();
@@ -124,28 +125,58 @@ export function OrcamentoModal({
   // Estado para novo cliente inline
   const [mostrarNovoCliente, setMostrarNovoCliente] = useState(false);
 
-  // Estados para busca de cliente
+  // Estados para busca de cliente com debounce
   const [clienteSearchText, setClienteSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [clienteDropdownOpen, setClienteDropdownOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const clienteSearchRef = useRef<HTMLDivElement>(null);
   const clienteInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const formRef = useRef<HTMLFormElement>(null);
   const isInitializedRef = useRef(false);
 
-  // Filtrar clientes baseado na busca
+  // Debounce da busca
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(clienteSearchText);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [clienteSearchText]);
+
+  // Infinite scroll para clientes
+  const {
+    data: clientesData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isLoadingClientes,
+  } = useClientesInfiniteScroll(debouncedSearch || undefined, 20);
+
+  // Busca cliente específico para edição/duplicação
+  const clienteIdParaBuscar = (orcamento?.clienteId || duplicarDe?.clienteId) && !clienteSelecionado
+    ? (orcamento?.clienteId || duplicarDe?.clienteId)
+    : "";
+  const { data: clienteExistente } = useCliente(clienteIdParaBuscar || "");
+
+  // Flatten das páginas de clientes
   const clientesFiltrados = useMemo(() => {
-    if (!clientes) return [];
-    if (!clienteSearchText.trim()) return clientes;
-    const searchLower = clienteSearchText.toLowerCase();
-    return clientes.filter(
-      (c) =>
-        c.razaoSocial.toLowerCase().includes(searchLower) ||
-        c.nomeFantasia?.toLowerCase().includes(searchLower) ||
-        c.cnpj?.toLowerCase().includes(searchLower)
-    );
-  }, [clientes, clienteSearchText]);
+    if (!clientesData?.pages) return [];
+    return clientesData.pages.flatMap(page => page.items);
+  }, [clientesData]);
+
+  // Total de clientes disponíveis
+  const totalClientes = clientesData?.pages?.[0]?.total || 0;
+
+  // Handler para scroll infinito no dropdown
+  const handleDropdownScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    // Carregar mais quando estiver a 100px do final
+    if (scrollHeight - scrollTop - clientHeight < 100 && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -161,6 +192,14 @@ export function OrcamentoModal({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Quando cliente existente é carregado (para edição/duplicação)
+  useEffect(() => {
+    if (clienteExistente && !clienteSelecionado && isOpen) {
+      setClienteSelecionado(clienteExistente);
+      setClienteSearchText(clienteExistente.razaoSocial);
+    }
+  }, [clienteExistente, clienteSelecionado, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -206,10 +245,7 @@ export function OrcamentoModal({
           orcamento.mostrarValoresDetalhados !== false
         );
 
-        // Buscar cliente selecionado
-        const cliente = clientes?.find((c) => c.id === orcamento.clienteId);
-        setClienteSelecionado(cliente || null);
-        setClienteSearchText(cliente?.razaoSocial || "");
+        // Cliente será carregado pelo useCliente hook
         setMostrarNovoCliente(false);
       } else if (duplicarDe) {
         // Duplicando orçamento - pré-preenche mas permite alterar cliente
@@ -246,16 +282,14 @@ export function OrcamentoModal({
           duplicarDe.mostrarValoresDetalhados !== false
         );
 
-        // Buscar cliente selecionado
-        const cliente = clientes?.find((c) => c.id === duplicarDe.clienteId);
-        setClienteSelecionado(cliente || null);
-        setClienteSearchText(cliente?.razaoSocial || "");
+        // Cliente será carregado pelo useCliente hook
         setMostrarNovoCliente(false);
       } else {
         // Novo orçamento
         setClienteId("");
         setClienteSelecionado(null);
         setClienteSearchText("");
+        setDebouncedSearch("");
         setServicoId("");
         setItensCompleto([{ ...emptyItemCompleto }]);
         setLimitacoesSelecionadas([]);
@@ -281,7 +315,7 @@ export function OrcamentoModal({
       // Quando o modal fecha, resetar a flag para a próxima abertura
       isInitializedRef.current = false;
     }
-  }, [isOpen, orcamento, duplicarDe, clientes, limitacoesAtivas]);
+  }, [isOpen, orcamento, duplicarDe, limitacoesAtivas]);
 
   const handleClienteSelect = (cliente: Cliente) => {
     setClienteId(cliente.id!);
@@ -654,22 +688,37 @@ export function OrcamentoModal({
               </ClienteSearchDropdownButton>
 
               {clienteDropdownOpen && !mostrarNovoCliente && (
-                <ClienteSearchDropdown>
-                  {clientesFiltrados.length > 0 ? (
-                    clientesFiltrados.map((cliente, index) => (
-                      <ClienteSearchOption
-                        key={cliente.id}
-                        $highlighted={index === highlightedIndex}
-                        onClick={() => handleClienteSelect(cliente)}
-                      >
-                        <div className="nome">{cliente.razaoSocial}</div>
-                        <div className="info">
-                          {cliente.cnpj}
-                          {cliente.cidade && ` • ${cliente.cidade}`}
-                          {cliente.estado && `/${cliente.estado}`}
-                        </div>
-                      </ClienteSearchOption>
-                    ))
+                <ClienteSearchDropdown
+                  ref={dropdownRef}
+                  onScroll={handleDropdownScroll}
+                >
+                  {isLoadingClientes ? (
+                    <ClienteSearchLoading $initial>Carregando...</ClienteSearchLoading>
+                  ) : clientesFiltrados.length > 0 ? (
+                    <>
+                      {clientesFiltrados.map((cliente, index) => (
+                        <ClienteSearchOption
+                          key={cliente.id}
+                          $highlighted={index === highlightedIndex}
+                          onClick={() => handleClienteSelect(cliente)}
+                        >
+                          <div className="nome">{cliente.razaoSocial}</div>
+                          <div className="info">
+                            {cliente.cnpj}
+                            {cliente.cidade && ` • ${cliente.cidade}`}
+                            {cliente.estado && `/${cliente.estado}`}
+                          </div>
+                        </ClienteSearchOption>
+                      ))}
+                      {isFetchingNextPage && (
+                        <ClienteSearchLoading>Carregando mais...</ClienteSearchLoading>
+                      )}
+                      {totalClientes > 0 && (
+                        <ClienteSearchTotal>
+                          {clientesFiltrados.length} de {totalClientes} clientes
+                        </ClienteSearchTotal>
+                      )}
+                    </>
                   ) : (
                     <ClienteSearchEmpty>
                       Nenhum cliente encontrado
