@@ -1,12 +1,11 @@
-import { useRef, useEffect, useState, useMemo } from "react";
-import { useQueries } from "react-query";
+import { useRef, useEffect, useState, useCallback } from "react";
 import {
   OrcamentoItemCompleto,
   CategoriaItem,
   EtapaTipo,
   ItemServico,
 } from "../../../types";
-import { itemServicoService } from "../../../services/itemServicoService";
+import { useInfiniteItensServicoAtivos } from "../../../hooks/useItensServico";
 import { formatCurrency } from "../../../utils/constants";
 import { Button, Input, InputGroup, Label, Select, ErrorText } from "../../ui";
 import {
@@ -23,6 +22,9 @@ import {
   DescricaoDropdown,
   DescricaoOption,
   DescricaoEmptyMessage,
+  DescricaoSearchInput,
+  DescricaoLoadingMore,
+  DescricaoTotal,
   AddItemButtonContainer,
 } from "./styles";
 
@@ -55,39 +57,52 @@ export function ItensCompleto({
   const [descricaoDropdownOpen, setDescricaoDropdownOpen] = useState<
     number | null
   >(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownListRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Coleta todas as categorias selecionadas para pré-carregar seus itens
-  const categoriasEmUso = useMemo(() =>
-    [...new Set(itens.map(item => item.categoriaId).filter(Boolean))],
-    [itens]
-  );
+  // Categoria do item com dropdown aberto
+  const categoriaAtiva = descricaoDropdownOpen !== null
+    ? itens[descricaoDropdownOpen]?.categoriaId
+    : undefined;
 
-  // Pré-carrega itens de todas as categorias em uso usando useQueries
-  const itensQueries = useQueries(
-    categoriasEmUso.map(categoriaId => ({
-      queryKey: ['itens-servico', 'categoria', categoriaId, 'ativos'],
-      queryFn: () => itemServicoService.listarAtivosPorCategoria(categoriaId),
-      staleTime: 5 * 60 * 1000, // 5 minutos
-      enabled: !!categoriaId,
-    }))
-  );
+  // Hook de paginação infinita
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteItensServicoAtivos(categoriaAtiva, debouncedSearch, 10);
 
-  // Cria um mapa de categoria -> itens para acesso rápido
-  const itensPorCategoria = useMemo(() => {
-    const mapa: Record<string, ItemServico[]> = {};
-    categoriasEmUso.forEach((catId, index) => {
-      const query = itensQueries[index];
-      if (query.data) {
-        mapa[catId] = query.data;
-      }
-    });
-    return mapa;
-  }, [categoriasEmUso, itensQueries]);
+  // Todos os itens carregados (flatten das páginas)
+  const itensPredefinidos = data?.pages.flatMap(page => page.itens) || [];
+  const totalItens = data?.pages[0]?.total || 0;
 
-  // Itens da categoria do dropdown ativo
-  const categoriaAtiva = descricaoDropdownOpen !== null ? itens[descricaoDropdownOpen]?.categoriaId : undefined;
-  const itensPredefinidos = categoriaAtiva ? itensPorCategoria[categoriaAtiva] : undefined;
+  // Debounce da busca (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Limpa busca ao fechar dropdown
+  useEffect(() => {
+    if (descricaoDropdownOpen === null) {
+      setSearchTerm("");
+      setDebouncedSearch("");
+    }
+  }, [descricaoDropdownOpen]);
+
+  // Foca no input de busca quando abre o dropdown
+  useEffect(() => {
+    if (descricaoDropdownOpen !== null && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    }
+  }, [descricaoDropdownOpen]);
 
   // Fecha dropdown ao clicar fora
   useEffect(() => {
@@ -103,6 +118,17 @@ export function ItensCompleto({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Scroll infinito no dropdown
+  const handleScroll = useCallback(() => {
+    if (!dropdownListRef.current || !hasNextPage || isFetchingNextPage) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = dropdownListRef.current;
+    // Carrega mais quando estiver a 50px do final
+    if (scrollHeight - scrollTop - clientHeight < 50) {
+      fetchNextPage();
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const handleOpenDescricaoDropdown = (index: number, categoriaId: string) => {
     if (categoriaId) {
@@ -241,44 +267,77 @@ export function ItensCompleto({
 
                 {descricaoDropdownOpen === index && item.categoriaId && (
                   <DescricaoDropdown>
-                    {itensPredefinidos && itensPredefinidos.length > 0 ? (
-                      itensPredefinidos.map((itemPred) => (
-                        <DescricaoOption
-                          key={itemPred.id}
-                          onClick={() =>
-                            handleSelectItemPredefinido(index, itemPred)
-                          }
-                        >
-                          <div className="descricao">{itemPred.descricao}</div>
-                          <div className="unidade">
-                            Unidade: {itemPred.unidade}
-                            {(itemPred.valorUnitario ||
-                              itemPred.valorMaoDeObraUnitario) && (
-                              <span
-                                style={{
-                                  marginLeft: 8,
-                                  color: "var(--primary)",
-                                }}
-                              >
-                                | Mat:{" "}
-                                {formatCurrency(itemPred.valorUnitario || 0)} |
-                                M.O:{" "}
-                                {formatCurrency(
-                                  itemPred.valorMaoDeObraUnitario || 0
+                    <DescricaoSearchInput
+                      ref={searchInputRef}
+                      type="text"
+                      placeholder="Buscar item..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <div
+                      ref={dropdownListRef}
+                      onScroll={handleScroll}
+                      style={{ maxHeight: '250px', overflowY: 'auto' }}
+                    >
+                      {isLoading ? (
+                        <DescricaoLoadingMore>Carregando...</DescricaoLoadingMore>
+                      ) : itensPredefinidos.length > 0 ? (
+                        <>
+                          {itensPredefinidos.map((itemPred) => (
+                            <DescricaoOption
+                              key={itemPred.id}
+                              onClick={() =>
+                                handleSelectItemPredefinido(index, itemPred)
+                              }
+                            >
+                              <div className="descricao">{itemPred.descricao}</div>
+                              <div className="unidade">
+                                Unidade: {itemPred.unidade}
+                                {(itemPred.valorUnitario ||
+                                  itemPred.valorMaoDeObraUnitario) && (
+                                  <span
+                                    style={{
+                                      marginLeft: 8,
+                                      color: "var(--primary)",
+                                    }}
+                                  >
+                                    | Mat:{" "}
+                                    {formatCurrency(itemPred.valorUnitario || 0)} |
+                                    M.O:{" "}
+                                    {formatCurrency(
+                                      itemPred.valorMaoDeObraUnitario || 0
+                                    )}
+                                  </span>
                                 )}
-                              </span>
-                            )}
-                          </div>
-                        </DescricaoOption>
-                      ))
-                    ) : (
-                      <DescricaoEmptyMessage>
-                        Nenhum item pré-definido nesta categoria.
-                        <br />
-                        <small>
-                          Configure em Configurações &gt; Categorias
-                        </small>
-                      </DescricaoEmptyMessage>
+                              </div>
+                            </DescricaoOption>
+                          ))}
+                          {isFetchingNextPage && (
+                            <DescricaoLoadingMore>Carregando mais...</DescricaoLoadingMore>
+                          )}
+                        </>
+                      ) : (
+                        <DescricaoEmptyMessage>
+                          {searchTerm ? (
+                            <>Nenhum item encontrado para "{searchTerm}"</>
+                          ) : (
+                            <>
+                              Nenhum item pré-definido nesta categoria.
+                              <br />
+                              <small>
+                                Configure em Configurações &gt; Categorias
+                              </small>
+                            </>
+                          )}
+                        </DescricaoEmptyMessage>
+                      )}
+                    </div>
+                    {totalItens > 0 && (
+                      <DescricaoTotal>
+                        {itensPredefinidos.length} de {totalItens} itens
+                        {hasNextPage && " (role para ver mais)"}
+                      </DescricaoTotal>
                     )}
                   </DescricaoDropdown>
                 )}

@@ -453,3 +453,59 @@ export const ExpandButton = styled.button`
     background: rgba(204, 0, 0, 0.05);
   }
 `;
+
+export const ItensSearchInput = styled.input`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: var(--surface);
+  color: var(--text-primary);
+  margin-bottom: 12px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+
+  &::placeholder {
+    color: var(--text-secondary);
+  }
+`;
+
+export const ItensListContainer = styled.div`
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--background);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+`;
+
+export const ItensLoadingMore = styled.div`
+  text-align: center;
+  padding: 12px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+`;
+
+export const ItensTotalCount = styled.div`
+  text-align: center;
+  padding: 8px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+`;

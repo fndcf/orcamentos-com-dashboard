@@ -31,6 +31,38 @@ export const itemServicoController = {
     }
   },
 
+  async listarAtivosPorCategoriaPaginado(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { categoriaId } = req.params;
+      const { limit = '10', cursor, search } = req.query;
+      const result = await itemServicoService.listarAtivosPorCategoriaPaginado(
+        categoriaId,
+        parseInt(limit as string, 10),
+        cursor as string | undefined,
+        search as string | undefined
+      );
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async listarPorCategoriaPaginado(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { categoriaId } = req.params;
+      const { limit = '10', cursor, search } = req.query;
+      const result = await itemServicoService.listarPorCategoriaPaginado(
+        categoriaId,
+        parseInt(limit as string, 10),
+        cursor as string | undefined,
+        search as string | undefined
+      );
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async buscarPorId(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;

@@ -548,6 +548,42 @@ export const DescricaoEmptyMessage = styled.div`
   font-size: 0.85rem;
 `;
 
+export const DescricaoSearchInput = styled.input`
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+  background: var(--background);
+  color: var(--text-primary);
+
+  &:focus {
+    outline: none;
+    background: var(--surface);
+  }
+
+  &::placeholder {
+    color: var(--text-secondary);
+  }
+`;
+
+export const DescricaoLoadingMore = styled.div`
+  padding: 10px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+`;
+
+export const DescricaoTotal = styled.div`
+  padding: 8px 12px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  background: var(--background);
+  border-top: 1px solid var(--border);
+`;
+
 export const ItemCompletoRow2 = styled.div`
   display: grid;
   grid-template-columns: 70px 80px 1fr 1fr 1fr 1fr;

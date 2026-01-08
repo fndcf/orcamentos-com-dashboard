@@ -1,6 +1,13 @@
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from 'react-query';
 import { itemServicoService } from '../services/itemServicoService';
 import { ItemServico } from '../types';
+
+interface ItensServicoPaginadoResponse {
+  itens: ItemServico[];
+  nextCursor?: string;
+  hasMore: boolean;
+  total: number;
+}
 
 export function useItensServico() {
   return useQuery<ItemServico[]>('itens-servico', itemServicoService.listar);
@@ -23,6 +30,40 @@ export function useItensServicoAtivosPorCategoria(categoriaId: string | undefine
     {
       enabled: !!categoriaId,
       staleTime: 5 * 60 * 1000, // 5 minutos - itens de serviço não mudam frequentemente
+    }
+  );
+}
+
+export function useInfiniteItensServicoAtivos(
+  categoriaId: string | undefined,
+  search?: string,
+  limit: number = 10
+) {
+  return useInfiniteQuery<ItensServicoPaginadoResponse>(
+    ['itens-servico', 'categoria', categoriaId, 'ativos', 'paginado', search],
+    ({ pageParam }) =>
+      itemServicoService.listarAtivosPorCategoriaPaginado(categoriaId!, limit, pageParam, search),
+    {
+      enabled: !!categoriaId,
+      staleTime: 5 * 60 * 1000,
+      getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.nextCursor : undefined,
+    }
+  );
+}
+
+export function useInfiniteItensServicoPorCategoria(
+  categoriaId: string | undefined,
+  search?: string,
+  limit: number = 10
+) {
+  return useInfiniteQuery<ItensServicoPaginadoResponse>(
+    ['itens-servico', 'categoria', categoriaId, 'paginado', search],
+    ({ pageParam }) =>
+      itemServicoService.listarPorCategoriaPaginado(categoriaId!, limit, pageParam, search),
+    {
+      enabled: !!categoriaId,
+      staleTime: 5 * 60 * 1000,
+      getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.nextCursor : undefined,
     }
   );
 }

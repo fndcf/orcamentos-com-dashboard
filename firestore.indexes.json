@@ -1,6 +1,64 @@
 {
   "indexes": [
     {
+      "collectionGroup": "categoriasItem",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ativo", "order": "ASCENDING" },
+        { "fieldPath": "ordem", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "itensServico",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ativo", "order": "ASCENDING" },
+        { "fieldPath": "categoriaId", "order": "ASCENDING" },
+        { "fieldPath": "ordem", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "itensServico",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "categoriaId", "order": "ASCENDING" },
+        { "fieldPath": "ordem", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "itensServico",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "categoriaId", "order": "ASCENDING" },
+        { "fieldPath": "ordem", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "itensServico",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "categoriaId", "order": "ASCENDING" },
+        { "fieldPath": "ativo", "order": "ASCENDING" },
+        { "fieldPath": "descricao", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "itensServico",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "categoriaId", "order": "ASCENDING" },
+        { "fieldPath": "descricao", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "limitacoes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ativo", "order": "ASCENDING" },
+        { "fieldPath": "ordem", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "notificacoes",
       "queryScope": "COLLECTION",
       "fields": [
@@ -9,19 +67,19 @@
       ]
     },
     {
-      "collectionGroup": "notificacoes",
+      "collectionGroup": "palavrasChave",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "dataVencimento", "order": "ASCENDING" },
-        { "fieldPath": "lida", "order": "ASCENDING" }
+        { "fieldPath": "ativo", "order": "ASCENDING" },
+        { "fieldPath": "palavra", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "notificacoes",
+      "collectionGroup": "servicos",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "orcamentoId", "order": "ASCENDING" },
-        { "fieldPath": "dataVencimento", "order": "ASCENDING" }
+        { "fieldPath": "ativo", "order": "ASCENDING" },
+        { "fieldPath": "ordem", "order": "ASCENDING" }
       ]
     }
   ],

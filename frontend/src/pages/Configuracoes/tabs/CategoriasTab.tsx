@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   useCategoriasItem,
   useCriarCategoriaItem,
@@ -7,7 +7,7 @@ import {
   useExcluirCategoriaItem,
 } from '../../../hooks/useCategoriasItem';
 import {
-  useItensServicoPorCategoria,
+  useInfiniteItensServicoPorCategoria,
   useCriarItemServico,
   useAtualizarItemServico,
   useToggleItemServico,
@@ -39,6 +39,10 @@ import {
   ItemServicoActions,
   SmallButton,
   ExpandButton,
+  ItensSearchInput,
+  ItensListContainer,
+  ItensLoadingMore,
+  ItensTotalCount,
 } from '../styles';
 
 export function CategoriasTab() {
@@ -67,13 +71,52 @@ export function CategoriasTab() {
   const [itemServicoValorMaoDeObraCusto, setItemServicoValorMaoDeObraCusto] = useState<string>('');
   const [confirmDeleteItemServico, setConfirmDeleteItemServico] = useState<ItemServico | null>(null);
   const [itemServicoError, setItemServicoError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const listContainerRef = useRef<HTMLDivElement>(null);
 
-  // Hooks de itens de serviço
-  const { data: itensServico, isLoading: loadingItensServico } = useItensServicoPorCategoria(categoriaExpandida || undefined);
+  // Hooks de itens de serviço com paginação infinita
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: loadingItensServico,
+  } = useInfiniteItensServicoPorCategoria(categoriaExpandida || undefined, debouncedSearch, 10);
+
+  // Flatten das páginas para lista de itens
+  const itensServico = data?.pages.flatMap(page => page.itens) || [];
+  const totalItens = data?.pages[0]?.total || 0;
+
   const criarItemServico = useCriarItemServico();
   const atualizarItemServico = useAtualizarItemServico();
   const toggleItemServico = useToggleItemServico();
   const excluirItemServico = useExcluirItemServico();
+
+  // Debounce da busca (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Limpa busca ao mudar de categoria
+  useEffect(() => {
+    setSearchTerm('');
+    setDebouncedSearch('');
+  }, [categoriaExpandida]);
+
+  // Scroll infinito no container de itens
+  const handleScroll = useCallback(() => {
+    if (!listContainerRef.current || !hasNextPage || isFetchingNextPage) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = listContainerRef.current;
+    // Carrega mais quando estiver a 50px do final
+    if (scrollHeight - scrollTop - clientHeight < 50) {
+      fetchNextPage();
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   // Funções para Categorias
   const resetForm = () => {
@@ -287,43 +330,72 @@ export function CategoriasTab() {
                       </Button>
                     </ItensServicoHeader>
 
+                    <ItensSearchInput
+                      type="text"
+                      placeholder="Buscar item..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+
                     {loadingItensServico ? (
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Carregando...</p>
+                      <ItensLoadingMore>Carregando...</ItensLoadingMore>
                     ) : itensServico && itensServico.length > 0 ? (
-                      itensServico.map((item) => (
-                        <ItemServicoRow key={item.id} $ativo={item.ativo}>
-                          <ItemServicoInfo>
-                            <div className="descricao">{item.descricao}</div>
-                            <div className="unidade">Unidade: {item.unidade}</div>
-                            {(item.valorUnitario !== undefined || item.valorMaoDeObraUnitario !== undefined) && (
-                              <div className="unidade">
-                                Venda: Mat. R$ {(item.valorUnitario || 0).toFixed(2)} | M.O. R$ {(item.valorMaoDeObraUnitario || 0).toFixed(2)}
-                              </div>
-                            )}
-                            {(item.valorCusto !== undefined || item.valorMaoDeObraCusto !== undefined) && (
-                              <div className="unidade" style={{ color: 'var(--text-tertiary)' }}>
-                                Custo: Mat. R$ {(item.valorCusto || 0).toFixed(2)} | M.O. R$ {(item.valorMaoDeObraCusto || 0).toFixed(2)}
-                              </div>
-                            )}
-                          </ItemServicoInfo>
-                          <ItemServicoActions>
-                            <SmallButton $variant="edit" onClick={() => handleEditarItemServico(item)}>
-                              Editar
-                            </SmallButton>
-                            <SmallButton $variant="toggle" onClick={() => handleToggleItemServico(item.id!)}>
-                              {item.ativo ? 'Desativar' : 'Ativar'}
-                            </SmallButton>
-                            <SmallButton $variant="delete" onClick={() => setConfirmDeleteItemServico(item)}>
-                              Excluir
-                            </SmallButton>
-                          </ItemServicoActions>
-                        </ItemServicoRow>
-                      ))
+                      <>
+                        <ItensListContainer
+                          ref={listContainerRef}
+                          onScroll={handleScroll}
+                        >
+                          {itensServico.map((item) => (
+                            <ItemServicoRow key={item.id} $ativo={item.ativo}>
+                              <ItemServicoInfo>
+                                <div className="descricao">{item.descricao}</div>
+                                <div className="unidade">Unidade: {item.unidade}</div>
+                                {(item.valorUnitario !== undefined || item.valorMaoDeObraUnitario !== undefined) && (
+                                  <div className="unidade">
+                                    Venda: Mat. R$ {(item.valorUnitario || 0).toFixed(2)} | M.O. R$ {(item.valorMaoDeObraUnitario || 0).toFixed(2)}
+                                  </div>
+                                )}
+                                {(item.valorCusto !== undefined || item.valorMaoDeObraCusto !== undefined) && (
+                                  <div className="unidade" style={{ color: 'var(--text-tertiary)' }}>
+                                    Custo: Mat. R$ {(item.valorCusto || 0).toFixed(2)} | M.O. R$ {(item.valorMaoDeObraCusto || 0).toFixed(2)}
+                                  </div>
+                                )}
+                              </ItemServicoInfo>
+                              <ItemServicoActions>
+                                <SmallButton $variant="edit" onClick={() => handleEditarItemServico(item)}>
+                                  Editar
+                                </SmallButton>
+                                <SmallButton $variant="toggle" onClick={() => handleToggleItemServico(item.id!)}>
+                                  {item.ativo ? 'Desativar' : 'Ativar'}
+                                </SmallButton>
+                                <SmallButton $variant="delete" onClick={() => setConfirmDeleteItemServico(item)}>
+                                  Excluir
+                                </SmallButton>
+                              </ItemServicoActions>
+                            </ItemServicoRow>
+                          ))}
+                          {isFetchingNextPage && (
+                            <ItensLoadingMore>Carregando mais...</ItensLoadingMore>
+                          )}
+                        </ItensListContainer>
+                        {totalItens > 0 && (
+                          <ItensTotalCount>
+                            {itensServico.length} de {totalItens} itens
+                            {hasNextPage && ' (role para ver mais)'}
+                          </ItensTotalCount>
+                        )}
+                      </>
                     ) : (
                       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '20px 0' }}>
-                        Nenhum item cadastrado nesta categoria.
-                        <br />
-                        <span style={{ fontSize: '0.8rem' }}>Clique em "+ Novo Item" para adicionar.</span>
+                        {searchTerm ? (
+                          <>Nenhum item encontrado para "{searchTerm}"</>
+                        ) : (
+                          <>
+                            Nenhum item cadastrado nesta categoria.
+                            <br />
+                            <span style={{ fontSize: '0.8rem' }}>Clique em "+ Novo Item" para adicionar.</span>
+                          </>
+                        )}
                       </p>
                     )}
                   </ItensServicoContainer>

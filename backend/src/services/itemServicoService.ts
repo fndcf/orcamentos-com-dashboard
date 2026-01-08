@@ -55,6 +55,37 @@ export const itemServicoService = {
     return itemServicoRepository.findAtivosByCategoria(categoriaId);
   },
 
+  async listarAtivosPorCategoriaPaginado(
+    categoriaId: string,
+    limit: number = 10,
+    cursor?: string,
+    search?: string
+  ): Promise<{ itens: ItemServico[]; nextCursor?: string; hasMore: boolean; total: number }> {
+    if (!categoriaId) {
+      throw new ValidationError('ID da categoria é obrigatório');
+    }
+
+    return itemServicoRepository.findAtivosByCategoriaPaginado(categoriaId, limit, cursor, search);
+  },
+
+  async listarPorCategoriaPaginado(
+    categoriaId: string,
+    limit: number = 10,
+    cursor?: string,
+    search?: string
+  ): Promise<{ itens: ItemServico[]; nextCursor?: string; hasMore: boolean; total: number }> {
+    if (!categoriaId) {
+      throw new ValidationError('ID da categoria é obrigatório');
+    }
+
+    const categoria = await categoriaItemRepository.findById(categoriaId);
+    if (!categoria) {
+      throw new NotFoundError('Categoria não encontrada');
+    }
+
+    return itemServicoRepository.findByCategoriaPaginado(categoriaId, limit, cursor, search);
+  },
+
   async buscarPorId(id: string): Promise<ItemServico> {
     if (!id) {
       throw new ValidationError('ID é obrigatório');

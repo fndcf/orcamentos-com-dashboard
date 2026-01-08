@@ -17,6 +17,34 @@ export const itemServicoService = {
     return response.data;
   },
 
+  async listarAtivosPorCategoriaPaginado(
+    categoriaId: string,
+    limit: number = 10,
+    cursor?: string,
+    search?: string
+  ): Promise<{ itens: ItemServico[]; nextCursor?: string; hasMore: boolean; total: number }> {
+    const params: Record<string, string> = { limit: limit.toString() };
+    if (cursor) params.cursor = cursor;
+    if (search) params.search = search;
+
+    const response = await api.get(`/itens-servico/categoria/${categoriaId}/ativos/paginado`, { params });
+    return response.data;
+  },
+
+  async listarPorCategoriaPaginado(
+    categoriaId: string,
+    limit: number = 10,
+    cursor?: string,
+    search?: string
+  ): Promise<{ itens: ItemServico[]; nextCursor?: string; hasMore: boolean; total: number }> {
+    const params: Record<string, string> = { limit: limit.toString() };
+    if (cursor) params.cursor = cursor;
+    if (search) params.search = search;
+
+    const response = await api.get(`/itens-servico/categoria/${categoriaId}/paginado`, { params });
+    return response.data;
+  },
+
   async buscarPorId(id: string): Promise<ItemServico> {
     const response = await api.get(`/itens-servico/${id}`);
     return response.data;
