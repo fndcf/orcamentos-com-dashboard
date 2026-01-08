@@ -84,6 +84,50 @@ export const orcamentoRepository = {
     }
   },
 
+  async findByPeriodo(dataInicio: Date, dataFim: Date): Promise<Orcamento[]> {
+    try {
+      // Buscar orçamentos com dataEmissao >= dataInicio E dataEmissao <= dataFim
+      const snapshot = await collection
+        .where('dataEmissao', '>=', dataInicio)
+        .where('dataEmissao', '<=', dataFim)
+        .orderBy('dataEmissao', 'desc')
+        .get();
+
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        dataEmissao: doc.data().dataEmissao?.toDate(),
+        dataValidade: doc.data().dataValidade?.toDate(),
+        dataAceite: doc.data().dataAceite?.toDate(),
+        createdAt: doc.data().createdAt?.toDate(),
+        updatedAt: doc.data().updatedAt?.toDate(),
+      })) as Orcamento[];
+    } catch {
+      // Fallback: buscar todos e filtrar manualmente
+      const snapshot = await collection.get();
+      const orcamentos = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        dataEmissao: doc.data().dataEmissao?.toDate(),
+        dataValidade: doc.data().dataValidade?.toDate(),
+        dataAceite: doc.data().dataAceite?.toDate(),
+        createdAt: doc.data().createdAt?.toDate(),
+        updatedAt: doc.data().updatedAt?.toDate(),
+      })) as Orcamento[];
+
+      return orcamentos
+        .filter(orc => {
+          const emissao = orc.dataEmissao instanceof Date ? orc.dataEmissao : new Date(orc.dataEmissao as string);
+          return emissao >= dataInicio && emissao <= dataFim;
+        })
+        .sort((a, b) => {
+          const dateA = a.dataEmissao instanceof Date ? a.dataEmissao : new Date(a.dataEmissao as string);
+          const dateB = b.dataEmissao instanceof Date ? b.dataEmissao : new Date(b.dataEmissao as string);
+          return dateB.getTime() - dateA.getTime();
+        });
+    }
+  },
+
   async findByStatus(status: OrcamentoStatus): Promise<Orcamento[]> {
     try {
       const snapshot = await collection

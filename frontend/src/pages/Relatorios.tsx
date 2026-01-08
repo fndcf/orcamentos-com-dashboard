@@ -16,7 +16,7 @@ import {
   Line,
   Legend,
 } from "recharts";
-import { useOrcamentos } from "../hooks/useOrcamentos";
+import { useOrcamentosPorPeriodo } from "../hooks/useOrcamentos";
 import { useItensServico } from "../hooks/useItensServico";
 import { useConfiguracoesGerais } from "../hooks/useConfiguracoesGerais";
 import {
@@ -587,6 +587,61 @@ const ClickableMobileCard = styled(MobileCard)`
   }
 `;
 
+// Styled components para paginação
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+const PaginationInfo = styled.span`
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+
+  @media (max-width: 480px) {
+    text-align: center;
+  }
+`;
+
+const PaginationButtons = styled.div`
+  display: flex;
+  gap: 8px;
+
+  @media (max-width: 480px) {
+    justify-content: center;
+  }
+`;
+
+const PaginationButton = styled.button<{ $disabled?: boolean }>`
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: ${(props) => (props.$disabled ? "var(--bg-secondary)" : "var(--bg-primary)")};
+  color: ${(props) => (props.$disabled ? "var(--text-disabled)" : "var(--text-primary)")};
+  cursor: ${(props) => (props.$disabled ? "not-allowed" : "pointer")};
+  font-size: 0.875rem;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: ${(props) => (props.$disabled ? "var(--bg-secondary)" : "var(--bg-hover)")};
+    border-color: var(--primary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+`;
+
 // Styled components para o modal de análise individual
 const ModalContent = styled.div`
   padding: 8px 0;
@@ -701,6 +756,8 @@ interface OrcamentoAnalise {
   vendaMaoDeObra: number;
   custoMaterial: number;
   custoMaoDeObra: number;
+  impostoMaterial: number;
+  impostoMaoDeObra: number;
   lucroMaterial: number;
   lucroMaoDeObra: number;
   lucroTotal: number;
@@ -716,13 +773,27 @@ function obterValoresVigentes(
 ): { valorCusto: number; valorMaoDeObraCusto: number } {
   const key = descricao.toLowerCase().trim();
 
-  // Filtrar históricos do item pela descrição
+  // Filtrar históricos do item pela descrição e ordenar por dataVigencia (mais recente primeiro)
   const historicosItem = historicoItens
     .filter((h) => h.descricao.toLowerCase().trim() === key)
     .sort(
       (a, b) =>
         new Date(b.dataVigencia).getTime() - new Date(a.dataVigencia).getTime()
     );
+
+  if (historicosItem.length === 0) {
+    // Sem histórico: usar valores atuais do item
+    const itemAtual = itensServicoAtuais.find(
+      (i) => i.descricao.toLowerCase().trim() === key
+    );
+    if (itemAtual) {
+      return {
+        valorCusto: itemAtual.valorCusto || 0,
+        valorMaoDeObraCusto: itemAtual.valorMaoDeObraCusto || 0,
+      };
+    }
+    return { valorCusto: 0, valorMaoDeObraCusto: 0 };
+  }
 
   // Encontrar o registro vigente na data de emissão
   // (maior dataVigencia que seja <= dataEmissao)
@@ -737,18 +808,14 @@ function obterValoresVigentes(
     };
   }
 
-  // Fallback: usar valores atuais do item (para orçamentos antigos sem histórico)
-  const itemAtual = itensServicoAtuais.find(
-    (i) => i.descricao.toLowerCase().trim() === key
-  );
-  if (itemAtual) {
-    return {
-      valorCusto: itemAtual.valorCusto || 0,
-      valorMaoDeObraCusto: itemAtual.valorMaoDeObraCusto || 0,
-    };
-  }
-
-  return { valorCusto: 0, valorMaoDeObraCusto: 0 };
+  // Se não encontrou registro vigente, significa que a data de emissão é anterior
+  // a todos os registros de histórico. Neste caso, usar o registro mais ANTIGO,
+  // pois representa os valores que existiam antes de qualquer alteração registrada.
+  const maisAntigo = historicosItem[historicosItem.length - 1];
+  return {
+    valorCusto: maisAntigo.valorCusto,
+    valorMaoDeObraCusto: maisAntigo.valorMaoDeObraCusto,
+  };
 }
 
 // Função auxiliar para obter configurações vigentes na data de emissão do orçamento
@@ -767,11 +834,20 @@ function obterConfiguracoesVigentes(
   impostoMaterial: number;
   impostoServico: number;
 } {
-  // Ordenar por dataVigencia decrescente
+  // Ordenar por dataVigencia decrescente (mais recente primeiro)
   const historicosOrdenados = [...historicoConfiguracoes].sort(
     (a, b) =>
       new Date(b.dataVigencia).getTime() - new Date(a.dataVigencia).getTime()
   );
+
+  if (historicosOrdenados.length === 0) {
+    // Sem histórico: usar valores atuais das configurações
+    return {
+      custoFixoMensal: configuracoesAtuais?.custoFixoMensal || 0,
+      impostoMaterial: configuracoesAtuais?.impostoMaterial || 0,
+      impostoServico: configuracoesAtuais?.impostoServico || 0,
+    };
+  }
 
   // Encontrar o registro vigente na data de emissão
   const vigente = historicosOrdenados.find(
@@ -786,16 +862,30 @@ function obterConfiguracoesVigentes(
     };
   }
 
-  // Fallback: usar valores atuais das configurações
+  // Se não encontrou registro vigente, significa que a data de emissão é anterior
+  // a todos os registros de histórico. Neste caso, usar o registro mais ANTIGO,
+  // pois representa os valores que existiam antes de qualquer alteração registrada.
+  const maisAntigo = historicosOrdenados[historicosOrdenados.length - 1];
   return {
-    custoFixoMensal: configuracoesAtuais?.custoFixoMensal || 0,
-    impostoMaterial: configuracoesAtuais?.impostoMaterial || 0,
-    impostoServico: configuracoesAtuais?.impostoServico || 0,
+    custoFixoMensal: maisAntigo.custoFixoMensal,
+    impostoMaterial: maisAntigo.impostoMaterial,
+    impostoServico: maisAntigo.impostoServico,
   };
 }
 
 export function Relatorios() {
-  const { data: orcamentos, isLoading: loadingOrcamentos } = useOrcamentos();
+  // Filtros de data - padrão: mês vigente (dia 1 até hoje)
+  // Definidos primeiro para que possam ser usados nos hooks
+  const hoje = new Date();
+  const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+
+  const [dataInicio, setDataInicio] = useState(
+    primeiroDiaMes.toISOString().split("T")[0]
+  );
+  const [dataFim, setDataFim] = useState(hoje.toISOString().split("T")[0]);
+
+  // Buscar orçamentos filtrados por período diretamente do backend (otimizado)
+  const { data: orcamentosFiltrados = [], isLoading: loadingOrcamentos } = useOrcamentosPorPeriodo(dataInicio, dataFim);
   const { data: itensServico } = useItensServico();
   const { data: configuracoesGerais } = useConfiguracoesGerais();
 
@@ -816,15 +906,9 @@ export function Relatorios() {
     setOrcamentoSelecionado(null);
   }, []);
 
-  // Filtros de data - padrão: último 1 mês
-  const hoje = new Date();
-  const umMesAtras = new Date(hoje);
-  umMesAtras.setMonth(umMesAtras.getMonth() - 1);
-
-  const [dataInicio, setDataInicio] = useState(
-    umMesAtras.toISOString().split("T")[0]
-  );
-  const [dataFim, setDataFim] = useState(hoje.toISOString().split("T")[0]);
+  // Estado para paginação do detalhamento de orçamentos
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const itensPorPagina = 10;
 
   // Buscar históricos de valores para o período selecionado
   const { data: historicoItens } = useHistoricoItens(dataInicio, dataFim);
@@ -832,25 +916,6 @@ export function Relatorios() {
     dataInicio,
     dataFim
   );
-
-  // Filtrar orçamentos por período
-  const orcamentosFiltrados = useMemo(() => {
-    if (!orcamentos) return [];
-
-    // Usar UTC para evitar problemas de timezone
-    const [anoInicio, mesInicio, diaInicio] = dataInicio.split("-").map(Number);
-    const [anoFim, mesFim, diaFim] = dataFim.split("-").map(Number);
-
-    const inicio = new Date(
-      Date.UTC(anoInicio, mesInicio - 1, diaInicio, 0, 0, 0, 0)
-    );
-    const fim = new Date(Date.UTC(anoFim, mesFim - 1, diaFim, 23, 59, 59, 999));
-
-    return orcamentos.filter((orc) => {
-      const dataEmissao = new Date(orc.dataEmissao);
-      return dataEmissao >= inicio && dataEmissao <= fim;
-    });
-  }, [orcamentos, dataInicio, dataFim]);
 
   // KPIs
   const kpis = useMemo(() => {
@@ -1173,6 +1238,8 @@ export function Relatorios() {
           vendaMaoDeObra,
           custoMaterial,
           custoMaoDeObra,
+          impostoMaterial,
+          impostoMaoDeObra: impostoServico,
           lucroMaterial,
           lucroMaoDeObra,
           lucroTotal,
@@ -1223,8 +1290,8 @@ export function Relatorios() {
     const margemLucro =
       valorTotalVenda > 0 ? (lucroTotal / valorTotalVenda) * 100 : 0;
 
-    // Ordenar por lucro total (maior primeiro)
-    orcamentosComCustoCompleto.sort((a, b) => b.lucroTotal - a.lucroTotal);
+    // Ordenar por número do orçamento (decrescente - mais recente primeiro)
+    orcamentosComCustoCompleto.sort((a, b) => b.numero - a.numero);
 
     return {
       totalVendaMaterial,
@@ -1252,30 +1319,151 @@ export function Relatorios() {
     historicoConfiguracoes,
   ]);
 
-  // Cálculo do Lucro Líquido (considerando custo fixo proporcional ao período e impostos)
+  // Cálculo do Lucro Líquido (considerando custo fixo mensal e impostos)
   const lucroLiquido = useMemo(() => {
-    const custoFixoMensal = configuracoesGerais?.custoFixoMensal || 0;
-    const impostoMaterialPercent = configuracoesGerais?.impostoMaterial || 0;
-    const impostoServicoPercent = configuracoesGerais?.impostoServico || 0;
+    // Função auxiliar para obter configuração vigente em um mês específico
+    // Usa a alteração mais recente DENTRO do mês, ou a configuração vigente no final do mês
+    const obterConfigMes = (
+      inicioMes: Date,
+      fimMes: Date,
+      historicosOrdenados: HistoricoConfiguracao[]
+    ) => {
+      // Procurar alteração dentro do mês (a mais recente)
+      const alteracaoNoMes = historicosOrdenados.find(
+        (h) =>
+          new Date(h.dataVigencia) >= inicioMes &&
+          new Date(h.dataVigencia) <= fimMes
+      );
+
+      if (alteracaoNoMes) {
+        return {
+          custoFixoMensal: alteracaoNoMes.custoFixoMensal,
+          impostoMaterial: alteracaoNoMes.impostoMaterial,
+          impostoServico: alteracaoNoMes.impostoServico,
+        };
+      }
+
+      // Não houve alteração no mês, usar a configuração vigente no final do mês
+      const vigente = historicosOrdenados.find(
+        (h) => new Date(h.dataVigencia) <= fimMes
+      );
+
+      if (vigente) {
+        return {
+          custoFixoMensal: vigente.custoFixoMensal,
+          impostoMaterial: vigente.impostoMaterial,
+          impostoServico: vigente.impostoServico,
+        };
+      }
+
+      // Se não encontrou, usar o mais antigo
+      if (historicosOrdenados.length > 0) {
+        const maisAntigo = historicosOrdenados[historicosOrdenados.length - 1];
+        return {
+          custoFixoMensal: maisAntigo.custoFixoMensal,
+          impostoMaterial: maisAntigo.impostoMaterial,
+          impostoServico: maisAntigo.impostoServico,
+        };
+      }
+
+      return null;
+    };
+
+    // Parsear datas evitando problemas de timezone
+    // dataInicio e dataFim estão no formato "YYYY-MM-DD"
+    const [anoInicio, mesInicio, diaInicio] = dataInicio.split("-").map(Number);
+    const [anoFim, mesFim, diaFim] = dataFim.split("-").map(Number);
+
+    const fim = new Date(anoFim, mesFim - 1, diaFim, 23, 59, 59, 999);
+
+    // Ordenar por dataVigencia decrescente
+    const historicosOrdenados = [...(historicoConfiguracoes || [])].sort(
+      (a, b) =>
+        new Date(b.dataVigencia).getTime() - new Date(a.dataVigencia).getTime()
+    );
+
+    // Gerar lista de meses no período (cada mês conta como 1 unidade, não importa quantos dias)
+    const meses: { inicio: Date; fim: Date }[] = [];
+    const dataAtual = new Date(anoInicio, mesInicio - 1, diaInicio);
+
+    while (dataAtual <= fim) {
+      const inicioMes = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), 1);
+      const fimMes = new Date(dataAtual.getFullYear(), dataAtual.getMonth() + 1, 0);
+      fimMes.setHours(23, 59, 59, 999);
+
+      meses.push({
+        inicio: inicioMes,
+        fim: fimMes,
+      });
+
+      // Avançar para o próximo mês
+      dataAtual.setMonth(dataAtual.getMonth() + 1);
+      dataAtual.setDate(1);
+    }
+
+    // Calcular custo fixo total (1 custo fixo por mês, não proporcional aos dias)
+    let custoFixoTotal = 0;
+    let custoFixoMensalMedio = 0;
+    const detalheMeses: { mes: string; custoFixo: number }[] = [];
+
+    for (const mes of meses) {
+      let configMes;
+
+      if (historicosOrdenados.length === 0) {
+        // Sem histórico: usar valores atuais
+        configMes = {
+          custoFixoMensal: configuracoesGerais?.custoFixoMensal || 0,
+          impostoMaterial: configuracoesGerais?.impostoMaterial || 0,
+          impostoServico: configuracoesGerais?.impostoServico || 0,
+        };
+      } else {
+        configMes = obterConfigMes(mes.inicio, mes.fim, historicosOrdenados);
+      }
+
+      if (configMes) {
+        // Cada mês conta como 1 custo fixo inteiro
+        custoFixoTotal += configMes.custoFixoMensal;
+        custoFixoMensalMedio += configMes.custoFixoMensal;
+
+        detalheMeses.push({
+          mes: mes.inicio.toLocaleDateString("pt-BR", { month: "short", year: "numeric" }),
+          custoFixo: configMes.custoFixoMensal,
+        });
+      }
+    }
+
+    // Calcular média do custo fixo mensal para exibição
+    custoFixoMensalMedio = meses.length > 0 ? custoFixoMensalMedio / meses.length : 0;
+
+    // Número de meses no período (inteiros)
+    const mesesPeriodo = meses.length;
+
+    // Para impostos, usar a configuração mais recente do período (último mês)
+    let impostoMaterialPercent = 0;
+    let impostoServicoPercent = 0;
+
+    if (historicosOrdenados.length === 0) {
+      impostoMaterialPercent = configuracoesGerais?.impostoMaterial || 0;
+      impostoServicoPercent = configuracoesGerais?.impostoServico || 0;
+    } else {
+      const configUltimoMes = meses.length > 0
+        ? obterConfigMes(meses[meses.length - 1].inicio, meses[meses.length - 1].fim, historicosOrdenados)
+        : null;
+
+      if (configUltimoMes) {
+        impostoMaterialPercent = configUltimoMes.impostoMaterial;
+        impostoServicoPercent = configUltimoMes.impostoServico;
+      }
+    }
 
     // Exibe se houver custo fixo OU impostos configurados
     if (
-      custoFixoMensal === 0 &&
+      custoFixoMensalMedio === 0 &&
       impostoMaterialPercent === 0 &&
       impostoServicoPercent === 0
     ) {
       return null;
     }
-
-    // Calcular número de meses no período selecionado
-    const inicio = new Date(dataInicio);
-    const fim = new Date(dataFim);
-    const diffTime = Math.abs(fim.getTime() - inicio.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir o dia final
-    const mesesPeriodo = diffDays / 30; // Aproximação de meses
-
-    // Custo fixo proporcional ao período
-    const custoFixoProporcional = custoFixoMensal * mesesPeriodo;
 
     // Valor total de orçamentos aceitos no período
     const valorTotalAceitos = orcamentosFiltrados
@@ -1289,14 +1477,14 @@ export function Relatorios() {
     // Impostos totais da análise de lucro (se disponível)
     const totalImpostos = analiseLucro?.totalImpostos || 0;
 
-    // Lucro líquido = Lucro bruto (já com impostos descontados) - Custo fixo proporcional
+    // Lucro líquido = Lucro bruto (já com impostos descontados) - Custo fixo total
     // Se não tiver análise de lucro, calcula impostos sobre o total de vendas
     let lucroLiquidoValor: number;
     let impostosCalculados = 0;
 
     if (temAnaliseLucro) {
       // Análise de lucro já tem os impostos descontados no lucroTotal
-      lucroLiquidoValor = lucroBruto - custoFixoProporcional;
+      lucroLiquidoValor = lucroBruto - custoFixoTotal;
       impostosCalculados = totalImpostos;
     } else {
       // Sem análise de lucro, precisamos calcular impostos aproximados
@@ -1305,13 +1493,13 @@ export function Relatorios() {
         (impostoMaterialPercent + impostoServicoPercent) / 2;
       impostosCalculados = valorTotalAceitos * (taxaMediaImposto / 100);
       lucroLiquidoValor =
-        valorTotalAceitos - impostosCalculados - custoFixoProporcional;
+        valorTotalAceitos - impostosCalculados - custoFixoTotal;
     }
 
     return {
-      custoFixoMensal,
+      custoFixoMensal: custoFixoMensalMedio,
       mesesPeriodo,
-      custoFixoProporcional,
+      custoFixoTotal,
       valorTotalAceitos,
       lucroBruto: temAnaliseLucro ? lucroBruto : null,
       lucroLiquido: lucroLiquidoValor,
@@ -1319,17 +1507,52 @@ export function Relatorios() {
       totalImpostos: impostosCalculados,
       impostoMaterialPercent,
       impostoServicoPercent,
+      detalheMeses,
     };
   }, [
     orcamentosFiltrados,
     analiseLucro,
     configuracoesGerais,
+    historicoConfiguracoes,
     dataInicio,
     dataFim,
   ]);
 
-  // Exportar para CSV
+  // Exportar para CSV com dados de lucro para todos os orçamentos
   const exportarCSV = () => {
+    // Criar mapa de custos por descrição do item (fallback)
+    const itensPorDescricao: Record<
+      string,
+      { valorCusto: number; valorMaoDeObraCusto: number }
+    > = {};
+    itensServico?.forEach((item) => {
+      const key = item.descricao.toLowerCase().trim();
+      itensPorDescricao[key] = {
+        valorCusto: item.valorCusto || 0,
+        valorMaoDeObraCusto: item.valorMaoDeObraCusto || 0,
+      };
+    });
+
+    // Função para obter valores de custo de um item
+    const obterCustosItem = (descricao: string, quantidade: number, dataEmissao: Date) => {
+      if (historicoItens && historicoItens.length > 0) {
+        const valores = obterValoresVigentes(descricao, dataEmissao, historicoItens, itensServico || []);
+        return {
+          custoMaterial: valores.valorCusto * quantidade,
+          custoMaoDeObra: valores.valorMaoDeObraCusto * quantidade,
+        };
+      }
+      const key = descricao.toLowerCase().trim();
+      const itemInfo = itensPorDescricao[key];
+      if (itemInfo) {
+        return {
+          custoMaterial: itemInfo.valorCusto * quantidade,
+          custoMaoDeObra: itemInfo.valorMaoDeObraCusto * quantidade,
+        };
+      }
+      return { custoMaterial: 0, custoMaoDeObra: 0 };
+    };
+
     const headers = [
       "Número",
       "Cliente",
@@ -1337,15 +1560,73 @@ export function Relatorios() {
       "Data Emissão",
       "Data Validade",
       "Valor Total",
+      "Venda Material",
+      "Venda Mão de Obra",
+      "Custo Material",
+      "Custo Mão de Obra",
+      "Custo Total",
+      "Imposto Material (%)",
+      "Imposto Serviço (%)",
+      "Valor Impostos",
+      "Lucro Bruto",
+      "Margem (%)",
     ];
-    const rows = orcamentosFiltrados.map((orc) => [
-      orc.numero,
-      orc.clienteNome,
-      STATUS_LABELS[orc.status],
-      new Date(orc.dataEmissao).toLocaleDateString("pt-BR"),
-      new Date(orc.dataValidade).toLocaleDateString("pt-BR"),
-      orc.valorTotal.toFixed(2).replace(".", ","),
-    ]);
+
+    const rows = orcamentosFiltrados.map((orc) => {
+      const dataEmissaoOrc = new Date(orc.dataEmissao);
+
+      // Obter configurações vigentes na data de emissão
+      const configVigente = obterConfiguracoesVigentes(
+        dataEmissaoOrc,
+        historicoConfiguracoes || [],
+        configuracoesGerais
+      );
+      const impostoMaterialPercent = configVigente.impostoMaterial;
+      const impostoServicoPercent = configVigente.impostoServico;
+
+      let vendaMaterial = 0;
+      let vendaMaoDeObra = 0;
+      let custoMaterial = 0;
+      let custoMaoDeObra = 0;
+
+      // Calcular valores dos itens do orçamento
+      if (orc.itensCompleto && orc.itensCompleto.length > 0) {
+        for (const item of orc.itensCompleto) {
+          vendaMaterial += item.valorTotalMaterial;
+          vendaMaoDeObra += item.valorTotalMaoDeObra;
+          const custos = obterCustosItem(item.descricao, item.quantidade, dataEmissaoOrc);
+          custoMaterial += custos.custoMaterial;
+          custoMaoDeObra += custos.custoMaoDeObra;
+        }
+      }
+
+      const custoTotal = custoMaterial + custoMaoDeObra;
+      const impostoMaterialValor = vendaMaterial * (impostoMaterialPercent / 100);
+      const impostoServicoValor = vendaMaoDeObra * (impostoServicoPercent / 100);
+      const valorImpostos = impostoMaterialValor + impostoServicoValor;
+      const lucroBruto = (vendaMaterial + vendaMaoDeObra) - custoTotal - valorImpostos;
+      const valorTotalVenda = vendaMaterial + vendaMaoDeObra;
+      const margem = valorTotalVenda > 0 ? (lucroBruto / valorTotalVenda) * 100 : 0;
+
+      return [
+        orc.numero,
+        orc.clienteNome,
+        STATUS_LABELS[orc.status],
+        new Date(orc.dataEmissao).toLocaleDateString("pt-BR"),
+        new Date(orc.dataValidade).toLocaleDateString("pt-BR"),
+        orc.valorTotal.toFixed(2).replace(".", ","),
+        vendaMaterial.toFixed(2).replace(".", ","),
+        vendaMaoDeObra.toFixed(2).replace(".", ","),
+        custoMaterial.toFixed(2).replace(".", ","),
+        custoMaoDeObra.toFixed(2).replace(".", ","),
+        custoTotal.toFixed(2).replace(".", ","),
+        impostoMaterialPercent.toFixed(2).replace(".", ","),
+        impostoServicoPercent.toFixed(2).replace(".", ","),
+        valorImpostos.toFixed(2).replace(".", ","),
+        lucroBruto.toFixed(2).replace(".", ","),
+        margem.toFixed(2).replace(".", ","),
+      ];
+    });
 
     const csvContent = [
       headers.join(";"),
@@ -1543,7 +1824,7 @@ export function Relatorios() {
           <FullWidthChart>
             <h3>Lucro Líquido da Empresa</h3>
             <InfoText style={{ marginTop: 0, marginBottom: 16 }}>
-              Período de {lucroLiquido.mesesPeriodo.toFixed(1)} meses
+              Período de {lucroLiquido.mesesPeriodo} {lucroLiquido.mesesPeriodo === 1 ? "mês" : "meses"}
             </InfoText>
 
             <div
@@ -1562,22 +1843,14 @@ export function Relatorios() {
               </strong>
               <ol style={{ margin: 0, paddingLeft: 20 }}>
                 <li>
-                  <strong>Período:</strong> O número de dias entre as datas
-                  selecionadas é dividido por 30 para calcular os meses do
-                  período (
-                  {Math.ceil(
-                    Math.abs(
-                      new Date(dataFim).getTime() -
-                        new Date(dataInicio).getTime()
-                    ) /
-                      (1000 * 60 * 60 * 24)
-                  ) + 1}{" "}
-                  dias ÷ 30 = {lucroLiquido.mesesPeriodo.toFixed(2)} meses)
+                  <strong>Período:</strong> O custo fixo é contabilizado por mês
+                  inteiro. Qualquer período dentro de um mês conta como 1 mês
+                  completo ({lucroLiquido.mesesPeriodo} {lucroLiquido.mesesPeriodo === 1 ? "mês" : "meses"})
                 </li>
                 {lucroLiquido.custoFixoMensal > 0 && (
                   <li>
-                    <strong>Custo Fixo Proporcional:</strong> O custo fixo
-                    mensal configurado é multiplicado pelo período
+                    <strong>Custo Fixo:</strong> Soma do custo fixo de cada mês
+                    no período (valor pode variar entre meses se houve alteração)
                   </li>
                 )}
                 {lucroLiquido.totalImpostos > 0 && (
@@ -1589,7 +1862,7 @@ export function Relatorios() {
                 {lucroLiquido.temAnaliseLucro ? (
                   <li>
                     <strong>Lucro Líquido:</strong> O lucro bruto (vendas -
-                    custos - impostos) menos o custo fixo proporcional
+                    custos - impostos) menos o custo fixo do período
                   </li>
                 ) : (
                   <li>
@@ -1598,9 +1871,9 @@ export function Relatorios() {
                     {formatCurrency(lucroLiquido.valorTotalAceitos)}
                     {lucroLiquido.totalImpostos > 0 &&
                       ` - ${formatCurrency(lucroLiquido.totalImpostos)}`}
-                    {lucroLiquido.custoFixoProporcional > 0 &&
+                    {lucroLiquido.custoFixoTotal > 0 &&
                       ` - ${formatCurrency(
-                        lucroLiquido.custoFixoProporcional
+                        lucroLiquido.custoFixoTotal
                       )}`}
                     {" = "}
                     {formatCurrency(lucroLiquido.lucroLiquido)})
@@ -1648,15 +1921,49 @@ export function Relatorios() {
                   </StatCard>
                 )}
 
-              {lucroLiquido.custoFixoProporcional > 0 && (
+              {lucroLiquido.custoFixoTotal > 0 && (
                 <StatCard $color="#e74c3c">
                   <div className="label">Custo Fixo (Período)</div>
                   <div className="value">
-                    {formatCurrency(lucroLiquido.custoFixoProporcional)}
+                    {formatCurrency(lucroLiquido.custoFixoTotal)}
                   </div>
                   <div className="subvalue">
-                    {lucroLiquido.mesesPeriodo.toFixed(1)} meses ×{" "}
-                    {formatCurrency(lucroLiquido.custoFixoMensal)}
+                    {lucroLiquido.detalheMeses.length === 1 ? (
+                      // Apenas 1 mês: exibir simples
+                      <>
+                        {lucroLiquido.mesesPeriodo} mês ×{" "}
+                        {formatCurrency(lucroLiquido.custoFixoMensal)}
+                      </>
+                    ) : (
+                      // Múltiplos meses: verificar se custos são diferentes
+                      (() => {
+                        const custosUnicos = [...new Set(lucroLiquido.detalheMeses.map(m => m.custoFixo))];
+                        if (custosUnicos.length === 1) {
+                          // Todos os meses têm o mesmo custo
+                          return (
+                            <>
+                              {lucroLiquido.mesesPeriodo} meses ×{" "}
+                              {formatCurrency(lucroLiquido.custoFixoMensal)}
+                            </>
+                          );
+                        } else {
+                          // Meses com custos diferentes: mostrar detalhamento
+                          return (
+                            <span title={lucroLiquido.detalheMeses.map(m =>
+                              `${m.mes}: ${formatCurrency(m.custoFixo)}`
+                            ).join('\n')}>
+                              {lucroLiquido.detalheMeses.map((m, i) => (
+                                <span key={i}>
+                                  {i > 0 && " + "}
+                                  {formatCurrency(m.custoFixo)}
+                                </span>
+                              ))}
+                              {" (ver detalhes)"}
+                            </span>
+                          );
+                        }
+                      })()
+                    )}
                   </div>
                 </StatCard>
               )}
@@ -1679,14 +1986,14 @@ export function Relatorios() {
                 <div className="subvalue">
                   {lucroLiquido.temAnaliseLucro
                     ? `Lucro bruto${
-                        lucroLiquido.custoFixoProporcional > 0
+                        lucroLiquido.custoFixoTotal > 0
                           ? " - Custo fixo"
                           : ""
                       }`
                     : `Receita${
                         lucroLiquido.totalImpostos > 0 ? " - Impostos" : ""
                       }${
-                        lucroLiquido.custoFixoProporcional > 0
+                        lucroLiquido.custoFixoTotal > 0
                           ? " - Custo fixo"
                           : ""
                       }`}
@@ -1917,50 +2224,130 @@ export function Relatorios() {
             </SectionTitle>
 
             {analiseLucro.orcamentos.length > 0 ? (
-              <>
-                {/* Tabela Desktop */}
-                <DesktopTableWrapper>
-                  <LucroTableWrapper>
-                    <LucroTable>
-                      <thead>
-                        <tr>
-                          <th>Nº</th>
-                          <th>Cliente</th>
-                          <th className="value">Venda Mat.</th>
-                          <th className="value">Custo Mat.</th>
-                          <th className="value">Venda M.O.</th>
-                          <th className="value">Custo M.O.</th>
-                          <th className="value">Lucro</th>
-                          <th className="value">Margem</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {analiseLucro.orcamentos.map((orc, index) => (
-                          <ClickableTableRow
-                            key={index}
-                            onClick={() => handleOrcamentoClick(orc)}
-                            title="Clique para ver detalhes"
-                          >
-                            <td className="rank">
+              (() => {
+                const totalOrcamentos = analiseLucro.orcamentos.length;
+                const totalPaginas = Math.ceil(totalOrcamentos / itensPorPagina);
+                const indiceInicio = (paginaAtual - 1) * itensPorPagina;
+                const indiceFim = Math.min(indiceInicio + itensPorPagina, totalOrcamentos);
+                const orcamentosPaginados = analiseLucro.orcamentos.slice(indiceInicio, indiceFim);
+
+                return (
+                  <>
+                    {/* Tabela Desktop */}
+                    <DesktopTableWrapper>
+                      <LucroTableWrapper>
+                        <LucroTable>
+                          <thead>
+                            <tr>
+                              <th>Nº</th>
+                              <th>Cliente</th>
+                              <th className="value">Venda Mat.</th>
+                              <th className="value">Custo Mat.</th>
+                              <th className="value">Venda M.O.</th>
+                              <th className="value">Custo M.O.</th>
+                              <th className="value">Lucro</th>
+                              <th className="value">Margem</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {orcamentosPaginados.map((orc, index) => (
+                              <ClickableTableRow
+                                key={index}
+                                onClick={() => handleOrcamentoClick(orc)}
+                                title="Clique para ver detalhes"
+                              >
+                                <td className="rank">
+                                  {formatOrcamentoNumeroSimples(
+                                    orc.numero,
+                                    orc.dataEmissao
+                                  )}
+                                </td>
+                                <td className="cliente">{orc.clienteNome}</td>
+                                <td className="value">
+                                  {formatCurrency(orc.vendaMaterial)}
+                                </td>
+                                <td className="value">
+                                  {formatCurrency(orc.custoMaterial)}
+                                </td>
+                                <td className="value">
+                                  {formatCurrency(orc.vendaMaoDeObra)}
+                                </td>
+                                <td className="value">
+                                  {formatCurrency(orc.custoMaoDeObra)}
+                                </td>
+                                <td className="value">
+                                  {orc.lucroTotal >= 0 ? (
+                                    <LucroPositivo>
+                                      {formatCurrency(orc.lucroTotal)}
+                                    </LucroPositivo>
+                                  ) : (
+                                    <LucroNegativo>
+                                      {formatCurrency(orc.lucroTotal)}
+                                    </LucroNegativo>
+                                  )}
+                                </td>
+                                <td className="value">
+                                  <MargemBadge $positiva={orc.margem >= 0}>
+                                    {orc.margem.toFixed(1)}%
+                                  </MargemBadge>
+                                </td>
+                              </ClickableTableRow>
+                            ))}
+                          </tbody>
+                        </LucroTable>
+                      </LucroTableWrapper>
+                    </DesktopTableWrapper>
+
+                    {/* Cards Mobile */}
+                    <MobileCardList>
+                      {orcamentosPaginados.map((orc, index) => (
+                        <ClickableMobileCard
+                          key={index}
+                          onClick={() => handleOrcamentoClick(orc)}
+                        >
+                          <div className="header">
+                            <span className="numero">
                               {formatOrcamentoNumeroSimples(
                                 orc.numero,
                                 orc.dataEmissao
                               )}
-                            </td>
-                            <td className="cliente">{orc.clienteNome}</td>
-                            <td className="value">
-                              {formatCurrency(orc.vendaMaterial)}
-                            </td>
-                            <td className="value">
-                              {formatCurrency(orc.custoMaterial)}
-                            </td>
-                            <td className="value">
-                              {formatCurrency(orc.vendaMaoDeObra)}
-                            </td>
-                            <td className="value">
-                              {formatCurrency(orc.custoMaoDeObra)}
-                            </td>
-                            <td className="value">
+                            </span>
+                            <span className="cliente">{orc.clienteNome}</span>
+                            <span className="margem">
+                              <MargemBadge $positiva={orc.margem >= 0}>
+                                {orc.margem.toFixed(1)}%
+                              </MargemBadge>
+                            </span>
+                          </div>
+                          <div className="values-list">
+                            <div className="value-row">
+                              <span className="label">Venda Material</span>
+                              <span className="value">
+                                {formatCurrency(orc.vendaMaterial)}
+                              </span>
+                            </div>
+                            <div className="value-row">
+                              <span className="label">Custo Material</span>
+                              <span className="value">
+                                {formatCurrency(orc.custoMaterial)}
+                              </span>
+                            </div>
+                            <div className="value-row">
+                              <span className="label">Venda M.O.</span>
+                              <span className="value">
+                                {formatCurrency(orc.vendaMaoDeObra)}
+                              </span>
+                            </div>
+                            <div className="value-row">
+                              <span className="label">Custo M.O.</span>
+                              <span className="value">
+                                {formatCurrency(orc.custoMaoDeObra)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="lucro-row">
+                            <span className="lucro-label">Lucro Total</span>
+                            <span className="lucro-value">
                               {orc.lucroTotal >= 0 ? (
                                 <LucroPositivo>
                                   {formatCurrency(orc.lucroTotal)}
@@ -1970,84 +2357,39 @@ export function Relatorios() {
                                   {formatCurrency(orc.lucroTotal)}
                                 </LucroNegativo>
                               )}
-                            </td>
-                            <td className="value">
-                              <MargemBadge $positiva={orc.margem >= 0}>
-                                {orc.margem.toFixed(1)}%
-                              </MargemBadge>
-                            </td>
-                          </ClickableTableRow>
-                        ))}
-                      </tbody>
-                    </LucroTable>
-                  </LucroTableWrapper>
-                </DesktopTableWrapper>
+                            </span>
+                          </div>
+                        </ClickableMobileCard>
+                      ))}
+                    </MobileCardList>
 
-                {/* Cards Mobile */}
-                <MobileCardList>
-                  {analiseLucro.orcamentos.map((orc, index) => (
-                    <ClickableMobileCard
-                      key={index}
-                      onClick={() => handleOrcamentoClick(orc)}
-                    >
-                      <div className="header">
-                        <span className="numero">
-                          {formatOrcamentoNumeroSimples(
-                            orc.numero,
-                            orc.dataEmissao
-                          )}
-                        </span>
-                        <span className="cliente">{orc.clienteNome}</span>
-                        <span className="margem">
-                          <MargemBadge $positiva={orc.margem >= 0}>
-                            {orc.margem.toFixed(1)}%
-                          </MargemBadge>
-                        </span>
-                      </div>
-                      <div className="values-list">
-                        <div className="value-row">
-                          <span className="label">Venda Material</span>
-                          <span className="value">
-                            {formatCurrency(orc.vendaMaterial)}
-                          </span>
-                        </div>
-                        <div className="value-row">
-                          <span className="label">Custo Material</span>
-                          <span className="value">
-                            {formatCurrency(orc.custoMaterial)}
-                          </span>
-                        </div>
-                        <div className="value-row">
-                          <span className="label">Venda M.O.</span>
-                          <span className="value">
-                            {formatCurrency(orc.vendaMaoDeObra)}
-                          </span>
-                        </div>
-                        <div className="value-row">
-                          <span className="label">Custo M.O.</span>
-                          <span className="value">
-                            {formatCurrency(orc.custoMaoDeObra)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="lucro-row">
-                        <span className="lucro-label">Lucro Total</span>
-                        <span className="lucro-value">
-                          {orc.lucroTotal >= 0 ? (
-                            <LucroPositivo>
-                              {formatCurrency(orc.lucroTotal)}
-                            </LucroPositivo>
-                          ) : (
-                            <LucroNegativo>
-                              {formatCurrency(orc.lucroTotal)}
-                            </LucroNegativo>
-                          )}
-                        </span>
-                      </div>
-                    </ClickableMobileCard>
-                  ))}
-                </MobileCardList>
-              </>
+                    {/* Paginação */}
+                    {totalPaginas > 1 && (
+                      <PaginationContainer>
+                        <PaginationInfo>
+                          Mostrando {indiceInicio + 1} - {indiceFim} de {totalOrcamentos} orçamentos
+                        </PaginationInfo>
+                        <PaginationButtons>
+                          <PaginationButton
+                            $disabled={paginaAtual === 1}
+                            disabled={paginaAtual === 1}
+                            onClick={() => setPaginaAtual(paginaAtual - 1)}
+                          >
+                            Anterior
+                          </PaginationButton>
+                          <PaginationButton
+                            $disabled={paginaAtual === totalPaginas}
+                            disabled={paginaAtual === totalPaginas}
+                            onClick={() => setPaginaAtual(paginaAtual + 1)}
+                          >
+                            Próximo
+                          </PaginationButton>
+                        </PaginationButtons>
+                      </PaginationContainer>
+                    )}
+                  </>
+                );
+              })()
             ) : (
               <NoDataMessage>
                 Nenhum orçamento aceito com todos os itens com custo cadastrado
@@ -2178,14 +2520,11 @@ export function Relatorios() {
                     {formatCurrency(orcamentoSelecionado.custoMaterial)}
                   </div>
                 </ModalStatCard>
-                {(configuracoesGerais?.impostoMaterial || 0) > 0 && (
+                {orcamentoSelecionado.impostoMaterial > 0 && (
                   <ModalStatCard $color="#f39c12">
                     <div className="label">Imposto</div>
                     <div className="value">
-                      {formatCurrency(
-                        orcamentoSelecionado.vendaMaterial *
-                          ((configuracoesGerais?.impostoMaterial || 0) / 100)
-                      )}
+                      {formatCurrency(orcamentoSelecionado.impostoMaterial)}
                     </div>
                   </ModalStatCard>
                 )}
@@ -2248,14 +2587,11 @@ export function Relatorios() {
                     {formatCurrency(orcamentoSelecionado.custoMaoDeObra)}
                   </div>
                 </ModalStatCard>
-                {(configuracoesGerais?.impostoServico || 0) > 0 && (
+                {orcamentoSelecionado.impostoMaoDeObra > 0 && (
                   <ModalStatCard $color="#f39c12">
                     <div className="label">Imposto</div>
                     <div className="value">
-                      {formatCurrency(
-                        orcamentoSelecionado.vendaMaoDeObra *
-                          ((configuracoesGerais?.impostoServico || 0) / 100)
-                      )}
+                      {formatCurrency(orcamentoSelecionado.impostoMaoDeObra)}
                     </div>
                   </ModalStatCard>
                 )}
@@ -2324,16 +2660,14 @@ export function Relatorios() {
                     )}
                   </div>
                 </ModalStatCard>
-                {((configuracoesGerais?.impostoMaterial || 0) > 0 ||
-                  (configuracoesGerais?.impostoServico || 0) > 0) && (
+                {(orcamentoSelecionado.impostoMaterial > 0 ||
+                  orcamentoSelecionado.impostoMaoDeObra > 0) && (
                   <ModalStatCard $color="#f39c12">
                     <div className="label">Impostos</div>
                     <div className="value">
                       {formatCurrency(
-                        orcamentoSelecionado.vendaMaterial *
-                          ((configuracoesGerais?.impostoMaterial || 0) / 100) +
-                          orcamentoSelecionado.vendaMaoDeObra *
-                            ((configuracoesGerais?.impostoServico || 0) / 100)
+                        orcamentoSelecionado.impostoMaterial +
+                          orcamentoSelecionado.impostoMaoDeObra
                       )}
                     </div>
                   </ModalStatCard>

@@ -42,6 +42,19 @@ export const orcamentoController = {
     }
   },
 
+  async buscarPorPeriodo(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { dataInicio, dataFim } = req.query;
+      const orcamentos = await orcamentoService.buscarPorPeriodo(
+        dataInicio as string,
+        dataFim as string
+      );
+      res.json({ success: true, data: orcamentos });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async criar(req: Request, res: Response, next: NextFunction) {
     try {
       const orcamento = await orcamentoService.criar(req.body);

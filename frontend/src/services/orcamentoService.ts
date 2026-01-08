@@ -85,6 +85,13 @@ export const orcamentoService = {
     return response.data.data;
   },
 
+  async buscarPorPeriodo(dataInicio: string, dataFim: string): Promise<Orcamento[]> {
+    const response = await api.get<ApiResponse<Orcamento[]>>('/orcamentos/periodo', {
+      params: { dataInicio, dataFim }
+    });
+    return response.data.data;
+  },
+
   async criar(data: CriarOrcamentoDTO): Promise<Orcamento> {
     const response = await api.post<ApiResponse<Orcamento>>('/orcamentos', data);
     return response.data.data;

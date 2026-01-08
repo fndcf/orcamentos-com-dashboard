@@ -76,6 +76,17 @@ export function useOrcamentosPorStatus(status: OrcamentoStatus) {
   );
 }
 
+export function useOrcamentosPorPeriodo(dataInicio: string, dataFim: string) {
+  return useQuery(
+    ['orcamentos', 'periodo', dataInicio, dataFim],
+    () => orcamentoService.buscarPorPeriodo(dataInicio, dataFim),
+    {
+      enabled: !!dataInicio && !!dataFim,
+      staleTime: 5 * 60 * 1000,
+    }
+  );
+}
+
 export function useEstatisticasOrcamentos() {
   return useQuery(['orcamentos', 'estatisticas'], orcamentoService.getEstatisticas);
 }

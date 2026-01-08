@@ -24,14 +24,17 @@ export const historicoValoresRepository = {
   },
 
   async buscarHistoricoItensPorPeriodo(
-    dataInicio: Date,
-    dataFim: Date
+    _dataInicio: Date,
+    _dataFim: Date
   ): Promise<HistoricoValorItem[]> {
-    // Busca todos os históricos onde a dataVigencia é <= dataFim
-    // (históricos que podem estar vigentes no período)
+    // Buscar TODOS os históricos ordenados por dataVigencia desc
+    // Isso é necessário porque para calcular o valor vigente de um orçamento
+    // emitido em uma data específica, precisamos do último registro com dataVigencia <= dataEmissao
+    // O registro vigente pode ter sido criado ANTES do período selecionado
+    // ou mesmo DEPOIS (se não existia registro anterior à data do orçamento)
+    // Os parâmetros são mantidos para compatibilidade da API
     const snapshot = await db
       .collection(COLLECTION_ITENS)
-      .where('dataVigencia', '<=', dataFim)
       .orderBy('dataVigencia', 'desc')
       .get();
 
@@ -81,13 +84,15 @@ export const historicoValoresRepository = {
   },
 
   async buscarHistoricoConfiguracoesPorPeriodo(
-    dataInicio: Date,
-    dataFim: Date
+    _dataInicio: Date,
+    _dataFim: Date
   ): Promise<HistoricoConfiguracao[]> {
-    // Busca todos os históricos onde a dataVigencia é <= dataFim
+    // Buscar TODOS os históricos de configurações ordenados por dataVigencia desc
+    // Mesma lógica dos itens: precisamos de todos os registros para encontrar
+    // o valor vigente na data de emissão de cada orçamento
+    // Os parâmetros são mantidos para compatibilidade da API
     const snapshot = await db
       .collection(COLLECTION_CONFIGURACOES)
-      .where('dataVigencia', '<=', dataFim)
       .orderBy('dataVigencia', 'desc')
       .get();
 

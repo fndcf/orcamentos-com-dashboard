@@ -122,6 +122,20 @@ export const orcamentoService = {
     return orcamentoRepository.findByStatus(status);
   },
 
+  async buscarPorPeriodo(dataInicio: string, dataFim: string): Promise<Orcamento[]> {
+    const inicio = new Date(dataInicio);
+    const fim = new Date(dataFim);
+
+    if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) {
+      throw new ValidationError('Datas inválidas');
+    }
+
+    // Ajustar fim para o final do dia
+    fim.setHours(23, 59, 59, 999);
+
+    return orcamentoRepository.findByPeriodo(inicio, fim);
+  },
+
   async criar(data: CriarOrcamentoDTO): Promise<Orcamento> {
     // Validar cliente
     const cliente = await clienteRepository.findById(data.clienteId);

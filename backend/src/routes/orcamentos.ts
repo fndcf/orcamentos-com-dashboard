@@ -19,6 +19,9 @@ router.get('/cliente/:clienteId', orcamentoController.buscarPorCliente);
 // GET /api/orcamentos/status/:status - Buscar por status
 router.get('/status/:status', orcamentoController.buscarPorStatus);
 
+// GET /api/orcamentos/periodo?dataInicio=YYYY-MM-DD&dataFim=YYYY-MM-DD - Buscar por período
+router.get('/periodo', orcamentoController.buscarPorPeriodo);
+
 // POST /api/orcamentos/verificar-expirados - Verificar e atualizar orçamentos expirados
 router.post('/verificar-expirados', orcamentoController.verificarExpirados);
 
