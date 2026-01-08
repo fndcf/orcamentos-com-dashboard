@@ -1,5 +1,5 @@
 import api from './api';
-import { Cliente, BrasilAPICNPJ } from '../types';
+import { Cliente, BrasilAPICNPJ, PaginatedResponse } from '../types';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -10,6 +10,23 @@ interface ApiResponse<T> {
 export const clienteService = {
   async listar(): Promise<Cliente[]> {
     const response = await api.get<ApiResponse<Cliente[]>>('/clientes');
+    return response.data.data;
+  },
+
+  async listarPaginado(
+    page: number = 1,
+    limit: number = 10,
+    filters?: {
+      busca?: string;
+    }
+  ): Promise<PaginatedResponse<Cliente>> {
+    const response = await api.get<ApiResponse<PaginatedResponse<Cliente>>>('/clientes/paginated', {
+      params: {
+        page,
+        limit,
+        ...filters,
+      },
+    });
     return response.data.data;
   },
 

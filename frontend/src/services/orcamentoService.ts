@@ -1,5 +1,5 @@
 import api from './api';
-import { Orcamento, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, ParcelamentoDados, DescontoAVistaDados, DashboardStats } from '../types';
+import { Orcamento, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, ParcelamentoDados, DescontoAVistaDados, DashboardStats, PaginatedResponse } from '../types';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -72,6 +72,25 @@ export const orcamentoService = {
 
   async buscarPorId(id: string): Promise<Orcamento> {
     const response = await api.get<ApiResponse<Orcamento>>(`/orcamentos/${id}`);
+    return response.data.data;
+  },
+
+  async listarPaginado(
+    page: number = 1,
+    limit: number = 10,
+    filters?: {
+      status?: OrcamentoStatus;
+      clienteId?: string;
+      busca?: string;
+    }
+  ): Promise<PaginatedResponse<Orcamento>> {
+    const response = await api.get<ApiResponse<PaginatedResponse<Orcamento>>>('/orcamentos/paginated', {
+      params: {
+        page,
+        limit,
+        ...filters,
+      },
+    });
     return response.data.data;
   },
 

@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Cliente } from "../types";
 import {
-  useClientes,
+  useClientesPaginados,
   useCriarCliente,
   useAtualizarCliente,
   useExcluirCliente,
@@ -113,9 +113,27 @@ export function Clientes() {
     null
   );
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: clientes, isLoading } = useClientes();
+  // Debounce da busca para não fazer muitas requisições
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Usa paginação do backend
+  const { data: paginatedData, isLoading } = useClientesPaginados(
+    currentPage,
+    ITEMS_PER_PAGE,
+    {
+      busca: debouncedSearchTerm || undefined,
+    }
+  );
+
+  const clientes = paginatedData?.items;
   const { data: orcamentos } = useOrcamentos();
   const criarCliente = useCriarCliente();
   const atualizarCliente = useAtualizarCliente();
@@ -156,36 +174,15 @@ export function Clientes() {
     }
   };
 
-  const clientesFiltrados = useMemo(() => {
-    return clientes?.filter((cliente) => {
-      if (!searchTerm) return true;
-      const termo = searchTerm.toLowerCase();
-      const termoNumeros = searchTerm.replace(/\D/g, "");
-
-      const razaoMatch =
-        cliente.razaoSocial?.toLowerCase().includes(termo) || false;
-      const cnpjMatch = termoNumeros
-        ? cliente.cnpj?.includes(termoNumeros) || false
-        : false;
-      const fantasiaMatch =
-        cliente.nomeFantasia?.toLowerCase().includes(termo) || false;
-
-      return razaoMatch || cnpjMatch || fantasiaMatch;
-    });
-  }, [clientes, searchTerm]);
-
   // Reset para página 1 quando busca muda
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [debouncedSearchTerm]);
 
-  // Paginação
-  const totalItems = clientesFiltrados?.length || 0;
+  // Paginação - agora vem do backend
+  const totalItems = paginatedData?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const clientesPaginados = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return clientesFiltrados?.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [clientesFiltrados, currentPage]);
+  const clientesPaginados = clientes;
 
   return (
     <Container>

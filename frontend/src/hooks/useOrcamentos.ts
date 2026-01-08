@@ -87,6 +87,25 @@ export function useOrcamentosPorPeriodo(dataInicio: string, dataFim: string) {
   );
 }
 
+export function useOrcamentosPaginados(
+  page: number = 1,
+  limit: number = 10,
+  filters?: {
+    status?: OrcamentoStatus;
+    clienteId?: string;
+    busca?: string;
+  }
+) {
+  return useQuery(
+    ['orcamentos', 'paginated', page, limit, filters],
+    () => orcamentoService.listarPaginado(page, limit, filters),
+    {
+      keepPreviousData: true, // Mantém dados anteriores enquanto carrega nova página
+      staleTime: 30 * 1000, // 30 segundos
+    }
+  );
+}
+
 export function useEstatisticasOrcamentos() {
   return useQuery(['orcamentos', 'estatisticas'], orcamentoService.getEstatisticas);
 }

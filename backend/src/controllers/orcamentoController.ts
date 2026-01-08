@@ -12,6 +12,26 @@ export const orcamentoController = {
     }
   },
 
+  async listarPaginado(req: Request, res: Response, next: NextFunction) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const status = req.query.status as OrcamentoStatus | undefined;
+      const clienteId = req.query.clienteId as string | undefined;
+      const busca = req.query.busca as string | undefined;
+
+      const result = await orcamentoService.listarPaginado(page, limit, {
+        status,
+        clienteId,
+        busca,
+      });
+
+      res.json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async buscarPorId(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;

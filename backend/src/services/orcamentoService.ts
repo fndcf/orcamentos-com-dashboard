@@ -11,6 +11,7 @@ import {
   DescontoAVistaDados,
   DashboardStats,
   DashboardMesStats,
+  PaginatedResponse,
 } from "../models";
 import { ValidationError, NotFoundError } from "../utils/errors";
 import { eventBus, OrcamentoEvents } from "../events";
@@ -110,6 +111,18 @@ interface AtualizarOrcamentoDTO {
 export const orcamentoService = {
   async listar(): Promise<Orcamento[]> {
     return orcamentoRepository.findAll();
+  },
+
+  async listarPaginado(
+    page: number = 1,
+    limit: number = 10,
+    filters?: {
+      status?: OrcamentoStatus;
+      clienteId?: string;
+      busca?: string;
+    }
+  ): Promise<PaginatedResponse<Orcamento>> {
+    return orcamentoRepository.findPaginated(page, limit, filters);
   },
 
   async buscarPorId(id: string): Promise<Orcamento> {

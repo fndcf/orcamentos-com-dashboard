@@ -1,9 +1,23 @@
 import { db } from '../config/firebase';
-import { Orcamento, OrcamentoStatus } from '../models';
+import { Orcamento, OrcamentoStatus, PaginatedResponse } from '../models';
 import { COLLECTIONS, CONTADORES } from '../utils/constants';
 import { NotFoundError } from '../utils/errors';
 
 const collection = db.collection(COLLECTIONS.ORCAMENTOS);
+
+// Helper para mapear documento do Firestore para Orcamento
+function mapDocToOrcamento(doc: FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot): Orcamento {
+  const data = doc.data();
+  return {
+    id: doc.id,
+    ...data,
+    dataEmissao: data?.dataEmissao?.toDate(),
+    dataValidade: data?.dataValidade?.toDate(),
+    dataAceite: data?.dataAceite?.toDate(),
+    createdAt: data?.createdAt?.toDate(),
+    updatedAt: data?.updatedAt?.toDate(),
+  } as Orcamento;
+}
 
 export const orcamentoRepository = {
   async findAll(): Promise<Orcamento[]> {
@@ -292,5 +306,112 @@ export const orcamentoRepository = {
     });
 
     return stats;
+  },
+
+  async findPaginated(
+    page: number = 1,
+    limit: number = 10,
+    filters?: {
+      status?: OrcamentoStatus;
+      clienteId?: string;
+      busca?: string;
+    }
+  ): Promise<PaginatedResponse<Orcamento>> {
+    try {
+      // Primeiro, contar o total de documentos com os filtros aplicados
+      let countQuery: FirebaseFirestore.Query = collection;
+
+      if (filters?.status) {
+        countQuery = countQuery.where('status', '==', filters.status);
+      }
+      if (filters?.clienteId) {
+        countQuery = countQuery.where('clienteId', '==', filters.clienteId);
+      }
+
+      const countSnapshot = await countQuery.get();
+      let totalDocs = countSnapshot.docs;
+
+      // Se houver busca por texto, filtrar manualmente
+      if (filters?.busca) {
+        const buscaLower = filters.busca.toLowerCase();
+        totalDocs = totalDocs.filter(doc => {
+          const data = doc.data();
+          const clienteNome = (data.clienteNome || '').toLowerCase();
+          const numero = (data.numero || '').toString();
+          return clienteNome.includes(buscaLower) || numero.includes(buscaLower);
+        });
+      }
+
+      const total = totalDocs.length;
+
+      // Ordenar por número decrescente
+      totalDocs.sort((a, b) => (b.data().numero || 0) - (a.data().numero || 0));
+
+      // Aplicar paginação
+      const offset = (page - 1) * limit;
+      const paginatedDocs = totalDocs.slice(offset, offset + limit);
+
+      const items = paginatedDocs.map(mapDocToOrcamento);
+      const hasMore = offset + limit < total;
+
+      return {
+        items,
+        total,
+        hasMore,
+      };
+    } catch (error) {
+      // Fallback: buscar todos e paginar manualmente
+      const snapshot = await collection.get();
+      let allDocs = snapshot.docs;
+
+      // Aplicar filtros
+      if (filters?.status) {
+        allDocs = allDocs.filter(doc => doc.data().status === filters.status);
+      }
+      if (filters?.clienteId) {
+        allDocs = allDocs.filter(doc => doc.data().clienteId === filters.clienteId);
+      }
+      if (filters?.busca) {
+        const buscaLower = filters.busca.toLowerCase();
+        allDocs = allDocs.filter(doc => {
+          const data = doc.data();
+          const clienteNome = (data.clienteNome || '').toLowerCase();
+          const numero = (data.numero || '').toString();
+          return clienteNome.includes(buscaLower) || numero.includes(buscaLower);
+        });
+      }
+
+      const total = allDocs.length;
+
+      // Ordenar por número decrescente
+      allDocs.sort((a, b) => (b.data().numero || 0) - (a.data().numero || 0));
+
+      // Aplicar paginação
+      const offset = (page - 1) * limit;
+      const paginatedDocs = allDocs.slice(offset, offset + limit);
+
+      const items = paginatedDocs.map(mapDocToOrcamento);
+      const hasMore = offset + limit < total;
+
+      return {
+        items,
+        total,
+        hasMore,
+      };
+    }
+  },
+
+  async count(filters?: { status?: OrcamentoStatus; clienteId?: string }): Promise<number> {
+    let query: FirebaseFirestore.Query = collection;
+
+    if (filters?.status) {
+      query = query.where('status', '==', filters.status);
+    }
+    if (filters?.clienteId) {
+      query = query.where('clienteId', '==', filters.clienteId);
+    }
+
+    const snapshot = await query.get();
+    return snapshot.size;
   },
 };

@@ -10,6 +10,9 @@ router.use(authMiddleware);
 // GET /api/clientes - Listar todos os clientes
 router.get('/', clienteController.listar);
 
+// GET /api/clientes/paginated - Listar clientes com paginação
+router.get('/paginated', clienteController.listarPaginado);
+
 // GET /api/clientes/pesquisar?termo=xxx - Pesquisar clientes
 router.get('/pesquisar', clienteController.pesquisar);
 

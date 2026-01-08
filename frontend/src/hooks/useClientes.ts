@@ -8,6 +8,23 @@ export function useClientes() {
   });
 }
 
+export function useClientesPaginados(
+  page: number = 1,
+  limit: number = 10,
+  filters?: {
+    busca?: string;
+  }
+) {
+  return useQuery(
+    ['clientes', 'paginated', page, limit, filters],
+    () => clienteService.listarPaginado(page, limit, filters),
+    {
+      keepPreviousData: true, // Mantém dados anteriores enquanto carrega nova página
+      staleTime: 30 * 1000, // 30 segundos
+    }
+  );
+}
+
 export function useCliente(id: string) {
   return useQuery(['cliente', id], () => clienteService.buscarPorId(id), {
     enabled: !!id,

@@ -1,9 +1,20 @@
 import { db } from '../config/firebase';
-import { Cliente } from '../models';
+import { Cliente, PaginatedResponse } from '../models';
 import { COLLECTIONS } from '../utils/constants';
 import { NotFoundError } from '../utils/errors';
 
 const collection = db.collection(COLLECTIONS.CLIENTES);
+
+// Helper para mapear documento do Firestore para Cliente
+function mapDocToCliente(doc: FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot): Cliente {
+  const data = doc.data();
+  return {
+    id: doc.id,
+    ...data,
+    createdAt: data?.createdAt?.toDate(),
+    updatedAt: data?.updatedAt?.toDate(),
+  } as Cliente;
+}
 
 export const clienteRepository = {
   async findAll(): Promise<Cliente[]> {
@@ -117,5 +128,60 @@ export const clienteRepository = {
     }
 
     await collection.doc(id).delete();
+  },
+
+  async findPaginated(
+    page: number = 1,
+    limit: number = 10,
+    filters?: {
+      busca?: string;
+    }
+  ): Promise<PaginatedResponse<Cliente>> {
+    // Buscar todos os documentos
+    const snapshot = await collection.get();
+    let allDocs = snapshot.docs;
+
+    // Se houver busca por texto, filtrar manualmente
+    if (filters?.busca) {
+      const buscaLower = filters.busca.toLowerCase();
+      allDocs = allDocs.filter(doc => {
+        const data = doc.data();
+        const razaoSocial = (data.razaoSocial || '').toLowerCase();
+        const nomeFantasia = (data.nomeFantasia || '').toLowerCase();
+        const cnpj = (data.cnpj || '').replace(/\D/g, '');
+        const buscaLimpa = buscaLower.replace(/\D/g, '');
+
+        return razaoSocial.includes(buscaLower) ||
+               nomeFantasia.includes(buscaLower) ||
+               (buscaLimpa && cnpj.includes(buscaLimpa));
+      });
+    }
+
+    const total = allDocs.length;
+
+    // Ordenar por razão social
+    allDocs.sort((a, b) => {
+      const razaoA = (a.data().razaoSocial || '').toLowerCase();
+      const razaoB = (b.data().razaoSocial || '').toLowerCase();
+      return razaoA.localeCompare(razaoB);
+    });
+
+    // Aplicar paginação
+    const offset = (page - 1) * limit;
+    const paginatedDocs = allDocs.slice(offset, offset + limit);
+
+    const items = paginatedDocs.map(mapDocToCliente);
+    const hasMore = offset + limit < total;
+
+    return {
+      items,
+      total,
+      hasMore,
+    };
+  },
+
+  async count(): Promise<number> {
+    const snapshot = await collection.get();
+    return snapshot.size;
   },
 };

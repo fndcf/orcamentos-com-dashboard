@@ -1,10 +1,20 @@
-import { Cliente } from '../models';
+import { Cliente, PaginatedResponse } from '../models';
 import { clienteRepository } from '../repositories/clienteRepository';
 import { ValidationError } from '../utils/errors';
 
 export const clienteService = {
   async listar(): Promise<Cliente[]> {
     return clienteRepository.findAll();
+  },
+
+  async listarPaginado(
+    page: number = 1,
+    limit: number = 10,
+    filters?: {
+      busca?: string;
+    }
+  ): Promise<PaginatedResponse<Cliente>> {
+    return clienteRepository.findPaginated(page, limit, filters);
   },
 
   async buscarPorId(id: string): Promise<Cliente> {

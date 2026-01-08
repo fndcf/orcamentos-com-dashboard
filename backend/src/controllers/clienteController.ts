@@ -11,6 +11,20 @@ export const clienteController = {
     }
   },
 
+  async listarPaginado(req: Request, res: Response, next: NextFunction) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const busca = req.query.busca as string | undefined;
+
+      const result = await clienteService.listarPaginado(page, limit, { busca });
+
+      res.json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async buscarPorId(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;

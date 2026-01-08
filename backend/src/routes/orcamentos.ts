@@ -10,6 +10,9 @@ router.use(authMiddleware);
 // GET /api/orcamentos - Listar todos os orçamentos
 router.get('/', orcamentoController.listar);
 
+// GET /api/orcamentos/paginated - Listar orçamentos com paginação
+router.get('/paginated', orcamentoController.listarPaginado);
+
 // GET /api/orcamentos/estatisticas - Obter estatísticas
 router.get('/estatisticas', orcamentoController.estatisticas);
 

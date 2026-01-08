@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import { Orcamento, OrcamentoStatus, OrcamentoSaveData } from "../types";
 import {
-  useOrcamentos,
+  useOrcamentosPaginados,
   useCriarOrcamento,
   useAtualizarOrcamento,
   useAtualizarStatusOrcamento,
@@ -212,10 +212,29 @@ export function Orcamentos() {
   );
   const [orcamentoView, setOrcamentoView] = useState<Orcamento | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrcamentoStatus | "">("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: orcamentos, isLoading } = useOrcamentos();
+  // Debounce da busca para não fazer muitas requisições
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Usa paginação do backend
+  const { data: paginatedData, isLoading } = useOrcamentosPaginados(
+    currentPage,
+    ITEMS_PER_PAGE,
+    {
+      status: statusFilter || undefined,
+      busca: debouncedSearchTerm || undefined,
+    }
+  );
+
+  const orcamentos = paginatedData?.items;
   const criarOrcamento = useCriarOrcamento();
   const atualizarOrcamento = useAtualizarOrcamento();
   const atualizarStatus = useAtualizarStatusOrcamento();
@@ -348,36 +367,15 @@ export function Orcamentos() {
     setModalOpen(true);
   };
 
-  const orcamentosFiltrados = useMemo(() => {
-    return orcamentos?.filter((orcamento) => {
-      // Filtro por status
-      if (statusFilter && orcamento.status !== statusFilter) {
-        return false;
-      }
-
-      // Filtro por busca
-      if (!searchTerm) return true;
-      const termo = searchTerm.toLowerCase();
-      const numeroMatch = orcamento.numero.toString().includes(termo);
-      const clienteMatch =
-        orcamento.clienteNome?.toLowerCase().includes(termo) || false;
-
-      return numeroMatch || clienteMatch;
-    });
-  }, [orcamentos, searchTerm, statusFilter]);
-
   // Reset para página 1 quando filtros mudam
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter]);
+  }, [debouncedSearchTerm, statusFilter]);
 
-  // Paginação
-  const totalItems = orcamentosFiltrados?.length || 0;
+  // Paginação - agora vem do backend
+  const totalItems = paginatedData?.total || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const orcamentosPaginados = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return orcamentosFiltrados?.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [orcamentosFiltrados, currentPage]);
+  const orcamentosPaginados = orcamentos;
 
   const getStatusActions = (orcamento: Orcamento): OrcamentoStatus[] => {
     switch (orcamento.status) {
