@@ -91,6 +91,16 @@ export function useEstatisticasOrcamentos() {
   return useQuery(['orcamentos', 'estatisticas'], orcamentoService.getEstatisticas);
 }
 
+export function useDashboardStats() {
+  return useQuery(
+    ['orcamentos', 'dashboard-stats'],
+    () => orcamentoService.getDashboardStats(),
+    {
+      staleTime: 2 * 60 * 1000, // 2 minutos
+    }
+  );
+}
+
 export function useCriarOrcamento() {
   const queryClient = useQueryClient();
 

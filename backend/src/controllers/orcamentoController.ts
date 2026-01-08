@@ -122,4 +122,13 @@ export const orcamentoController = {
       next(error);
     }
   },
+
+  async dashboardStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stats = await orcamentoService.getDashboardStats();
+      res.json({ success: true, data: stats });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

@@ -15,8 +15,7 @@ import {
   Line,
   Legend,
 } from "recharts";
-import { useOrcamentos } from "../hooks/useOrcamentos";
-import { useClientes } from "../hooks/useClientes";
+import { useOrcamentos, useDashboardStats } from "../hooks/useOrcamentos";
 import { Loading } from "../components/ui";
 import { formatCurrency, formatOrcamentoNumero } from "../utils/constants";
 import { Orcamento, OrcamentoStatus } from "../types";
@@ -259,72 +258,31 @@ const STATUS_LABELS: Record<OrcamentoStatus, string> = {
   expirado: "Expirados",
 };
 
-const MONTH_NAMES = [
-  "Jan",
-  "Fev",
-  "Mar",
-  "Abr",
-  "Mai",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Set",
-  "Out",
-  "Nov",
-  "Dez",
-];
-
 export function Dashboard() {
+  // Usa o endpoint otimizado que retorna dados agregados do backend
+  const { data: dashboardStats, isLoading: loadingStats } = useDashboardStats();
+  // Ainda precisa dos orçamentos para a lista de recentes e o modal
   const { data: orcamentos, isLoading: loadingOrcamentos } = useOrcamentos();
-  const { data: clientes, isLoading: loadingClientes } = useClientes();
   const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(
     null
   );
 
-  const stats = useMemo(() => {
-    if (!orcamentos) return null;
+  // Calcula taxa de conversão a partir dos dados do backend
+  const taxaConversao = useMemo(() => {
+    if (!dashboardStats || dashboardStats.total === 0) return "0";
+    return ((dashboardStats.aceitos / dashboardStats.total) * 100).toFixed(1);
+  }, [dashboardStats]);
 
-    const total = orcamentos.length;
-    const abertos = orcamentos.filter((o) => o.status === "aberto").length;
-    const aceitos = orcamentos.filter((o) => o.status === "aceito").length;
-    const recusados = orcamentos.filter((o) => o.status === "recusado").length;
-
-    const valorTotal = orcamentos.reduce(
-      (acc, o) => acc + (o.valorTotal || 0),
-      0
-    );
-    const valorAceitos = orcamentos
-      .filter((o) => o.status === "aceito")
-      .reduce((acc, o) => acc + (o.valorTotal || 0), 0);
-
-    const taxaConversao =
-      total > 0 ? ((aceitos / total) * 100).toFixed(1) : "0";
-
-    return {
-      total,
-      abertos,
-      aceitos,
-      recusados,
-      valorTotal,
-      valorAceitos,
-      taxaConversao,
-      totalClientes: clientes?.length || 0,
-    };
-  }, [orcamentos, clientes]);
-
+  // Dados para o gráfico de pizza (status) - derivado dos dados do backend
   const statusData = useMemo(() => {
-    if (!orcamentos) return [];
+    if (!dashboardStats) return [];
 
     const counts: Record<OrcamentoStatus, number> = {
-      aberto: 0,
-      aceito: 0,
-      recusado: 0,
-      expirado: 0,
+      aberto: dashboardStats.abertos,
+      aceito: dashboardStats.aceitos,
+      recusado: dashboardStats.recusados,
+      expirado: dashboardStats.expirados,
     };
-
-    orcamentos.forEach((o) => {
-      counts[o.status]++;
-    });
 
     return Object.entries(counts)
       .filter(([, value]) => value > 0)
@@ -333,48 +291,21 @@ export function Dashboard() {
         value,
         color: COLORS[status as OrcamentoStatus],
       }));
-  }, [orcamentos]);
+  }, [dashboardStats]);
 
+  // Dados mensais já vêm calculados do backend
   const monthlyData = useMemo(() => {
-    if (!orcamentos) return [];
+    if (!dashboardStats) return [];
 
-    const now = new Date();
-    const last6Months: { month: string; year: number; monthIndex: number }[] =
-      [];
+    return dashboardStats.porMes.map((mes) => ({
+      name: mes.mes,
+      total: mes.total,
+      aceitos: mes.aceitos,
+      valor: mes.valor / 1000, // Em milhares para visualização
+    }));
+  }, [dashboardStats]);
 
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      last6Months.push({
-        month: MONTH_NAMES[date.getMonth()],
-        year: date.getFullYear(),
-        monthIndex: date.getMonth(),
-      });
-    }
-
-    return last6Months.map(({ month, year, monthIndex }) => {
-      const monthOrcamentos = orcamentos.filter((o) => {
-        const date = new Date(o.dataEmissao);
-        return date.getMonth() === monthIndex && date.getFullYear() === year;
-      });
-
-      const total = monthOrcamentos.length;
-      const aceitos = monthOrcamentos.filter(
-        (o) => o.status === "aceito"
-      ).length;
-      const valor = monthOrcamentos.reduce(
-        (acc, o) => acc + (o.valorTotal || 0),
-        0
-      );
-
-      return {
-        name: `${month}/${year.toString().slice(-2)}`,
-        total,
-        aceitos,
-        valor: valor / 1000, // Em milhares para visualização
-      };
-    });
-  }, [orcamentos]);
-
+  // Lista de orçamentos recentes (ainda usa dados locais para o modal)
   const recentOrcamentos = useMemo(() => {
     if (!orcamentos) return [];
 
@@ -386,7 +317,7 @@ export function Dashboard() {
       .slice(0, 5);
   }, [orcamentos]);
 
-  if (loadingOrcamentos || loadingClientes) {
+  if (loadingStats || loadingOrcamentos) {
     return (
       <Container>
         <Title>Painel</Title>
@@ -395,7 +326,7 @@ export function Dashboard() {
     );
   }
 
-  if (!stats) {
+  if (!dashboardStats) {
     return (
       <Container>
         <Title>Painel</Title>
@@ -413,25 +344,25 @@ export function Dashboard() {
       <StatsGrid>
         <StatCard $color="var(--primary)">
           <div className="label">Total de Orçamentos</div>
-          <div className="value">{stats.total}</div>
-          <div className="subvalue">{formatCurrency(stats.valorTotal)}</div>
+          <div className="value">{dashboardStats.total}</div>
+          <div className="subvalue">{formatCurrency(dashboardStats.valorTotal)}</div>
         </StatCard>
 
         <StatCard $color="#4caf50">
           <div className="label">Orçamentos Aceitos</div>
-          <div className="value">{stats.aceitos}</div>
-          <div className="subvalue">{formatCurrency(stats.valorAceitos)}</div>
+          <div className="value">{dashboardStats.aceitos}</div>
+          <div className="subvalue">{formatCurrency(dashboardStats.valorAceitos)}</div>
         </StatCard>
 
         <StatCard $color="#2196f3">
           <div className="label">Taxa de Conversão</div>
-          <div className="value">{stats.taxaConversao}%</div>
-          <div className="subvalue">{stats.abertos} em aberto</div>
+          <div className="value">{taxaConversao}%</div>
+          <div className="subvalue">{dashboardStats.abertos} em aberto</div>
         </StatCard>
 
         <StatCard $color="#ff9800">
           <div className="label">Clientes Cadastrados</div>
-          <div className="value">{stats.totalClientes}</div>
+          <div className="value">{dashboardStats.totalClientes}</div>
           <div className="subvalue">ativos no sistema</div>
         </StatCard>
       </StatsGrid>

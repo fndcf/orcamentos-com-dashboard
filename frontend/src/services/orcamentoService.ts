@@ -1,5 +1,5 @@
 import api from './api';
-import { Orcamento, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, ParcelamentoDados, DescontoAVistaDados } from '../types';
+import { Orcamento, OrcamentoItemCompleto, OrcamentoStatus, OrcamentoTipo, ParcelamentoDados, DescontoAVistaDados, DashboardStats } from '../types';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -124,5 +124,10 @@ export const orcamentoService = {
   async verificarExpirados(): Promise<number> {
     const response = await api.post<ApiResponse<{ expirados: number }>>('/orcamentos/verificar-expirados');
     return response.data.data.expirados;
+  },
+
+  async getDashboardStats(): Promise<DashboardStats> {
+    const response = await api.get<ApiResponse<DashboardStats>>('/orcamentos/dashboard-stats');
+    return response.data.data;
   },
 };

@@ -216,15 +216,6 @@ export interface Usuario {
   createdAt: Date | string;
 }
 
-// Interface para estatísticas do Dashboard
-export interface DashboardStats {
-  totalAbertos: number;
-  totalAceitos: number;
-  totalRecusados: number;
-  totalExpirados: number;
-  valorTotalMes: number;
-}
-
 // Interface para resposta da BrasilAPI (CNPJ)
 export interface BrasilAPICNPJ {
   cnpj: string;
@@ -270,6 +261,28 @@ export interface HistoricoConfiguracao {
   impostoMaterial: number; // Percentual de imposto sobre material
   impostoServico: number; // Percentual de imposto sobre serviço
   createdAt: Date | string; // Quando o registro foi criado
+}
+
+// Interface para estatísticas do Dashboard (dados agregados do backend)
+export interface DashboardMesStats {
+  mes: string; // Ex: "Jan/26"
+  ano: number;
+  mesIndex: number;
+  total: number;
+  aceitos: number;
+  valor: number; // Em reais
+}
+
+export interface DashboardStats {
+  total: number;
+  abertos: number;
+  aceitos: number;
+  recusados: number;
+  expirados: number;
+  valorTotal: number;
+  valorAceitos: number;
+  totalClientes: number;
+  porMes: DashboardMesStats[];
 }
 
 // Interface para dados de salvamento do Orçamento

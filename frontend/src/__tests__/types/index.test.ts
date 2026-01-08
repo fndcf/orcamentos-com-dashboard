@@ -179,15 +179,22 @@ describe('Types', () => {
   describe('DashboardStats', () => {
     it('deve criar objeto DashboardStats válido', () => {
       const stats: DashboardStats = {
-        totalAbertos: 10,
-        totalAceitos: 50,
-        totalRecusados: 15,
-        totalExpirados: 5,
-        valorTotalMes: 150000,
+        total: 80,
+        abertos: 10,
+        aceitos: 50,
+        recusados: 15,
+        expirados: 5,
+        valorTotal: 500000,
+        valorAceitos: 350000,
+        totalClientes: 22,
+        porMes: [
+          { mes: 'Jan/26', ano: 2026, mesIndex: 0, total: 10, aceitos: 5, valor: 50000 },
+        ],
       };
 
-      expect(stats.totalAbertos).toBe(10);
-      expect(stats.valorTotalMes).toBe(150000);
+      expect(stats.total).toBe(80);
+      expect(stats.aceitos).toBe(50);
+      expect(stats.porMes[0].mes).toBe('Jan/26');
     });
   });
 

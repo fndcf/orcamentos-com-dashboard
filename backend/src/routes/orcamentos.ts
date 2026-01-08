@@ -13,6 +13,9 @@ router.get('/', orcamentoController.listar);
 // GET /api/orcamentos/estatisticas - Obter estatísticas
 router.get('/estatisticas', orcamentoController.estatisticas);
 
+// GET /api/orcamentos/dashboard-stats - Obter estatísticas agregadas para o Dashboard
+router.get('/dashboard-stats', orcamentoController.dashboardStats);
+
 // GET /api/orcamentos/cliente/:clienteId - Buscar por cliente
 router.get('/cliente/:clienteId', orcamentoController.buscarPorCliente);
 

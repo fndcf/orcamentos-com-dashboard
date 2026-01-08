@@ -242,3 +242,25 @@ export interface HistoricoConfiguracao {
   impostoServico: number; // Percentual de imposto sobre serviço
   createdAt: Date; // Quando o registro foi criado
 }
+
+// Interface para estatísticas do Dashboard (dados agregados)
+export interface DashboardMesStats {
+  mes: string; // Ex: "Jan/26"
+  ano: number;
+  mesIndex: number;
+  total: number;
+  aceitos: number;
+  valor: number; // Em reais
+}
+
+export interface DashboardStats {
+  total: number;
+  abertos: number;
+  aceitos: number;
+  recusados: number;
+  expirados: number;
+  valorTotal: number;
+  valorAceitos: number;
+  totalClientes: number;
+  porMes: DashboardMesStats[];
+}
