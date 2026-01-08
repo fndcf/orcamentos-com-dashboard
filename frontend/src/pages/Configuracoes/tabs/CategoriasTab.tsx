@@ -272,7 +272,8 @@ export function CategoriasTab() {
     }
   };
 
-  const isSaveDisabled = !nome.trim() || nome.trim().length < 3;
+  const isSavingCategoria = criarCategoria.isLoading || atualizarCategoria.isLoading;
+  const isSaveDisabled = !nome.trim() || nome.trim().length < 3 || isSavingCategoria;
 
   return (
     <>
@@ -431,11 +432,11 @@ export function CategoriasTab() {
         </FormGroup>
 
         <ModalButtons>
-          <Button $variant="ghost" onClick={handleCloseModal}>
+          <Button $variant="ghost" onClick={handleCloseModal} disabled={isSavingCategoria}>
             Cancelar
           </Button>
           <Button onClick={handleSalvar} disabled={isSaveDisabled}>
-            {editando ? 'Salvar Alterações' : 'Cadastrar'}
+            {isSavingCategoria ? 'Salvando...' : editando ? 'Salvar Alterações' : 'Cadastrar'}
           </Button>
         </ModalButtons>
       </Modal>

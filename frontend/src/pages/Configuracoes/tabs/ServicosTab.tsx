@@ -104,7 +104,8 @@ export function ServicosTab() {
     }
   };
 
-  const isSaveDisabled = !descricao.trim() || descricao.trim().length < 10;
+  const isSaving = criarServico.isLoading || atualizarServico.isLoading;
+  const isSaveDisabled = !descricao.trim() || descricao.trim().length < 10 || isSaving;
 
   return (
     <>
@@ -174,11 +175,11 @@ export function ServicosTab() {
         </FormGroup>
 
         <ModalButtons>
-          <Button $variant="ghost" onClick={handleCloseModal}>
+          <Button $variant="ghost" onClick={handleCloseModal} disabled={isSaving}>
             Cancelar
           </Button>
           <Button onClick={handleSalvar} disabled={isSaveDisabled}>
-            {editando ? 'Salvar Alterações' : 'Cadastrar'}
+            {isSaving ? 'Salvando...' : editando ? 'Salvar Alterações' : 'Cadastrar'}
           </Button>
         </ModalButtons>
       </Modal>

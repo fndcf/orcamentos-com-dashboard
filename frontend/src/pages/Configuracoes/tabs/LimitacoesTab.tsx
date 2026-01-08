@@ -111,10 +111,12 @@ export function LimitacoesTab() {
   const MAX_CARACTERES = 1000;
   const MIN_CARACTERES = 20;
   const caracteresUsados = texto.length;
+  const isSaving = criarLimitacao.isLoading || atualizarLimitacao.isLoading;
   const isSaveDisabled =
     !texto.trim() ||
     texto.trim().length < MIN_CARACTERES ||
-    texto.length > MAX_CARACTERES;
+    texto.length > MAX_CARACTERES ||
+    isSaving;
 
   return (
     <>
@@ -234,11 +236,11 @@ export function LimitacoesTab() {
         </FormGroup>
 
         <ModalButtons>
-          <Button $variant="ghost" onClick={handleCloseModal}>
+          <Button $variant="ghost" onClick={handleCloseModal} disabled={isSaving}>
             Cancelar
           </Button>
           <Button onClick={handleSalvar} disabled={isSaveDisabled}>
-            {editando ? "Salvar Alterações" : "Cadastrar"}
+            {isSaving ? "Salvando..." : editando ? "Salvar Alterações" : "Cadastrar"}
           </Button>
         </ModalButtons>
       </Modal>

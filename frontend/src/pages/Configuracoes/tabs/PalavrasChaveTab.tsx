@@ -131,7 +131,8 @@ export function PalavrasChaveTab() {
     }
   };
 
-  const isSaveDisabled = !palavra.trim() || !prazoDias || parseInt(prazoDias, 10) < 1;
+  const isSaving = criarPalavraChave.isLoading || atualizarPalavraChave.isLoading;
+  const isSaveDisabled = !palavra.trim() || !prazoDias || parseInt(prazoDias, 10) < 1 || isSaving;
 
   return (
     <>
@@ -220,11 +221,11 @@ export function PalavrasChaveTab() {
         </FormRow>
 
         <ModalButtons>
-          <Button $variant="ghost" onClick={handleCloseModal}>
+          <Button $variant="ghost" onClick={handleCloseModal} disabled={isSaving}>
             Cancelar
           </Button>
           <Button onClick={handleSalvar} disabled={isSaveDisabled}>
-            {editando ? 'Salvar Alterações' : 'Cadastrar'}
+            {isSaving ? 'Salvando...' : editando ? 'Salvar Alterações' : 'Cadastrar'}
           </Button>
         </ModalButtons>
       </Modal>
