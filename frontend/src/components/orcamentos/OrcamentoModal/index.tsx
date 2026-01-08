@@ -99,7 +99,7 @@ export function OrcamentoModal({
     string[]
   >([]);
   const [prazoExecucaoServicos, setPrazoExecucaoServicos] = useState(20);
-  const [prazoVistoriaBombeiros, setPrazoVistoriaBombeiros] = useState(30);
+  const [prazoVistoriaBombeiros, setPrazoVistoriaBombeiros] = useState<number | null>(null);
   const [condicaoPagamento, setCondicaoPagamento] = useState<
     "a_vista" | "a_combinar" | "parcelado"
   >("a_combinar");
@@ -236,7 +236,7 @@ export function OrcamentoModal({
             : orcamento.limitacoesSelecionadas || []
         );
         setPrazoExecucaoServicos(orcamento.prazoExecucaoServicos || 20);
-        setPrazoVistoriaBombeiros(orcamento.prazoVistoriaBombeiros || 30);
+        setPrazoVistoriaBombeiros(orcamento.prazoVistoriaBombeiros ?? null);
         setCondicaoPagamento(orcamento.condicaoPagamento || "a_combinar");
         setParcelamentoTexto(orcamento.parcelamentoTexto || "");
         setParcelamentoDados(orcamento.parcelamentoDados ?? undefined);
@@ -273,7 +273,7 @@ export function OrcamentoModal({
             : duplicarDe.limitacoesSelecionadas || []
         );
         setPrazoExecucaoServicos(duplicarDe.prazoExecucaoServicos || 20);
-        setPrazoVistoriaBombeiros(duplicarDe.prazoVistoriaBombeiros || 30);
+        setPrazoVistoriaBombeiros(duplicarDe.prazoVistoriaBombeiros ?? null);
         setCondicaoPagamento(duplicarDe.condicaoPagamento || "a_combinar");
         setParcelamentoTexto(duplicarDe.parcelamentoTexto || "");
         setParcelamentoDados(duplicarDe.parcelamentoDados ?? undefined);
@@ -294,7 +294,7 @@ export function OrcamentoModal({
         setItensCompleto([{ ...emptyItemCompleto }]);
         setLimitacoesSelecionadas([]);
         setPrazoExecucaoServicos(20);
-        setPrazoVistoriaBombeiros(30);
+        setPrazoVistoriaBombeiros(null);
         setCondicaoPagamento("a_combinar");
         setParcelamentoTexto("");
         setParcelamentoDados(undefined);
@@ -611,7 +611,7 @@ export function OrcamentoModal({
       limitacoesSelecionadas:
         limitacoesTextos.length > 0 ? limitacoesTextos : undefined,
       prazoExecucaoServicos,
-      prazoVistoriaBombeiros,
+      prazoVistoriaBombeiros: prazoVistoriaBombeiros, // Envia null explicitamente para limpar o campo
       condicaoPagamento,
       parcelamentoTexto:
         condicaoPagamento === "parcelado"

@@ -2133,13 +2133,15 @@ export function OrcamentoCompletoPDFDocument({
               execução dos serviços, podendo ser intercalados;
             </Text>
           </View>
-          <View style={stylesCompleto.prazoItem}>
-            <Text style={stylesCompleto.prazoBullet}>•</Text>
-            <Text style={stylesCompleto.prazoTexto}>
-              Até {orcamento.prazoVistoriaBombeiros || 30} dias para a vistoria
-              do Corpo de Bombeiros, depois de gerado o protocolo.
-            </Text>
-          </View>
+          {orcamento.prazoVistoriaBombeiros && (
+            <View style={stylesCompleto.prazoItem}>
+              <Text style={stylesCompleto.prazoBullet}>•</Text>
+              <Text style={stylesCompleto.prazoTexto}>
+                Até {orcamento.prazoVistoriaBombeiros} dias para a vistoria
+                do Corpo de Bombeiros, depois de gerado o protocolo.
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Prazo de Validade da Proposta */}
@@ -2180,6 +2182,7 @@ export function OrcamentoCompletoPDFDocument({
             </Text>
             <Text style={styles.footerCnpj}>
               CNPJ: {configuracoes.cnpjEmpresa}
+              {configuracoes.telefoneEmpresa ? ` | Tel: ${configuracoes.telefoneEmpresa}` : ''}
             </Text>
             <Text style={styles.footerEndereco}>
               {configuracoes.enderecoEmpresa}
@@ -2698,7 +2701,8 @@ function OrdemExecucaoPDFDocument({
               {configuracoes.nomeEmpresa}
             </Text>
             <Text style={stylesExecucao.footerInfo}>
-              CNPJ: {configuracoes.cnpjEmpresa} |{" "}
+              CNPJ: {configuracoes.cnpjEmpresa}
+              {configuracoes.telefoneEmpresa ? ` | Tel: ${configuracoes.telefoneEmpresa}` : ''} |{" "}
               {configuracoes.enderecoEmpresa}
             </Text>
           </View>

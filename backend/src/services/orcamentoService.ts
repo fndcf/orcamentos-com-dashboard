@@ -378,11 +378,13 @@ export const orcamentoService = {
     ) {
       updateData.prazoExecucaoServicos = data.prazoExecucaoServicos;
     }
-    if (
-      data.prazoVistoriaBombeiros !== undefined &&
-      data.prazoVistoriaBombeiros !== orcamento.prazoVistoriaBombeiros
-    ) {
-      updateData.prazoVistoriaBombeiros = data.prazoVistoriaBombeiros;
+    // prazoVistoriaBombeiros - pode ser null para remover
+    if (data.prazoVistoriaBombeiros !== undefined) {
+      if (data.prazoVistoriaBombeiros !== orcamento.prazoVistoriaBombeiros) {
+        updateData.prazoVistoriaBombeiros = data.prazoVistoriaBombeiros
+          ? data.prazoVistoriaBombeiros
+          : (FieldValue.delete() as any);
+      }
     }
 
     // Condição de pagamento - só atualiza se mudou

@@ -162,9 +162,9 @@ export function LimitacoesSection({
 
 interface PrazosSectionProps {
   prazoExecucao: number;
-  prazoVistoria: number;
+  prazoVistoria: number | null;
   onPrazoExecucaoChange: (valor: number) => void;
-  onPrazoVistoriaChange: (valor: number) => void;
+  onPrazoVistoriaChange: (valor: number | null) => void;
 }
 
 export function PrazosSection({
@@ -203,11 +203,13 @@ export function PrazosSection({
           <Input
             type="number"
             min="1"
-            value={prazoVistoria}
-            onChange={(e) =>
-              onPrazoVistoriaChange(parseInt(e.target.value) || 1)
-            }
+            value={prazoVistoria ?? ""}
+            onChange={(e) => {
+              const value = e.target.value;
+              onPrazoVistoriaChange(value === "" ? null : parseInt(value) || null);
+            }}
             style={{ maxWidth: "150px" }}
+            placeholder="Opcional"
           />
           <p
             style={{
@@ -216,7 +218,7 @@ export function PrazosSection({
               marginTop: "4px",
             }}
           >
-            Após gerado o protocolo
+            Após gerado o protocolo (deixe vazio para não exibir)
           </p>
         </InputGroup>
       </InputRow>

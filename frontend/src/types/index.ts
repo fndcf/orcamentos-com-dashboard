@@ -101,7 +101,7 @@ export interface Orcamento {
   itensCompleto?: OrcamentoItemCompleto[];
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number; // Dias úteis para execução dos serviços (podendo ser intercalados)
-  prazoVistoriaBombeiros?: number; // Dias para vistoria do Corpo de Bombeiros (após protocolo)
+  prazoVistoriaBombeiros?: number | null; // Dias para vistoria do Corpo de Bombeiros (após protocolo)
   condicaoPagamento?: "a_vista" | "a_combinar" | "parcelado";
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados; // Dados estruturados do parcelamento para o PDF
@@ -295,7 +295,7 @@ export interface OrcamentoSaveData {
   itensCompleto?: OrcamentoItemCompleto[];
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
-  prazoVistoriaBombeiros?: number;
+  prazoVistoriaBombeiros?: number | null;
   condicaoPagamento?: "a_vista" | "a_combinar" | "parcelado";
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;

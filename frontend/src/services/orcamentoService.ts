@@ -16,7 +16,7 @@ interface CriarOrcamentoDTO {
   itensCompleto?: OrcamentoItemCompleto[];
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
-  prazoVistoriaBombeiros?: number;
+  prazoVistoriaBombeiros?: number | null;
   condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
@@ -39,7 +39,7 @@ interface AtualizarOrcamentoDTO {
   itensCompleto?: OrcamentoItemCompleto[];
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
-  prazoVistoriaBombeiros?: number;
+  prazoVistoriaBombeiros?: number | null;
   condicaoPagamento?: 'a_vista' | 'a_combinar' | 'parcelado';
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
