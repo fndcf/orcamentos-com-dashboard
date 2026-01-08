@@ -14,7 +14,24 @@
       "fields": [
         { "fieldPath": "ativo", "order": "ASCENDING" },
         { "fieldPath": "categoriaId", "order": "ASCENDING" },
+        { "fieldPath": "descricao", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "itensServico",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ativo", "order": "ASCENDING" },
+        { "fieldPath": "categoriaId", "order": "ASCENDING" },
         { "fieldPath": "ordem", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "itensServico",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "categoriaId", "order": "ASCENDING" },
+        { "fieldPath": "descricao", "order": "ASCENDING" }
       ]
     },
     {
@@ -34,23 +51,6 @@
       ]
     },
     {
-      "collectionGroup": "itensServico",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "categoriaId", "order": "ASCENDING" },
-        { "fieldPath": "ativo", "order": "ASCENDING" },
-        { "fieldPath": "descricao", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "itensServico",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "categoriaId", "order": "ASCENDING" },
-        { "fieldPath": "descricao", "order": "ASCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "limitacoes",
       "queryScope": "COLLECTION",
       "fields": [
@@ -64,6 +64,38 @@
       "fields": [
         { "fieldPath": "lida", "order": "ASCENDING" },
         { "fieldPath": "dataVencimento", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "orcamentos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "clienteId", "order": "ASCENDING" },
+        { "fieldPath": "numero", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "orcamentos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "clienteId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "orcamentos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "dataValidade", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "orcamentos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "numero", "order": "DESCENDING" }
       ]
     },
     {

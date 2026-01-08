@@ -225,7 +225,7 @@ export function Orcamentos() {
   }, [searchTerm]);
 
   // Usa paginação do backend
-  const { data: paginatedData, isLoading } = useOrcamentosPaginados(
+  const { data: paginatedData, isLoading, isFetching } = useOrcamentosPaginados(
     currentPage,
     ITEMS_PER_PAGE,
     {
@@ -420,7 +420,7 @@ export function Orcamentos() {
         </FilterGroup>
       </SearchBar>
 
-      {isLoading ? (
+      {isLoading || isFetching ? (
         <Loading />
       ) : orcamentosPaginados && orcamentosPaginados.length > 0 ? (
         <>

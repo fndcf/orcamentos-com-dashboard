@@ -204,12 +204,31 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
     e.preventDefault();
     setMessage(null);
 
+    // Validação do documento no frontend
+    const docLimpo = form.cnpj.replace(/\D/g, '');
+
+    if (isPessoaFisica) {
+      // CPF é opcional, mas se foi digitado algo, deve ter 11 dígitos
+      if (docLimpo && docLimpo.length !== 11) {
+        setMessage({ type: 'error', text: 'CPF deve ter 11 dígitos' });
+        return;
+      }
+    } else {
+      // CNPJ é obrigatório e deve ter 14 dígitos
+      if (!docLimpo || docLimpo.length !== 14) {
+        setMessage({ type: 'error', text: 'CNPJ deve ter 14 dígitos' });
+        return;
+      }
+    }
+
     try {
       await onSave(form);
       onClose();
-    } catch (err) {
-      const error = err as Error;
-      setMessage({ type: 'error', text: error.message || 'Erro ao salvar cliente' });
+    } catch (err: unknown) {
+      // Extrair mensagem de erro do Axios ou Error genérico
+      const axiosError = err as { response?: { data?: { error?: string } }; message?: string };
+      const errorMessage = axiosError.response?.data?.error || axiosError.message || 'Erro ao salvar cliente';
+      setMessage({ type: 'error', text: errorMessage });
     }
   };
 

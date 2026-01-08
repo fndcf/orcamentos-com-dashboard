@@ -125,7 +125,7 @@ export function Clientes() {
   }, [searchTerm]);
 
   // Usa paginação do backend
-  const { data: paginatedData, isLoading } = useClientesPaginados(
+  const { data: paginatedData, isLoading, isFetching } = useClientesPaginados(
     currentPage,
     ITEMS_PER_PAGE,
     {
@@ -199,7 +199,7 @@ export function Clientes() {
         />
       </SearchBar>
 
-      {isLoading ? (
+      {isLoading || isFetching ? (
         <Loading />
       ) : clientesPaginados && clientesPaginados.length > 0 ? (
         <>

@@ -137,41 +137,54 @@ export const clienteRepository = {
       busca?: string;
     }
   ): Promise<PaginatedResponse<Cliente>> {
-    // Buscar todos os documentos
-    const snapshot = await collection.get();
-    let allDocs = snapshot.docs;
-
-    // Se houver busca por texto, filtrar manualmente
+    // Se houver busca por texto, filtrar em memória (Firestore não suporta substring search)
     if (filters?.busca) {
+      const snapshot = await collection.orderBy('razaoSocialUpper', 'asc').get();
+      let allDocs = snapshot.docs;
+
       const buscaLower = filters.busca.toLowerCase();
+      const buscaNumeros = filters.busca.replace(/\D/g, '');
+
       allDocs = allDocs.filter(doc => {
         const data = doc.data();
         const razaoSocial = (data.razaoSocial || '').toLowerCase();
         const nomeFantasia = (data.nomeFantasia || '').toLowerCase();
         const cnpj = (data.cnpj || '').replace(/\D/g, '');
-        const buscaLimpa = buscaLower.replace(/\D/g, '');
 
         return razaoSocial.includes(buscaLower) ||
                nomeFantasia.includes(buscaLower) ||
-               (buscaLimpa && cnpj.includes(buscaLimpa));
+               (buscaNumeros && cnpj.includes(buscaNumeros));
       });
+
+      const total = allDocs.length;
+      const offset = (page - 1) * limit;
+      const paginatedDocs = allDocs.slice(offset, offset + limit);
+      const items = paginatedDocs.map(mapDocToCliente);
+      const hasMore = offset + limit < total;
+
+      return { items, total, hasMore };
     }
 
-    const total = allDocs.length;
-
-    // Ordenar por razão social
-    allDocs.sort((a, b) => {
-      const razaoA = (a.data().razaoSocial || '').toLowerCase();
-      const razaoB = (b.data().razaoSocial || '').toLowerCase();
-      return razaoA.localeCompare(razaoB);
-    });
-
-    // Aplicar paginação
+    // Paginação otimizada com cursor do Firestore (sem busca)
     const offset = (page - 1) * limit;
-    const paginatedDocs = allDocs.slice(offset, offset + limit);
 
-    const items = paginatedDocs.map(mapDocToCliente);
-    const hasMore = offset + limit < total;
+    // Buscar total e dados em paralelo para melhor performance
+    const [totalCount, dataSnapshot] = await Promise.all([
+      collection.count().get(),
+      offset > 0
+        ? collection.orderBy('razaoSocialUpper', 'asc').limit(offset + limit).get()
+        : collection.orderBy('razaoSocialUpper', 'asc').limit(limit).get()
+    ]);
+
+    const total = totalCount.data().count;
+
+    // Se offset > 0, pegar apenas os docs após o offset
+    const docs = offset > 0
+      ? dataSnapshot.docs.slice(offset)
+      : dataSnapshot.docs;
+
+    const items = docs.map(mapDocToCliente);
+    const hasMore = offset + items.length < total;
 
     return {
       items,
@@ -181,7 +194,8 @@ export const clienteRepository = {
   },
 
   async count(): Promise<number> {
-    const snapshot = await collection.get();
-    return snapshot.size;
+    // Usar count aggregation do Firestore (mais eficiente)
+    const countSnapshot = await collection.count().get();
+    return countSnapshot.data().count;
   },
 };

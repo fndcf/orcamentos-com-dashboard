@@ -123,14 +123,29 @@ export function NovoClienteForm({ onClienteCriado }: NovoClienteFormProps) {
   };
 
   const handleSalvarCliente = async () => {
-    // Validação básica
-    if (!clienteForm.cnpj.trim()) {
-      setClienteMessage({
-        type: "error",
-        text: isPessoaFisica ? "CPF é obrigatório" : "CNPJ é obrigatório",
-      });
-      return;
+    // Validação do documento
+    const docLimpo = clienteForm.cnpj.replace(/\D/g, "");
+
+    if (isPessoaFisica) {
+      // CPF é opcional, mas se foi digitado algo, deve ter 11 dígitos
+      if (docLimpo && docLimpo.length !== 11) {
+        setClienteMessage({
+          type: "error",
+          text: "CPF deve ter 11 dígitos",
+        });
+        return;
+      }
+    } else {
+      // CNPJ é obrigatório e deve ter 14 dígitos
+      if (!docLimpo || docLimpo.length !== 14) {
+        setClienteMessage({
+          type: "error",
+          text: "CNPJ deve ter 14 dígitos",
+        });
+        return;
+      }
     }
+
     if (!clienteForm.razaoSocial.trim()) {
       setClienteMessage({
         type: "error",
@@ -155,11 +170,13 @@ export function NovoClienteForm({ onClienteCriado }: NovoClienteFormProps) {
           text: "Erro ao obter ID do cliente criado",
         });
       }
-    } catch (err) {
-      const error = err as Error;
+    } catch (err: unknown) {
+      // Extrair mensagem de erro do Axios ou Error genérico
+      const axiosError = err as { response?: { data?: { error?: string } }; message?: string };
+      const errorMessage = axiosError.response?.data?.error || axiosError.message || "Erro ao salvar cliente";
       setClienteMessage({
         type: "error",
-        text: error.message || "Erro ao salvar cliente",
+        text: errorMessage,
       });
     } finally {
       setSalvandoCliente(false);
@@ -190,7 +207,7 @@ export function NovoClienteForm({ onClienteCriado }: NovoClienteFormProps) {
       <DocumentRow>
         <InputGroup>
           <Label htmlFor="cnpjInline">
-            {isPessoaFisica ? "CPF *" : "CNPJ *"}
+            {isPessoaFisica ? "CPF" : "CNPJ *"}
           </Label>
           <Input
             id="cnpjInline"

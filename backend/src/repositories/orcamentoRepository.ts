@@ -273,39 +273,35 @@ export const orcamentoRepository = {
     expirados: number;
     valorTotalAceitos: number;
   }> {
-    const snapshot = await collection.get();
+    // Usar count aggregations em paralelo para melhor performance
+    const [totalCount, abertosCount, aceitosCount, recusadosCount, expiradosCount] = await Promise.all([
+      collection.count().get(),
+      collection.where('status', '==', 'aberto').count().get(),
+      collection.where('status', '==', 'aceito').count().get(),
+      collection.where('status', '==', 'recusado').count().get(),
+      collection.where('status', '==', 'expirado').count().get(),
+    ]);
 
-    const stats = {
-      total: 0,
-      abertos: 0,
-      aceitos: 0,
-      recusados: 0,
-      expirados: 0,
-      valorTotalAceitos: 0,
-    };
+    // Para valorTotalAceitos, precisamos usar sum aggregation ou buscar os aceitos
+    // O Firestore suporta sum aggregation a partir da versão mais recente
+    const aceitosSnapshot = await collection
+      .where('status', '==', 'aceito')
+      .select('valorTotal')
+      .get();
 
-    snapshot.docs.forEach(doc => {
-      const data = doc.data();
-      stats.total++;
-
-      switch (data.status) {
-        case 'aberto':
-          stats.abertos++;
-          break;
-        case 'aceito':
-          stats.aceitos++;
-          stats.valorTotalAceitos += data.valorTotal || 0;
-          break;
-        case 'recusado':
-          stats.recusados++;
-          break;
-        case 'expirado':
-          stats.expirados++;
-          break;
-      }
+    let valorTotalAceitos = 0;
+    aceitosSnapshot.docs.forEach(doc => {
+      valorTotalAceitos += doc.data().valorTotal || 0;
     });
 
-    return stats;
+    return {
+      total: totalCount.data().count,
+      abertos: abertosCount.data().count,
+      aceitos: aceitosCount.data().count,
+      recusados: recusadosCount.data().count,
+      expirados: expiradosCount.data().count,
+      valorTotalAceitos,
+    };
   },
 
   async findPaginated(
@@ -317,88 +313,71 @@ export const orcamentoRepository = {
       busca?: string;
     }
   ): Promise<PaginatedResponse<Orcamento>> {
-    try {
-      // Primeiro, contar o total de documentos com os filtros aplicados
-      let countQuery: FirebaseFirestore.Query = collection;
-
+    // Se houver busca por texto, filtrar em memória (Firestore não suporta substring search)
+    if (filters?.busca) {
+      let query: FirebaseFirestore.Query = collection;
       if (filters?.status) {
-        countQuery = countQuery.where('status', '==', filters.status);
+        query = query.where('status', '==', filters.status);
       }
       if (filters?.clienteId) {
-        countQuery = countQuery.where('clienteId', '==', filters.clienteId);
+        query = query.where('clienteId', '==', filters.clienteId);
       }
+      query = query.orderBy('numero', 'desc');
 
-      const countSnapshot = await countQuery.get();
-      let totalDocs = countSnapshot.docs;
-
-      // Se houver busca por texto, filtrar manualmente
-      if (filters?.busca) {
-        const buscaLower = filters.busca.toLowerCase();
-        totalDocs = totalDocs.filter(doc => {
-          const data = doc.data();
-          const clienteNome = (data.clienteNome || '').toLowerCase();
-          const numero = (data.numero || '').toString();
-          return clienteNome.includes(buscaLower) || numero.includes(buscaLower);
-        });
-      }
-
-      const total = totalDocs.length;
-
-      // Ordenar por número decrescente
-      totalDocs.sort((a, b) => (b.data().numero || 0) - (a.data().numero || 0));
-
-      // Aplicar paginação
-      const offset = (page - 1) * limit;
-      const paginatedDocs = totalDocs.slice(offset, offset + limit);
-
-      const items = paginatedDocs.map(mapDocToOrcamento);
-      const hasMore = offset + limit < total;
-
-      return {
-        items,
-        total,
-        hasMore,
-      };
-    } catch (error) {
-      // Fallback: buscar todos e paginar manualmente
-      const snapshot = await collection.get();
+      const snapshot = await query.get();
       let allDocs = snapshot.docs;
 
-      // Aplicar filtros
-      if (filters?.status) {
-        allDocs = allDocs.filter(doc => doc.data().status === filters.status);
-      }
-      if (filters?.clienteId) {
-        allDocs = allDocs.filter(doc => doc.data().clienteId === filters.clienteId);
-      }
-      if (filters?.busca) {
-        const buscaLower = filters.busca.toLowerCase();
-        allDocs = allDocs.filter(doc => {
-          const data = doc.data();
-          const clienteNome = (data.clienteNome || '').toLowerCase();
-          const numero = (data.numero || '').toString();
-          return clienteNome.includes(buscaLower) || numero.includes(buscaLower);
-        });
-      }
+      const buscaLower = filters.busca.toLowerCase();
+      allDocs = allDocs.filter(doc => {
+        const data = doc.data();
+        const clienteNome = (data.clienteNome || '').toLowerCase();
+        const numero = (data.numero || '').toString();
+        return clienteNome.includes(buscaLower) || numero.includes(buscaLower);
+      });
 
       const total = allDocs.length;
-
-      // Ordenar por número decrescente
-      allDocs.sort((a, b) => (b.data().numero || 0) - (a.data().numero || 0));
-
-      // Aplicar paginação
       const offset = (page - 1) * limit;
       const paginatedDocs = allDocs.slice(offset, offset + limit);
-
       const items = paginatedDocs.map(mapDocToOrcamento);
       const hasMore = offset + limit < total;
 
-      return {
-        items,
-        total,
-        hasMore,
-      };
+      return { items, total, hasMore };
     }
+
+    // Paginação otimizada com Firestore (sem busca de texto)
+    const offset = (page - 1) * limit;
+
+    // Construir query base com filtros
+    let baseQuery: FirebaseFirestore.Query = collection;
+    if (filters?.status) {
+      baseQuery = baseQuery.where('status', '==', filters.status);
+    }
+    if (filters?.clienteId) {
+      baseQuery = baseQuery.where('clienteId', '==', filters.clienteId);
+    }
+    baseQuery = baseQuery.orderBy('numero', 'desc');
+
+    // Buscar total e dados em paralelo
+    const [totalCount, dataSnapshot] = await Promise.all([
+      this.count(filters),
+      offset > 0
+        ? baseQuery.limit(offset + limit).get()
+        : baseQuery.limit(limit).get()
+    ]);
+
+    // Se offset > 0, pegar apenas os docs após o offset
+    const docs = offset > 0
+      ? dataSnapshot.docs.slice(offset)
+      : dataSnapshot.docs;
+
+    const items = docs.map(mapDocToOrcamento);
+    const hasMore = offset + items.length < totalCount;
+
+    return {
+      items,
+      total: totalCount,
+      hasMore,
+    };
   },
 
   async count(filters?: { status?: OrcamentoStatus; clienteId?: string }): Promise<number> {
@@ -411,11 +390,12 @@ export const orcamentoRepository = {
       query = query.where('clienteId', '==', filters.clienteId);
     }
 
-    const snapshot = await query.get();
-    return snapshot.size;
+    // Usar count aggregation do Firestore (mais eficiente que buscar todos os docs)
+    const countSnapshot = await query.count().get();
+    return countSnapshot.data().count;
   },
 
-  async getHistoricoCliente(clienteId: string, limit: number = 5): Promise<{
+  async getHistoricoCliente(clienteId: string, limitItems: number = 5): Promise<{
     orcamentos: Orcamento[];
     resumo: {
       total: number;
@@ -423,72 +403,38 @@ export const orcamentoRepository = {
       valorTotalAceitos: number;
     };
   }> {
-    try {
-      // Buscar todos os orçamentos do cliente para calcular resumo
-      const snapshot = await collection
+    // Buscar os últimos N orçamentos do cliente com paginação real
+    const [orcamentosSnapshot, totalCount, aceitosSnapshot] = await Promise.all([
+      // Últimos N orçamentos ordenados por número
+      collection
         .where('clienteId', '==', clienteId)
-        .get();
+        .orderBy('numero', 'desc')
+        .limit(limitItems)
+        .get(),
+      // Total de orçamentos do cliente
+      collection.where('clienteId', '==', clienteId).count().get(),
+      // Orçamentos aceitos para calcular valor total
+      collection
+        .where('clienteId', '==', clienteId)
+        .where('status', '==', 'aceito')
+        .select('valorTotal')
+        .get(),
+    ]);
 
-      // Calcular resumo com todos os documentos
-      let total = 0;
-      let aceitos = 0;
-      let valorTotalAceitos = 0;
+    const orcamentos = orcamentosSnapshot.docs.map(mapDocToOrcamento);
 
-      const allDocs = snapshot.docs.map(doc => {
-        const data = doc.data();
-        total++;
-        if (data.status === 'aceito') {
-          aceitos++;
-          valorTotalAceitos += data.valorTotal || 0;
-        }
-        return { doc, numero: data.numero || 0 };
-      });
+    let valorTotalAceitos = 0;
+    aceitosSnapshot.docs.forEach(doc => {
+      valorTotalAceitos += doc.data().valorTotal || 0;
+    });
 
-      // Ordenar por número decrescente e pegar apenas os últimos N
-      allDocs.sort((a, b) => b.numero - a.numero);
-      const limitedDocs = allDocs.slice(0, limit);
-
-      const orcamentos = limitedDocs.map(({ doc }) => mapDocToOrcamento(doc));
-
-      return {
-        orcamentos,
-        resumo: {
-          total,
-          aceitos,
-          valorTotalAceitos,
-        },
-      };
-    } catch {
-      // Fallback
-      const snapshot = await collection.where('clienteId', '==', clienteId).get();
-
-      let total = 0;
-      let aceitos = 0;
-      let valorTotalAceitos = 0;
-
-      const allDocs = snapshot.docs.map(doc => {
-        const data = doc.data();
-        total++;
-        if (data.status === 'aceito') {
-          aceitos++;
-          valorTotalAceitos += data.valorTotal || 0;
-        }
-        return { doc, numero: data.numero || 0 };
-      });
-
-      allDocs.sort((a, b) => b.numero - a.numero);
-      const limitedDocs = allDocs.slice(0, limit);
-
-      const orcamentos = limitedDocs.map(({ doc }) => mapDocToOrcamento(doc));
-
-      return {
-        orcamentos,
-        resumo: {
-          total,
-          aceitos,
-          valorTotalAceitos,
-        },
-      };
-    }
+    return {
+      orcamentos,
+      resumo: {
+        total: totalCount.data().count,
+        aceitos: aceitosSnapshot.size,
+        valorTotalAceitos,
+      },
+    };
   },
 };
