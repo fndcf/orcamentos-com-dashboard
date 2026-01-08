@@ -7,6 +7,7 @@ import {
   useOrcamento,
   useOrcamentosPorCliente,
   useOrcamentosPorStatus,
+  useHistoricoCliente,
   useEstatisticasOrcamentos,
   useCriarOrcamento,
   useAtualizarOrcamento,
@@ -24,6 +25,7 @@ vi.mock('../../services/orcamentoService', () => ({
     buscarPorId: vi.fn(),
     buscarPorCliente: vi.fn(),
     buscarPorStatus: vi.fn(),
+    getHistoricoCliente: vi.fn(),
     getEstatisticas: vi.fn(),
     criar: vi.fn(),
     atualizar: vi.fn(),
@@ -119,6 +121,81 @@ describe('useOrcamentos hooks', () => {
 
       expect(result.current.isIdle).toBe(true);
       expect(orcamentoService.buscarPorCliente).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('useHistoricoCliente', () => {
+    it('deve retornar histórico do cliente com resumo agregado', async () => {
+      const mockHistorico = {
+        orcamentos: [
+          { id: '1', numero: 5, clienteId: 'c1', status: 'aceito', valorTotal: 1000 },
+          { id: '2', numero: 4, clienteId: 'c1', status: 'aberto', valorTotal: 500 },
+        ],
+        resumo: {
+          total: 10,
+          aceitos: 5,
+          valorTotalAceitos: 15000,
+        },
+      };
+      vi.mocked(orcamentoService.getHistoricoCliente).mockResolvedValue(mockHistorico as any);
+
+      const { result } = renderHook(() => useHistoricoCliente('c1', 5), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data).toEqual(mockHistorico);
+      expect(orcamentoService.getHistoricoCliente).toHaveBeenCalledWith('c1', 5);
+    });
+
+    it('deve usar limite padrão de 5 quando não especificado', async () => {
+      const mockHistorico = {
+        orcamentos: [],
+        resumo: { total: 0, aceitos: 0, valorTotalAceitos: 0 },
+      };
+      vi.mocked(orcamentoService.getHistoricoCliente).mockResolvedValue(mockHistorico as any);
+
+      const { result } = renderHook(() => useHistoricoCliente('c1'), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(orcamentoService.getHistoricoCliente).toHaveBeenCalledWith('c1', 5);
+    });
+
+    it('não deve buscar quando clienteId está vazio', () => {
+      const { result } = renderHook(() => useHistoricoCliente(''), {
+        wrapper: createWrapper(),
+      });
+
+      expect(result.current.isIdle).toBe(true);
+      expect(orcamentoService.getHistoricoCliente).not.toHaveBeenCalled();
+    });
+
+    it('deve retornar resumo correto mesmo com poucos orçamentos retornados', async () => {
+      const mockHistorico = {
+        orcamentos: [
+          { id: '1', numero: 100, clienteId: 'c1', status: 'aceito', valorTotal: 5000 },
+        ],
+        resumo: {
+          total: 200,
+          aceitos: 150,
+          valorTotalAceitos: 500000,
+        },
+      };
+      vi.mocked(orcamentoService.getHistoricoCliente).mockResolvedValue(mockHistorico as any);
+
+      const { result } = renderHook(() => useHistoricoCliente('c1', 1), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.orcamentos).toHaveLength(1);
+      expect(result.current.data?.resumo.total).toBe(200);
+      expect(result.current.data?.resumo.aceitos).toBe(150);
     });
   });
 

@@ -63,6 +63,69 @@ describe('orcamentoService', () => {
     });
   });
 
+  describe('getHistoricoCliente', () => {
+    it('deve buscar histórico do cliente com limite', async () => {
+      const mockHistorico = {
+        orcamentos: [
+          { id: '1', numero: 5, clienteId: 'c1', status: 'aceito', valorTotal: 1000 },
+          { id: '2', numero: 4, clienteId: 'c1', status: 'aberto', valorTotal: 500 },
+        ],
+        resumo: {
+          total: 10,
+          aceitos: 5,
+          valorTotalAceitos: 15000,
+        },
+      };
+      vi.mocked(api.get).mockResolvedValue({
+        data: { success: true, data: mockHistorico },
+      });
+
+      const result = await orcamentoService.getHistoricoCliente('c1', 5);
+
+      expect(api.get).toHaveBeenCalledWith('/orcamentos/cliente/c1/historico', {
+        params: { limit: 5 },
+      });
+      expect(result).toEqual(mockHistorico);
+    });
+
+    it('deve usar limite padrão quando não especificado', async () => {
+      const mockHistorico = {
+        orcamentos: [],
+        resumo: { total: 0, aceitos: 0, valorTotalAceitos: 0 },
+      };
+      vi.mocked(api.get).mockResolvedValue({
+        data: { success: true, data: mockHistorico },
+      });
+
+      await orcamentoService.getHistoricoCliente('c1');
+
+      expect(api.get).toHaveBeenCalledWith('/orcamentos/cliente/c1/historico', {
+        params: { limit: 5 },
+      });
+    });
+
+    it('deve retornar resumo agregado de todos os orçamentos', async () => {
+      const mockHistorico = {
+        orcamentos: [{ id: '1', numero: 100 }],
+        resumo: {
+          total: 200,
+          aceitos: 150,
+          valorTotalAceitos: 500000,
+        },
+      };
+      vi.mocked(api.get).mockResolvedValue({
+        data: { success: true, data: mockHistorico },
+      });
+
+      const result = await orcamentoService.getHistoricoCliente('c1', 1);
+
+      expect(result.orcamentos).toHaveLength(1);
+      expect(result.resumo.total).toBe(200);
+      expect(result.resumo.aceitos).toBe(150);
+      expect(result.resumo.valorTotalAceitos).toBe(500000);
+    });
+  });
+
   describe('buscarPorStatus', () => {
     it('deve buscar orçamentos por status', async () => {
       const mockOrcamentos = [{ id: '1', status: 'aberto' }];

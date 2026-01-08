@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { HistoricoOrcamentosModal } from '../../../components/clientes/HistoricoOrcamentosModal';
-import { useOrcamentosPorCliente } from '../../../hooks/useOrcamentos';
+import { useHistoricoCliente } from '../../../hooks/useOrcamentos';
 import { formatOrcamentoNumero } from '../../../utils/constants';
 
 // Mock do hook
 vi.mock('../../../hooks/useOrcamentos', () => ({
-  useOrcamentosPorCliente: vi.fn(),
+  useHistoricoCliente: vi.fn(),
 }));
 
 // Mock do OrcamentoPDF
@@ -114,14 +114,24 @@ const mockOrcamentos = [
   },
 ];
 
+// Helper para criar dados mock do histórico
+const createMockHistorico = (orcamentos: typeof mockOrcamentos, resumo?: { total: number; aceitos: number; valorTotalAceitos: number }) => ({
+  orcamentos,
+  resumo: resumo || {
+    total: orcamentos.length,
+    aceitos: orcamentos.filter(o => o.status === 'aceito').length,
+    valorTotalAceitos: orcamentos.filter(o => o.status === 'aceito').reduce((acc, o) => acc + o.valorTotal, 0),
+  },
+});
+
 describe('HistoricoOrcamentosModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('não deve renderizar quando cliente é null', () => {
-    vi.mocked(useOrcamentosPorCliente).mockReturnValue({
-      data: [],
+    vi.mocked(useHistoricoCliente).mockReturnValue({
+      data: createMockHistorico([]),
       isLoading: false,
     } as any);
 
@@ -138,7 +148,7 @@ describe('HistoricoOrcamentosModal', () => {
   });
 
   it('deve mostrar loading quando está carregando', () => {
-    vi.mocked(useOrcamentosPorCliente).mockReturnValue({
+    vi.mocked(useHistoricoCliente).mockReturnValue({
       data: undefined,
       isLoading: true,
     } as any);
@@ -156,8 +166,8 @@ describe('HistoricoOrcamentosModal', () => {
   });
 
   it('deve renderizar informações do cliente', () => {
-    vi.mocked(useOrcamentosPorCliente).mockReturnValue({
-      data: [],
+    vi.mocked(useHistoricoCliente).mockReturnValue({
+      data: createMockHistorico([]),
       isLoading: false,
     } as any);
 
@@ -177,8 +187,8 @@ describe('HistoricoOrcamentosModal', () => {
   });
 
   it('deve mostrar mensagem quando não há orçamentos', () => {
-    vi.mocked(useOrcamentosPorCliente).mockReturnValue({
-      data: [],
+    vi.mocked(useHistoricoCliente).mockReturnValue({
+      data: createMockHistorico([]),
       isLoading: false,
     } as any);
 
@@ -196,8 +206,8 @@ describe('HistoricoOrcamentosModal', () => {
   });
 
   it('deve renderizar lista de orçamentos', () => {
-    vi.mocked(useOrcamentosPorCliente).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useHistoricoCliente).mockReturnValue({
+      data: createMockHistorico(mockOrcamentos),
       isLoading: false,
     } as any);
 
@@ -217,8 +227,8 @@ describe('HistoricoOrcamentosModal', () => {
   });
 
   it('deve exibir quantidade de itens corretamente', () => {
-    vi.mocked(useOrcamentosPorCliente).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useHistoricoCliente).mockReturnValue({
+      data: createMockHistorico(mockOrcamentos),
       isLoading: false,
     } as any);
 
@@ -236,8 +246,8 @@ describe('HistoricoOrcamentosModal', () => {
   });
 
   it('deve exibir badges de status corretos', () => {
-    vi.mocked(useOrcamentosPorCliente).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useHistoricoCliente).mockReturnValue({
+      data: createMockHistorico(mockOrcamentos),
       isLoading: false,
     } as any);
 
@@ -255,8 +265,8 @@ describe('HistoricoOrcamentosModal', () => {
   });
 
   it('deve exibir resumo com totais corretos', () => {
-    vi.mocked(useOrcamentosPorCliente).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useHistoricoCliente).mockReturnValue({
+      data: createMockHistorico(mockOrcamentos),
       isLoading: false,
     } as any);
 
@@ -282,8 +292,8 @@ describe('HistoricoOrcamentosModal', () => {
   });
 
   it('deve ter botões de PDF para cada orçamento', () => {
-    vi.mocked(useOrcamentosPorCliente).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useHistoricoCliente).mockReturnValue({
+      data: createMockHistorico(mockOrcamentos),
       isLoading: false,
     } as any);
 
@@ -303,8 +313,8 @@ describe('HistoricoOrcamentosModal', () => {
   it('deve chamar gerarPDFOrcamento ao clicar em Baixar PDF', async () => {
     const { gerarPDFOrcamento } = await import('../../../components/orcamentos/OrcamentoPDF');
 
-    vi.mocked(useOrcamentosPorCliente).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useHistoricoCliente).mockReturnValue({
+      data: createMockHistorico(mockOrcamentos),
       isLoading: false,
     } as any);
 
@@ -324,8 +334,8 @@ describe('HistoricoOrcamentosModal', () => {
   });
 
   it('deve exibir cliente sem nome fantasia', () => {
-    vi.mocked(useOrcamentosPorCliente).mockReturnValue({
-      data: [],
+    vi.mocked(useHistoricoCliente).mockReturnValue({
+      data: createMockHistorico([]),
       isLoading: false,
     } as any);
 
@@ -354,5 +364,100 @@ describe('HistoricoOrcamentosModal', () => {
 
     expect(screen.getByText('Empresa Sem Fantasia')).toBeInTheDocument();
     expect(screen.queryByText('Teste')).not.toBeInTheDocument();
+  });
+
+  describe('Limite de orçamentos e resumo agregado', () => {
+    it('deve mostrar mensagem quando há mais orçamentos do que o limite exibido', () => {
+      // Mock: exibe 2 orçamentos, mas o resumo indica 10 no total
+      vi.mocked(useHistoricoCliente).mockReturnValue({
+        data: {
+          orcamentos: mockOrcamentos,
+          resumo: {
+            total: 10,
+            aceitos: 5,
+            valorTotalAceitos: 25000,
+          },
+        },
+        isLoading: false,
+      } as any);
+
+      render(
+        <HistoricoOrcamentosModal
+          isOpen={true}
+          onClose={mockOnClose}
+          cliente={mockCliente}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Deve mostrar a mensagem sobre limite
+      expect(screen.getByText(/Exibindo os \d+ últimos orçamentos de 10 no total/)).toBeInTheDocument();
+    });
+
+    it('não deve mostrar mensagem de limite quando todos os orçamentos são exibidos', () => {
+      vi.mocked(useHistoricoCliente).mockReturnValue({
+        data: createMockHistorico(mockOrcamentos),
+        isLoading: false,
+      } as any);
+
+      render(
+        <HistoricoOrcamentosModal
+          isOpen={true}
+          onClose={mockOnClose}
+          cliente={mockCliente}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Não deve mostrar a mensagem
+      expect(screen.queryByText(/Exibindo os \d+ últimos orçamentos/)).not.toBeInTheDocument();
+    });
+
+    it('deve exibir resumo agregado de todos os orçamentos (não apenas os exibidos)', () => {
+      // Mock: exibe 2 orçamentos, mas o resumo é de todos (200 orçamentos)
+      vi.mocked(useHistoricoCliente).mockReturnValue({
+        data: {
+          orcamentos: mockOrcamentos, // apenas 2
+          resumo: {
+            total: 200,
+            aceitos: 150,
+            valorTotalAceitos: 500000,
+          },
+        },
+        isLoading: false,
+      } as any);
+
+      render(
+        <HistoricoOrcamentosModal
+          isOpen={true}
+          onClose={mockOnClose}
+          cliente={mockCliente}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Deve mostrar total do resumo (200), não dos orçamentos exibidos (2)
+      expect(screen.getByText('200')).toBeInTheDocument();
+      expect(screen.getByText('150')).toBeInTheDocument();
+    });
+
+    it('deve chamar useHistoricoCliente com clienteId e limite', () => {
+      vi.mocked(useHistoricoCliente).mockReturnValue({
+        data: createMockHistorico([]),
+        isLoading: false,
+      } as any);
+
+      render(
+        <HistoricoOrcamentosModal
+          isOpen={true}
+          onClose={mockOnClose}
+          cliente={mockCliente}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Verifica se o hook foi chamado com os parâmetros corretos
+      expect(useHistoricoCliente).toHaveBeenCalledWith('c1', 5);
+    });
   });
 });

@@ -160,6 +160,35 @@ describe('useItensServico hooks', () => {
       expect(result.current.isIdle).toBe(true);
       expect(itemServicoService.listarAtivosPorCategoria).not.toHaveBeenCalled();
     });
+
+    it('deve usar cache por 5 minutos (staleTime)', async () => {
+      const itensAtivos = mockItensServico.filter((i) => i.categoriaId === 'cat-1' && i.ativo);
+      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue(itensAtivos);
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+        },
+      });
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      );
+
+      const { result, rerender } = renderHook(() => useItensServicoAtivosPorCategoria('cat-1'), {
+        wrapper,
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(itemServicoService.listarAtivosPorCategoria).toHaveBeenCalledTimes(1);
+
+      // Re-render o hook - não deve fazer nova chamada devido ao staleTime
+      rerender();
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      // Ainda deve ter sido chamado apenas 1 vez
+      expect(itemServicoService.listarAtivosPorCategoria).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('useCriarItemServico', () => {
