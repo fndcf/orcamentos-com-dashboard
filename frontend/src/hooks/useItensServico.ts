@@ -22,6 +22,7 @@ export function useItensServicoAtivosPorCategoria(categoriaId: string | undefine
     () => itemServicoService.listarAtivosPorCategoria(categoriaId!),
     {
       enabled: !!categoriaId,
+      staleTime: 5 * 60 * 1000, // 5 minutos - itens de serviço não mudam frequentemente
     }
   );
 }

@@ -1,11 +1,12 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
+import { useQueries } from "react-query";
 import {
   OrcamentoItemCompleto,
   CategoriaItem,
   EtapaTipo,
   ItemServico,
 } from "../../../types";
-import { useItensServicoAtivosPorCategoria } from "../../../hooks/useItensServico";
+import { itemServicoService } from "../../../services/itemServicoService";
 import { formatCurrency } from "../../../utils/constants";
 import { Button, Input, InputGroup, Label, Select, ErrorText } from "../../ui";
 import {
@@ -54,15 +55,39 @@ export function ItensCompleto({
   const [descricaoDropdownOpen, setDescricaoDropdownOpen] = useState<
     number | null
   >(null);
-  const [categoriaParaBuscarItens, setCategoriaParaBuscarItens] = useState<
-    string | null
-  >(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Busca itens pré-definidos da categoria selecionada
-  const { data: itensPredefinidos } = useItensServicoAtivosPorCategoria(
-    categoriaParaBuscarItens || undefined
+  // Coleta todas as categorias selecionadas para pré-carregar seus itens
+  const categoriasEmUso = useMemo(() =>
+    [...new Set(itens.map(item => item.categoriaId).filter(Boolean))],
+    [itens]
   );
+
+  // Pré-carrega itens de todas as categorias em uso usando useQueries
+  const itensQueries = useQueries(
+    categoriasEmUso.map(categoriaId => ({
+      queryKey: ['itens-servico', 'categoria', categoriaId, 'ativos'],
+      queryFn: () => itemServicoService.listarAtivosPorCategoria(categoriaId),
+      staleTime: 5 * 60 * 1000, // 5 minutos
+      enabled: !!categoriaId,
+    }))
+  );
+
+  // Cria um mapa de categoria -> itens para acesso rápido
+  const itensPorCategoria = useMemo(() => {
+    const mapa: Record<string, ItemServico[]> = {};
+    categoriasEmUso.forEach((catId, index) => {
+      const query = itensQueries[index];
+      if (query.data) {
+        mapa[catId] = query.data;
+      }
+    });
+    return mapa;
+  }, [categoriasEmUso, itensQueries]);
+
+  // Itens da categoria do dropdown ativo
+  const categoriaAtiva = descricaoDropdownOpen !== null ? itens[descricaoDropdownOpen]?.categoriaId : undefined;
+  const itensPredefinidos = categoriaAtiva ? itensPorCategoria[categoriaAtiva] : undefined;
 
   // Fecha dropdown ao clicar fora
   useEffect(() => {
@@ -81,7 +106,6 @@ export function ItensCompleto({
 
   const handleOpenDescricaoDropdown = (index: number, categoriaId: string) => {
     if (categoriaId) {
-      setCategoriaParaBuscarItens(categoriaId);
       setDescricaoDropdownOpen(descricaoDropdownOpen === index ? null : index);
     }
   };
