@@ -290,12 +290,12 @@ export function CategoriasTab() {
 
         {categorias && categorias.length > 0 ? (
           <ItemsList>
-            {categorias.map((c) => (
+            {categorias.map((c, index) => (
               <div key={c.id}>
                 <Item $ativo={c.ativo}>
                   <ItemInfo>
                     <div className="titulo">
-                      {c.ordem}. {c.nome}
+                      {index + 1}. {c.nome}
                       <StatusBadge $ativo={c.ativo}>{c.ativo ? 'Ativa' : 'Inativa'}</StatusBadge>
                     </div>
                   </ItemInfo>
