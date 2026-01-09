@@ -37,8 +37,15 @@ import {
 } from "../components/ui";
 import { OrcamentoModal } from "../components/orcamentos/OrcamentoModal";
 import { OrcamentoViewModal } from "../components/orcamentos/OrcamentoViewModal";
-import { gerarPDFOrcamento, gerarPDFExecucao } from "../components/orcamentos/OrcamentoPDF";
-import { formatCurrency, formatDate, formatOrcamentoNumero } from "../utils/constants";
+import {
+  gerarPDFOrcamento,
+  gerarPDFExecucao,
+} from "../components/orcamentos/OrcamentoPDF";
+import {
+  formatCurrency,
+  formatDate,
+  formatOrcamentoNumero,
+} from "../utils/constants";
 import Footer from "@/components/layout/Footer";
 
 const Container = styled.div`
@@ -225,14 +232,14 @@ export function Orcamentos() {
   }, [searchTerm]);
 
   // Usa paginação do backend
-  const { data: paginatedData, isLoading, isFetching } = useOrcamentosPaginados(
-    currentPage,
-    ITEMS_PER_PAGE,
-    {
-      status: statusFilter || undefined,
-      busca: debouncedSearchTerm || undefined,
-    }
-  );
+  const {
+    data: paginatedData,
+    isLoading,
+    isFetching,
+  } = useOrcamentosPaginados(currentPage, ITEMS_PER_PAGE, {
+    status: statusFilter || undefined,
+    busca: debouncedSearchTerm || undefined,
+  });
 
   const orcamentos = paginatedData?.items;
   const criarOrcamento = useCriarOrcamento();
@@ -446,7 +453,13 @@ export function Orcamentos() {
                           onClick={() => setOrcamentoView(orcamento)}
                           title="Clique para ver detalhes"
                         >
-                          <span className="numero">{formatOrcamentoNumero(orcamento.numero, orcamento.dataEmissao, orcamento.versao)}</span>
+                          <span className="numero">
+                            {formatOrcamentoNumero(
+                              orcamento.numero,
+                              orcamento.dataEmissao,
+                              orcamento.versao
+                            )}
+                          </span>
                           <span className="cliente">
                             {orcamento.clienteNome}
                           </span>
@@ -531,7 +544,13 @@ export function Orcamentos() {
                       onClick={() => setOrcamentoView(orcamento)}
                       style={{ cursor: "pointer" }}
                     >
-                      <span className="primary">{formatOrcamentoNumero(orcamento.numero, orcamento.dataEmissao, orcamento.versao)}</span>
+                      <span className="primary">
+                        {formatOrcamentoNumero(
+                          orcamento.numero,
+                          orcamento.dataEmissao,
+                          orcamento.versao
+                        )}
+                      </span>
                       <span className="secondary">{orcamento.clienteNome}</span>
                     </MobileCardTitle>
                     <StatusBadge $status={orcamento.status}>
@@ -723,7 +742,7 @@ export function Orcamentos() {
             <StatusDialog>
               <h3 style={{ marginBottom: "16px" }}>Alterar Status</h3>
               <p>
-                Orçamento <strong>#{orcamentoStatus.numero}</strong> -{" "}
+                Orçamento <strong>{orcamentoStatus.numero}</strong> -{" "}
                 {orcamentoStatus.clienteNome}
               </p>
               <p>

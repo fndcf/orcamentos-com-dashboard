@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import { Cliente, BrasilAPICNPJ } from '../../types';
-import { Modal, Button, Input, InputGroup, Label, InputRow } from '../ui';
-import { useBuscarCnpjBrasilAPI } from '../../hooks/useClientes';
+import { useState, useEffect } from "react";
+import styled from "styled-components";
+import { Cliente, BrasilAPICNPJ } from "../../types";
+import { Modal, Button, Input, InputGroup, Label, InputRow } from "../ui";
+import { useBuscarCnpjBrasilAPI } from "../../hooks/useClientes";
 
 const Form = styled.form`
   display: flex;
@@ -64,7 +64,7 @@ const CheckboxRow = styled.label`
   }
 `;
 
-const StatusMessage = styled.p<{ $type: 'success' | 'error' | 'info' }>`
+const StatusMessage = styled.p<{ $type: "success" | "error" | "info" }>`
   font-size: 0.85rem;
   padding: 8px 12px;
   border-radius: 6px;
@@ -72,12 +72,12 @@ const StatusMessage = styled.p<{ $type: 'success' | 'error' | 'info' }>`
 
   ${({ $type }) => {
     switch ($type) {
-      case 'success':
-        return 'background: rgba(76, 175, 80, 0.1); color: var(--success);';
-      case 'error':
-        return 'background: rgba(244, 67, 54, 0.1); color: var(--error);';
-      case 'info':
-        return 'background: rgba(33, 150, 243, 0.1); color: var(--info);';
+      case "success":
+        return "background: rgba(76, 175, 80, 0.1); color: var(--success);";
+      case "error":
+        return "background: rgba(244, 67, 54, 0.1); color: var(--error);";
+      case "info":
+        return "background: rgba(33, 150, 243, 0.1); color: var(--info);";
     }
   }}
 `;
@@ -85,50 +85,59 @@ const StatusMessage = styled.p<{ $type: 'success' | 'error' | 'info' }>`
 interface ClienteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Omit<Cliente, 'id' | 'createdAt'>) => Promise<void>;
+  onSave: (data: Omit<Cliente, "id" | "createdAt">) => Promise<void>;
   cliente?: Cliente | null;
   loading?: boolean;
 }
 
 const initialForm = {
-  razaoSocial: '',
-  nomeFantasia: '',
-  cnpj: '',
-  tipoPessoa: 'juridica' as 'fisica' | 'juridica',
-  endereco: '',
-  cidade: '',
-  estado: '',
-  cep: '',
-  telefone: '',
-  email: '',
+  razaoSocial: "",
+  nomeFantasia: "",
+  cnpj: "",
+  tipoPessoa: "juridica" as "fisica" | "juridica",
+  endereco: "",
+  cidade: "",
+  estado: "",
+  cep: "",
+  telefone: "",
+  email: "",
 };
 
-export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: ClienteModalProps) {
+export function ClienteModal({
+  isOpen,
+  onClose,
+  onSave,
+  cliente,
+  loading,
+}: ClienteModalProps) {
   const [form, setForm] = useState(initialForm);
-  const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error" | "info";
+    text: string;
+  } | null>(null);
 
   const buscarCnpj = useBuscarCnpjBrasilAPI();
 
-  const isPessoaFisica = form.tipoPessoa === 'fisica';
-  const maxDocLength = isPessoaFisica ? 11 : 14;
+  const isPessoaFisica = form.tipoPessoa === "fisica";
+  const maxDocLength = isPessoaFisica ? 14 : 18;
 
   useEffect(() => {
     if (cliente) {
       // Detectar se é CPF ou CNPJ baseado no tamanho
-      const docLimpo = cliente.cnpj?.replace(/\D/g, '') || '';
-      const tipoPessoa = docLimpo.length <= 11 ? 'fisica' : 'juridica';
+      const docLimpo = cliente.cnpj?.replace(/\D/g, "") || "";
+      const tipoPessoa = docLimpo.length <= 11 ? "fisica" : "juridica";
 
       setForm({
-        razaoSocial: cliente.razaoSocial || '',
-        nomeFantasia: cliente.nomeFantasia || '',
-        cnpj: cliente.cnpj || '',
+        razaoSocial: cliente.razaoSocial || "",
+        nomeFantasia: cliente.nomeFantasia || "",
+        cnpj: cliente.cnpj || "",
         tipoPessoa,
-        endereco: cliente.endereco || '',
-        cidade: cliente.cidade || '',
-        estado: cliente.estado || '',
-        cep: cliente.cep || '',
-        telefone: cliente.telefone || '',
-        email: cliente.email || '',
+        endereco: cliente.endereco || "",
+        cidade: cliente.cidade || "",
+        estado: cliente.estado || "",
+        cep: cliente.cep || "",
+        telefone: cliente.telefone || "",
+        email: cliente.email || "",
       });
     } else {
       setForm(initialForm);
@@ -139,51 +148,59 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     // Converter para maiúsculas todos os campos exceto email
-    const finalValue = name === 'email' ? value : value.toUpperCase();
+    const finalValue = name === "email" ? value : value.toUpperCase();
     setForm((prev) => ({ ...prev, [name]: finalValue }));
   };
 
   const handleDocumentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '');
+    const value = e.target.value.replace(/\D/g, "");
     if (value.length <= maxDocLength) {
       setForm((prev) => ({ ...prev, cnpj: value }));
     }
   };
 
   const handleTipoPessoaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const tipoPessoa = e.target.checked ? 'fisica' : 'juridica';
+    const tipoPessoa = e.target.checked ? "fisica" : "juridica";
     // Limpar documento ao trocar tipo
-    setForm((prev) => ({ ...prev, tipoPessoa, cnpj: '', nomeFantasia: '' }));
+    setForm((prev) => ({ ...prev, tipoPessoa, cnpj: "", nomeFantasia: "" }));
   };
 
   const handleBuscarCnpj = async () => {
-    const cnpjLimpo = form.cnpj.replace(/\D/g, '');
+    const cnpjLimpo = form.cnpj.replace(/\D/g, "");
 
     if (cnpjLimpo.length !== 14) {
-      setMessage({ type: 'error', text: 'CNPJ deve ter 14 dígitos' });
+      setMessage({ type: "error", text: "CNPJ deve ter 14 dígitos" });
       return;
     }
 
-    setMessage({ type: 'info', text: 'Buscando dados do CNPJ...' });
+    setMessage({ type: "info", text: "Buscando dados do CNPJ..." });
 
     try {
       const dados = await buscarCnpj.mutateAsync(cnpjLimpo);
 
       if (dados) {
         preencherComDadosBrasilAPI(dados);
-        setMessage({ type: 'success', text: 'Dados preenchidos automaticamente!' });
+        setMessage({
+          type: "success",
+          text: "Dados preenchidos automaticamente!",
+        });
       } else {
-        setMessage({ type: 'error', text: 'CNPJ não encontrado na base da Receita Federal' });
+        setMessage({
+          type: "error",
+          text: "CNPJ não encontrado na base da Receita Federal",
+        });
       }
     } catch {
-      setMessage({ type: 'error', text: 'Erro ao buscar CNPJ' });
+      setMessage({ type: "error", text: "Erro ao buscar CNPJ" });
     }
   };
 
   const preencherComDadosBrasilAPI = (dados: BrasilAPICNPJ) => {
     setForm((prev) => {
       const endereco = dados.logradouro
-        ? `${dados.logradouro}, ${dados.numero}${dados.complemento ? `, ${dados.complemento}` : ''}, ${dados.bairro}`
+        ? `${dados.logradouro}, ${dados.numero}${
+            dados.complemento ? `, ${dados.complemento}` : ""
+          }, ${dados.bairro}`
         : prev.endereco;
 
       return {
@@ -193,8 +210,9 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
         endereco: endereco.toUpperCase(),
         cidade: (dados.municipio || prev.cidade).toUpperCase(),
         estado: (dados.uf || prev.estado).toUpperCase(),
-        cep: dados.cep?.replace(/\D/g, '') || prev.cep,
-        telefone: dados.telefone?.replace(/\D/g, '').slice(0, 11) || prev.telefone,
+        cep: dados.cep?.replace(/\D/g, "") || prev.cep,
+        telefone:
+          dados.telefone?.replace(/\D/g, "").slice(0, 11) || prev.telefone,
         email: dados.email || prev.email,
       };
     });
@@ -205,18 +223,18 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
     setMessage(null);
 
     // Validação do documento no frontend
-    const docLimpo = form.cnpj.replace(/\D/g, '');
+    const docLimpo = form.cnpj.replace(/\D/g, "");
 
     if (isPessoaFisica) {
       // CPF é opcional, mas se foi digitado algo, deve ter 11 dígitos
       if (docLimpo && docLimpo.length !== 11) {
-        setMessage({ type: 'error', text: 'CPF deve ter 11 dígitos' });
+        setMessage({ type: "error", text: "CPF deve ter 11 dígitos" });
         return;
       }
     } else {
       // CNPJ é obrigatório e deve ter 14 dígitos
       if (!docLimpo || docLimpo.length !== 14) {
-        setMessage({ type: 'error', text: 'CNPJ deve ter 14 dígitos' });
+        setMessage({ type: "error", text: "CNPJ deve ter 14 dígitos" });
         return;
       }
     }
@@ -226,19 +244,30 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
       onClose();
     } catch (err: unknown) {
       // Extrair mensagem de erro do Axios ou Error genérico
-      const axiosError = err as { response?: { data?: { error?: string } }; message?: string };
-      const errorMessage = axiosError.response?.data?.error || axiosError.message || 'Erro ao salvar cliente';
-      setMessage({ type: 'error', text: errorMessage });
+      const axiosError = err as {
+        response?: { data?: { error?: string } };
+        message?: string;
+      };
+      const errorMessage =
+        axiosError.response?.data?.error ||
+        axiosError.message ||
+        "Erro ao salvar cliente";
+      setMessage({ type: "error", text: errorMessage });
     }
   };
 
   const footer = (
     <>
-      <Button type="button" $variant="ghost" onClick={onClose} disabled={loading}>
+      <Button
+        type="button"
+        $variant="ghost"
+        onClick={onClose}
+        disabled={loading}
+      >
         Cancelar
       </Button>
       <Button type="submit" form="cliente-form" disabled={loading}>
-        {loading ? 'Salvando...' : cliente ? 'Atualizar' : 'Cadastrar'}
+        {loading ? "Salvando..." : cliente ? "Atualizar" : "Cadastrar"}
       </Button>
     </>
   );
@@ -247,12 +276,14 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={cliente ? 'Editar Cliente' : 'Novo Cliente'}
+      title={cliente ? "Editar Cliente" : "Novo Cliente"}
       footer={footer}
       width="600px"
     >
       <Form id="cliente-form" onSubmit={handleSubmit}>
-        {message && <StatusMessage $type={message.type}>{message.text}</StatusMessage>}
+        {message && (
+          <StatusMessage $type={message.type}>{message.text}</StatusMessage>
+        )}
 
         <CheckboxRow>
           <input
@@ -265,13 +296,15 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
 
         <DocumentRow>
           <InputGroup>
-            <Label htmlFor="cnpj">{isPessoaFisica ? 'CPF' : 'CNPJ *'}</Label>
+            <Label htmlFor="cnpj">{isPessoaFisica ? "CPF" : "CNPJ *"}</Label>
             <Input
               id="cnpj"
               name="cnpj"
               value={form.cnpj}
               onChange={handleDocumentoChange}
-              placeholder={isPessoaFisica ? '000.000.000-00' : '00.000.000/0000-00'}
+              placeholder={
+                isPessoaFisica ? "000.000.000-00" : "00.000.000/0000-00"
+              }
               maxLength={maxDocLength}
               required={!isPessoaFisica}
             />
@@ -283,19 +316,23 @@ export function ClienteModal({ isOpen, onClose, onSave, cliente, loading }: Clie
               onClick={handleBuscarCnpj}
               disabled={buscarCnpj.isLoading}
             >
-              {buscarCnpj.isLoading ? 'Buscando...' : 'Buscar CNPJ'}
+              {buscarCnpj.isLoading ? "Buscando..." : "Buscar CNPJ"}
             </Button>
           )}
         </DocumentRow>
 
         <InputGroup>
-          <Label htmlFor="razaoSocial">{isPessoaFisica ? 'Nome *' : 'Razão Social *'}</Label>
+          <Label htmlFor="razaoSocial">
+            {isPessoaFisica ? "Nome *" : "Razão Social *"}
+          </Label>
           <Input
             id="razaoSocial"
             name="razaoSocial"
             value={form.razaoSocial}
             onChange={handleChange}
-            placeholder={isPessoaFisica ? 'Nome completo' : 'Razão Social da Empresa'}
+            placeholder={
+              isPessoaFisica ? "Nome completo" : "Razão Social da Empresa"
+            }
             required
           />
         </InputGroup>

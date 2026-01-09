@@ -43,7 +43,7 @@ export function NovoClienteForm({ onClienteCriado }: NovoClienteFormProps) {
   const [salvandoCliente, setSalvandoCliente] = useState(false);
 
   const isPessoaFisica = clienteForm.tipoPessoa === "fisica";
-  const maxDocLength = isPessoaFisica ? 11 : 14;
+  const maxDocLength = isPessoaFisica ? 14 : 18;
 
   const handleClienteFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -172,8 +172,14 @@ export function NovoClienteForm({ onClienteCriado }: NovoClienteFormProps) {
       }
     } catch (err: unknown) {
       // Extrair mensagem de erro do Axios ou Error genérico
-      const axiosError = err as { response?: { data?: { error?: string } }; message?: string };
-      const errorMessage = axiosError.response?.data?.error || axiosError.message || "Erro ao salvar cliente";
+      const axiosError = err as {
+        response?: { data?: { error?: string } };
+        message?: string;
+      };
+      const errorMessage =
+        axiosError.response?.data?.error ||
+        axiosError.message ||
+        "Erro ao salvar cliente";
       setClienteMessage({
         type: "error",
         text: errorMessage,
