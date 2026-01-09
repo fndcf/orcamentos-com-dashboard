@@ -60,6 +60,78 @@ describe('itemServicoService', () => {
     });
   });
 
+  describe('listarAtivosPorCategoriaPaginado', () => {
+    it('deve listar itens ativos por categoria com paginação e parâmetros padrão', async () => {
+      const mockResponse = {
+        itens: [mockItemServico],
+        nextCursor: 'cursor-123',
+        hasMore: true,
+        total: 50,
+      };
+      vi.mocked(api.get).mockResolvedValue({ data: mockResponse });
+
+      const result = await itemServicoService.listarAtivosPorCategoriaPaginado('cat-1');
+
+      expect(api.get).toHaveBeenCalledWith('/itens-servico/categoria/cat-1/ativos/paginado', {
+        params: { limit: '10' },
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('deve listar itens ativos por categoria com cursor e search', async () => {
+      const mockResponse = {
+        itens: [mockItemServico],
+        nextCursor: null,
+        hasMore: false,
+        total: 1,
+      };
+      vi.mocked(api.get).mockResolvedValue({ data: mockResponse });
+
+      const result = await itemServicoService.listarAtivosPorCategoriaPaginado('cat-1', 20, 'cursor-abc', 'extintor');
+
+      expect(api.get).toHaveBeenCalledWith('/itens-servico/categoria/cat-1/ativos/paginado', {
+        params: { limit: '20', cursor: 'cursor-abc', search: 'extintor' },
+      });
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('listarPorCategoriaPaginado', () => {
+    it('deve listar itens por categoria com paginação e parâmetros padrão', async () => {
+      const mockResponse = {
+        itens: [mockItemServico],
+        nextCursor: 'cursor-456',
+        hasMore: true,
+        total: 100,
+      };
+      vi.mocked(api.get).mockResolvedValue({ data: mockResponse });
+
+      const result = await itemServicoService.listarPorCategoriaPaginado('cat-1');
+
+      expect(api.get).toHaveBeenCalledWith('/itens-servico/categoria/cat-1/paginado', {
+        params: { limit: '10' },
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('deve listar itens por categoria com cursor e search', async () => {
+      const mockResponse = {
+        itens: [mockItemServico],
+        nextCursor: null,
+        hasMore: false,
+        total: 5,
+      };
+      vi.mocked(api.get).mockResolvedValue({ data: mockResponse });
+
+      const result = await itemServicoService.listarPorCategoriaPaginado('cat-1', 15, 'cursor-xyz', 'mangueira');
+
+      expect(api.get).toHaveBeenCalledWith('/itens-servico/categoria/cat-1/paginado', {
+        params: { limit: '15', cursor: 'cursor-xyz', search: 'mangueira' },
+      });
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
   describe('buscarPorId', () => {
     it('deve buscar item por id', async () => {
       vi.mocked(api.get).mockResolvedValue({ data: mockItemServico });

@@ -5,6 +5,8 @@ import {
   useItensServico,
   useItensServicoPorCategoria,
   useItensServicoAtivosPorCategoria,
+  useInfiniteItensServicoAtivos,
+  useInfiniteItensServicoPorCategoria,
   useCriarItemServico,
   useAtualizarItemServico,
   useToggleItemServico,
@@ -19,6 +21,8 @@ vi.mock('../../services/itemServicoService', () => ({
     listar: vi.fn(),
     listarPorCategoria: vi.fn(),
     listarAtivosPorCategoria: vi.fn(),
+    listarAtivosPorCategoriaPaginado: vi.fn(),
+    listarPorCategoriaPaginado: vi.fn(),
     criar: vi.fn(),
     atualizar: vi.fn(),
     toggleAtivo: vi.fn(),
@@ -188,6 +192,104 @@ describe('useItensServico hooks', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       // Ainda deve ter sido chamado apenas 1 vez
       expect(itemServicoService.listarAtivosPorCategoria).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('useInfiniteItensServicoAtivos', () => {
+    it('deve retornar itens ativos com infinite scroll', async () => {
+      const mockResponse = {
+        itens: mockItensServico.filter((i) => i.categoriaId === 'cat-1' && i.ativo),
+        nextCursor: 'cursor-123',
+        hasMore: true,
+        total: 50,
+      };
+      vi.mocked(itemServicoService.listarAtivosPorCategoriaPaginado).mockResolvedValue(mockResponse);
+
+      const { result } = renderHook(() => useInfiniteItensServicoAtivos('cat-1'), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.pages[0]).toEqual(mockResponse);
+      expect(itemServicoService.listarAtivosPorCategoriaPaginado).toHaveBeenCalledWith('cat-1', 10, undefined, undefined);
+    });
+
+    it('deve retornar itens ativos com search', async () => {
+      const mockResponse = {
+        itens: [mockItensServico[0]],
+        nextCursor: null,
+        hasMore: false,
+        total: 1,
+      };
+      vi.mocked(itemServicoService.listarAtivosPorCategoriaPaginado).mockResolvedValue(mockResponse);
+
+      const { result } = renderHook(() => useInfiniteItensServicoAtivos('cat-1', 'extintor', 20), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.pages[0]).toEqual(mockResponse);
+      expect(itemServicoService.listarAtivosPorCategoriaPaginado).toHaveBeenCalledWith('cat-1', 20, undefined, 'extintor');
+    });
+
+    it('não deve buscar quando categoriaId é undefined', () => {
+      const { result } = renderHook(() => useInfiniteItensServicoAtivos(undefined), {
+        wrapper: createWrapper(),
+      });
+
+      expect(result.current.isIdle).toBe(true);
+      expect(itemServicoService.listarAtivosPorCategoriaPaginado).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('useInfiniteItensServicoPorCategoria', () => {
+    it('deve retornar itens por categoria com infinite scroll', async () => {
+      const mockResponse = {
+        itens: mockItensServico.filter((i) => i.categoriaId === 'cat-1'),
+        nextCursor: 'cursor-456',
+        hasMore: true,
+        total: 100,
+      };
+      vi.mocked(itemServicoService.listarPorCategoriaPaginado).mockResolvedValue(mockResponse);
+
+      const { result } = renderHook(() => useInfiniteItensServicoPorCategoria('cat-1'), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.pages[0]).toEqual(mockResponse);
+      expect(itemServicoService.listarPorCategoriaPaginado).toHaveBeenCalledWith('cat-1', 10, undefined, undefined);
+    });
+
+    it('deve retornar itens com search e limit customizado', async () => {
+      const mockResponse = {
+        itens: [mockItensServico[1]],
+        nextCursor: null,
+        hasMore: false,
+        total: 1,
+      };
+      vi.mocked(itemServicoService.listarPorCategoriaPaginado).mockResolvedValue(mockResponse);
+
+      const { result } = renderHook(() => useInfiniteItensServicoPorCategoria('cat-1', 'hidrante', 15), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.pages[0]).toEqual(mockResponse);
+      expect(itemServicoService.listarPorCategoriaPaginado).toHaveBeenCalledWith('cat-1', 15, undefined, 'hidrante');
+    });
+
+    it('não deve buscar quando categoriaId é undefined', () => {
+      const { result } = renderHook(() => useInfiniteItensServicoPorCategoria(undefined), {
+        wrapper: createWrapper(),
+      });
+
+      expect(result.current.isIdle).toBe(true);
+      expect(itemServicoService.listarPorCategoriaPaginado).not.toHaveBeenCalled();
     });
   });
 

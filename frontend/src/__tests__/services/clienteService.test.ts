@@ -37,6 +37,48 @@ describe('clienteService', () => {
     });
   });
 
+  describe('listarPaginado', () => {
+    it('deve listar clientes com paginação e parâmetros padrão', async () => {
+      const mockResponse = {
+        items: [{ id: '1', nome: 'Cliente 1' }],
+        total: 1,
+        page: 1,
+        totalPages: 1,
+        hasMore: false,
+      };
+      vi.mocked(api.get).mockResolvedValue({
+        data: { success: true, data: mockResponse },
+      });
+
+      const result = await clienteService.listarPaginado();
+
+      expect(api.get).toHaveBeenCalledWith('/clientes/paginated', {
+        params: { page: 1, limit: 10 },
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('deve listar clientes com paginação e parâmetros customizados', async () => {
+      const mockResponse = {
+        items: [{ id: '1', nome: 'Cliente 1' }],
+        total: 50,
+        page: 2,
+        totalPages: 5,
+        hasMore: true,
+      };
+      vi.mocked(api.get).mockResolvedValue({
+        data: { success: true, data: mockResponse },
+      });
+
+      const result = await clienteService.listarPaginado(2, 20, { busca: 'teste' });
+
+      expect(api.get).toHaveBeenCalledWith('/clientes/paginated', {
+        params: { page: 2, limit: 20, busca: 'teste' },
+      });
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
   describe('buscarPorId', () => {
     it('deve buscar cliente por ID', async () => {
       const mockCliente = { id: '1', nome: 'Cliente 1' };

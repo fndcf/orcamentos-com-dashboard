@@ -57,6 +57,59 @@ describe('clienteController', () => {
     });
   });
 
+  describe('listarPaginado', () => {
+    it('deve retornar lista paginada de clientes com parâmetros padrão', async () => {
+      const result = {
+        items: [
+          { id: '1', razaoSocial: 'Cliente 1', cnpj: '12345678901234' },
+          { id: '2', razaoSocial: 'Cliente 2', cnpj: '98765432109876' },
+        ],
+        total: 2,
+        page: 1,
+        totalPages: 1,
+      };
+      mockReq.query = {};
+      (clienteService.listarPaginado as jest.Mock).mockResolvedValue(result);
+
+      await clienteController.listarPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(clienteService.listarPaginado).toHaveBeenCalledWith(1, 10, { busca: undefined });
+      expect(jsonMock).toHaveBeenCalledWith({
+        success: true,
+        data: result,
+      });
+    });
+
+    it('deve retornar lista paginada com parâmetros personalizados', async () => {
+      const result = {
+        items: [{ id: '1', razaoSocial: 'Cliente Teste', cnpj: '12345678901234' }],
+        total: 1,
+        page: 2,
+        totalPages: 5,
+      };
+      mockReq.query = { page: '2', limit: '5', busca: 'teste' };
+      (clienteService.listarPaginado as jest.Mock).mockResolvedValue(result);
+
+      await clienteController.listarPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(clienteService.listarPaginado).toHaveBeenCalledWith(2, 5, { busca: 'teste' });
+      expect(jsonMock).toHaveBeenCalledWith({
+        success: true,
+        data: result,
+      });
+    });
+
+    it('deve chamar next com erro quando falhar', async () => {
+      mockReq.query = {};
+      const error = new Error('Erro no banco');
+      (clienteService.listarPaginado as jest.Mock).mockRejectedValue(error);
+
+      await clienteController.listarPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+  });
+
   describe('buscarPorId', () => {
     it('deve retornar cliente por ID com sucesso', async () => {
       const cliente = { id: '1', razaoSocial: 'Cliente 1', cnpj: '12345678901234' };

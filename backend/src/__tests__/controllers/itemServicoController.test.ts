@@ -103,6 +103,99 @@ describe('itemServicoController', () => {
     });
   });
 
+  describe('listarAtivosPorCategoriaPaginado', () => {
+    it('deve retornar lista paginada de itens ativos com parâmetros padrão', async () => {
+      const result = {
+        itens: [{ id: '1', categoriaId: 'cat1', descricao: 'Item 1', unidade: 'UN', ativo: true, ordem: 1 }],
+        total: 1,
+        nextCursor: null,
+      };
+      mockReq.params = { categoriaId: 'cat1' };
+      mockReq.query = {};
+      (itemServicoService.listarAtivosPorCategoriaPaginado as jest.Mock).mockResolvedValue(result);
+
+      await itemServicoController.listarAtivosPorCategoriaPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(itemServicoService.listarAtivosPorCategoriaPaginado).toHaveBeenCalledWith('cat1', 10, undefined, undefined);
+      expect(jsonMock).toHaveBeenCalledWith(result);
+    });
+
+    it('deve retornar lista paginada com parâmetros personalizados', async () => {
+      const result = {
+        itens: [{ id: '2', categoriaId: 'cat1', descricao: 'Item 2', unidade: 'UN', ativo: true, ordem: 2 }],
+        total: 5,
+        nextCursor: 'cursor123',
+      };
+      mockReq.params = { categoriaId: 'cat1' };
+      mockReq.query = { limit: '5', cursor: 'cursor-abc', search: 'teste' };
+      (itemServicoService.listarAtivosPorCategoriaPaginado as jest.Mock).mockResolvedValue(result);
+
+      await itemServicoController.listarAtivosPorCategoriaPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(itemServicoService.listarAtivosPorCategoriaPaginado).toHaveBeenCalledWith('cat1', 5, 'cursor-abc', 'teste');
+      expect(jsonMock).toHaveBeenCalledWith(result);
+    });
+
+    it('deve chamar next com erro quando falhar', async () => {
+      mockReq.params = { categoriaId: 'cat1' };
+      mockReq.query = {};
+      const error = new Error('Erro no banco');
+      (itemServicoService.listarAtivosPorCategoriaPaginado as jest.Mock).mockRejectedValue(error);
+
+      await itemServicoController.listarAtivosPorCategoriaPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('listarPorCategoriaPaginado', () => {
+    it('deve retornar lista paginada de itens com parâmetros padrão', async () => {
+      const result = {
+        itens: [
+          { id: '1', categoriaId: 'cat1', descricao: 'Item 1', unidade: 'UN', ativo: true, ordem: 1 },
+          { id: '2', categoriaId: 'cat1', descricao: 'Item 2', unidade: 'UN', ativo: false, ordem: 2 },
+        ],
+        total: 2,
+        nextCursor: null,
+      };
+      mockReq.params = { categoriaId: 'cat1' };
+      mockReq.query = {};
+      (itemServicoService.listarPorCategoriaPaginado as jest.Mock).mockResolvedValue(result);
+
+      await itemServicoController.listarPorCategoriaPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(itemServicoService.listarPorCategoriaPaginado).toHaveBeenCalledWith('cat1', 10, undefined, undefined);
+      expect(jsonMock).toHaveBeenCalledWith(result);
+    });
+
+    it('deve retornar lista paginada com parâmetros personalizados', async () => {
+      const result = {
+        itens: [{ id: '3', categoriaId: 'cat1', descricao: 'Item 3', unidade: 'M2', ativo: true, ordem: 3 }],
+        total: 10,
+        nextCursor: 'next-cursor',
+      };
+      mockReq.params = { categoriaId: 'cat1' };
+      mockReq.query = { limit: '20', cursor: 'prev-cursor', search: 'busca' };
+      (itemServicoService.listarPorCategoriaPaginado as jest.Mock).mockResolvedValue(result);
+
+      await itemServicoController.listarPorCategoriaPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(itemServicoService.listarPorCategoriaPaginado).toHaveBeenCalledWith('cat1', 20, 'prev-cursor', 'busca');
+      expect(jsonMock).toHaveBeenCalledWith(result);
+    });
+
+    it('deve chamar next com erro quando falhar', async () => {
+      mockReq.params = { categoriaId: 'cat1' };
+      mockReq.query = {};
+      const error = new Error('Erro no banco');
+      (itemServicoService.listarPorCategoriaPaginado as jest.Mock).mockRejectedValue(error);
+
+      await itemServicoController.listarPorCategoriaPaginado(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+  });
+
   describe('buscarPorId', () => {
     it('deve retornar item por ID com sucesso', async () => {
       const item = { id: '1', categoriaId: 'cat1', descricao: 'Item 1', unidade: 'UN', ativo: true, ordem: 1 };

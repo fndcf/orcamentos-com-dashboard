@@ -140,6 +140,92 @@ describe('orcamentoService', () => {
     });
   });
 
+  describe('listarPaginado', () => {
+    it('deve listar orçamentos com paginação e parâmetros padrão', async () => {
+      const mockResponse = {
+        items: [{ id: '1', numero: 1, clienteId: 'c1' }],
+        total: 1,
+        page: 1,
+        totalPages: 1,
+        hasMore: false,
+      };
+      vi.mocked(api.get).mockResolvedValue({
+        data: { success: true, data: mockResponse },
+      });
+
+      const result = await orcamentoService.listarPaginado();
+
+      expect(api.get).toHaveBeenCalledWith('/orcamentos/paginated', {
+        params: { page: 1, limit: 10 },
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('deve listar orçamentos com paginação e filtros', async () => {
+      const mockResponse = {
+        items: [{ id: '1', numero: 1, clienteId: 'c1', status: 'aceito' }],
+        total: 50,
+        page: 2,
+        totalPages: 5,
+        hasMore: true,
+      };
+      vi.mocked(api.get).mockResolvedValue({
+        data: { success: true, data: mockResponse },
+      });
+
+      const result = await orcamentoService.listarPaginado(2, 20, { status: 'aceito', busca: 'teste' });
+
+      expect(api.get).toHaveBeenCalledWith('/orcamentos/paginated', {
+        params: { page: 2, limit: 20, status: 'aceito', busca: 'teste' },
+      });
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('buscarPorPeriodo', () => {
+    it('deve buscar orçamentos por período', async () => {
+      const mockOrcamentos = [
+        { id: '1', numero: 1, dataEmissao: '2024-01-15' },
+        { id: '2', numero: 2, dataEmissao: '2024-01-20' },
+      ];
+      vi.mocked(api.get).mockResolvedValue({
+        data: { success: true, data: mockOrcamentos },
+      });
+
+      const result = await orcamentoService.buscarPorPeriodo('2024-01-01', '2024-01-31');
+
+      expect(api.get).toHaveBeenCalledWith('/orcamentos/periodo', {
+        params: { dataInicio: '2024-01-01', dataFim: '2024-01-31' },
+      });
+      expect(result).toEqual(mockOrcamentos);
+    });
+  });
+
+  describe('getDashboardStats', () => {
+    it('deve retornar estatísticas do dashboard', async () => {
+      const mockStats = {
+        totalOrcamentos: 150,
+        orcamentosAbertos: 30,
+        orcamentosAceitos: 80,
+        orcamentosRecusados: 25,
+        orcamentosExpirados: 15,
+        valorTotalAceitos: 500000,
+        ticketMedio: 6250,
+        taxaConversao: 53.33,
+        orcamentosHoje: 5,
+        valorHoje: 15000,
+      };
+      vi.mocked(api.get).mockResolvedValue({
+        data: { success: true, data: mockStats },
+      });
+
+      const result = await orcamentoService.getDashboardStats();
+
+      expect(api.get).toHaveBeenCalledWith('/orcamentos/dashboard-stats');
+      expect(result).toEqual(mockStats);
+    });
+  });
+
   describe('criar', () => {
     it('deve criar um novo orçamento', async () => {
       const novoOrcamento = {

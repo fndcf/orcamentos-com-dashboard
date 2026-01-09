@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Dashboard } from '../../pages/Dashboard';
-import { useOrcamentos } from '../../hooks/useOrcamentos';
+import { useOrcamentos, useDashboardStats } from '../../hooks/useOrcamentos';
 import { useClientes } from '../../hooks/useClientes';
 import { formatOrcamentoNumero } from '../../utils/constants';
 
 // Mock dos hooks
 vi.mock('../../hooks/useOrcamentos', () => ({
   useOrcamentos: vi.fn(),
+  useDashboardStats: vi.fn(),
 }));
 
 vi.mock('../../hooks/useClientes', () => ({
@@ -112,9 +113,26 @@ const mockClientes = [
   { id: 'c2', razaoSocial: 'Empresa 2' },
 ];
 
+const mockDashboardStats = {
+  total: 4,
+  abertos: 1,
+  aceitos: 1,
+  recusados: 1,
+  expirados: 1,
+  valorTotal: 5000,
+  valorAceitos: 2000,
+  totalClientes: 2,
+  porMes: [],
+};
+
 describe('Dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock padrão para useDashboardStats
+    vi.mocked(useDashboardStats).mockReturnValue({
+      data: mockDashboardStats,
+      isLoading: false,
+    } as any);
   });
 
   it('deve mostrar loading quando está carregando orçamentos', () => {
@@ -126,6 +144,10 @@ describe('Dashboard', () => {
       data: mockClientes,
       isLoading: false,
     } as any);
+    vi.mocked(useDashboardStats).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as any);
 
     render(<Dashboard />, { wrapper: createWrapper() });
 
@@ -133,12 +155,16 @@ describe('Dashboard', () => {
     expect(screen.getByTestId('loading')).toBeInTheDocument();
   });
 
-  it('deve mostrar loading quando está carregando clientes', () => {
+  it('deve mostrar loading quando dashboardStats está carregando', () => {
     vi.mocked(useOrcamentos).mockReturnValue({
       data: mockOrcamentos,
       isLoading: false,
     } as any);
     vi.mocked(useClientes).mockReturnValue({
+      data: mockClientes,
+      isLoading: false,
+    } as any);
+    vi.mocked(useDashboardStats).mockReturnValue({
       data: undefined,
       isLoading: true,
     } as any);
@@ -150,10 +176,14 @@ describe('Dashboard', () => {
 
   it('deve mostrar mensagem quando não há dados', () => {
     vi.mocked(useOrcamentos).mockReturnValue({
-      data: undefined,
+      data: [],
       isLoading: false,
     } as any);
     vi.mocked(useClientes).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as any);
+    vi.mocked(useDashboardStats).mockReturnValue({
       data: undefined,
       isLoading: false,
     } as any);

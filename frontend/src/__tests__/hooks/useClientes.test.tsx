@@ -5,6 +5,8 @@ import { ReactNode } from 'react';
 import {
   useClientes,
   useCliente,
+  useClientesPaginados,
+  useClientesInfiniteScroll,
   usePesquisarClientes,
   useCriarCliente,
   useAtualizarCliente,
@@ -17,6 +19,7 @@ import { clienteService } from '../../services/clienteService';
 vi.mock('../../services/clienteService', () => ({
   clienteService: {
     listar: vi.fn(),
+    listarPaginado: vi.fn(),
     buscarPorId: vi.fn(),
     pesquisar: vi.fn(),
     criar: vi.fn(),
@@ -61,6 +64,90 @@ describe('useClientes hooks', () => {
 
       expect(result.current.data).toEqual(mockClientes);
       expect(clienteService.listar).toHaveBeenCalled();
+    });
+  });
+
+  describe('useClientesPaginados', () => {
+    it('deve retornar lista paginada de clientes', async () => {
+      const mockResponse = {
+        items: [{ id: '1', nome: 'Cliente 1' }],
+        total: 50,
+        page: 1,
+        totalPages: 5,
+        hasMore: true,
+      };
+      vi.mocked(clienteService.listarPaginado).mockResolvedValue(mockResponse as any);
+
+      const { result } = renderHook(() => useClientesPaginados(1, 10), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data).toEqual(mockResponse);
+      expect(clienteService.listarPaginado).toHaveBeenCalledWith(1, 10, undefined);
+    });
+
+    it('deve retornar lista paginada com filtros', async () => {
+      const mockResponse = {
+        items: [{ id: '1', nome: 'Cliente Teste' }],
+        total: 1,
+        page: 1,
+        totalPages: 1,
+        hasMore: false,
+      };
+      vi.mocked(clienteService.listarPaginado).mockResolvedValue(mockResponse as any);
+
+      const { result } = renderHook(() => useClientesPaginados(1, 10, { busca: 'Teste' }), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data).toEqual(mockResponse);
+      expect(clienteService.listarPaginado).toHaveBeenCalledWith(1, 10, { busca: 'Teste' });
+    });
+  });
+
+  describe('useClientesInfiniteScroll', () => {
+    it('deve retornar clientes com infinite scroll', async () => {
+      const mockResponse = {
+        items: [{ id: '1', nome: 'Cliente 1' }],
+        total: 50,
+        page: 1,
+        totalPages: 5,
+        hasMore: true,
+      };
+      vi.mocked(clienteService.listarPaginado).mockResolvedValue(mockResponse as any);
+
+      const { result } = renderHook(() => useClientesInfiniteScroll(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.pages[0]).toEqual(mockResponse);
+      expect(clienteService.listarPaginado).toHaveBeenCalledWith(1, 20, { busca: undefined });
+    });
+
+    it('deve retornar clientes com busca e limit customizado', async () => {
+      const mockResponse = {
+        items: [{ id: '1', nome: 'Cliente Teste' }],
+        total: 1,
+        page: 1,
+        totalPages: 1,
+        hasMore: false,
+      };
+      vi.mocked(clienteService.listarPaginado).mockResolvedValue(mockResponse as any);
+
+      const { result } = renderHook(() => useClientesInfiniteScroll('Teste', 10), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.pages[0]).toEqual(mockResponse);
+      expect(clienteService.listarPaginado).toHaveBeenCalledWith(1, 10, { busca: 'Teste' });
     });
   });
 

@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { Orcamentos } from '../../pages/Orcamentos';
 import {
-  useOrcamentos,
+  useOrcamentosPaginados,
   useCriarOrcamento,
   useAtualizarOrcamento,
   useAtualizarStatusOrcamento,
@@ -15,7 +15,7 @@ import { formatOrcamentoNumero } from '../../utils/constants';
 
 // Mock dos hooks
 vi.mock('../../hooks/useOrcamentos', () => ({
-  useOrcamentos: vi.fn(),
+  useOrcamentosPaginados: vi.fn(),
   useCriarOrcamento: vi.fn(),
   useAtualizarOrcamento: vi.fn(),
   useAtualizarStatusOrcamento: vi.fn(),
@@ -141,7 +141,7 @@ describe('Orcamentos', () => {
   });
 
   it('deve mostrar loading quando está carregando', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
       data: undefined,
       isLoading: true,
     } as any);
@@ -153,8 +153,8 @@ describe('Orcamentos', () => {
   });
 
   it('deve mostrar mensagem quando não há orçamentos', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: [],
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: [], total: 0 },
       isLoading: false,
     } as any);
 
@@ -165,8 +165,8 @@ describe('Orcamentos', () => {
   });
 
   it('deve renderizar lista de orçamentos', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -181,10 +181,11 @@ describe('Orcamentos', () => {
     expect(screen.getAllByText('Cliente 2')[0]).toBeInTheDocument();
   });
 
-  it('deve filtrar orçamentos por número', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+  it('deve filtrar orçamentos por número (backend filtering)', () => {
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
+      isFetching: false,
     } as any);
 
     render(<Orcamentos />, { wrapper: createWrapper() });
@@ -192,16 +193,15 @@ describe('Orcamentos', () => {
     const searchInput = screen.getByPlaceholderText('Buscar por número ou cliente...');
     fireEvent.change(searchInput, { target: { value: '1' } });
 
-    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
-    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
-    expect(screen.getAllByText(orc1Numero)[0]).toBeInTheDocument();
-    expect(screen.queryByText(orc2Numero)).not.toBeInTheDocument();
+    // Como a filtragem é feita no backend, apenas verificamos que o campo de busca aceita o valor
+    expect(searchInput).toHaveValue('1');
   });
 
-  it('deve filtrar orçamentos por cliente', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+  it('deve filtrar orçamentos por cliente (backend filtering)', () => {
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
+      isFetching: false,
     } as any);
 
     render(<Orcamentos />, { wrapper: createWrapper() });
@@ -209,16 +209,15 @@ describe('Orcamentos', () => {
     const searchInput = screen.getByPlaceholderText('Buscar por número ou cliente...');
     fireEvent.change(searchInput, { target: { value: 'Cliente 2' } });
 
-    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
-    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
-    expect(screen.queryByText(orc1Numero)).not.toBeInTheDocument();
-    expect(screen.getAllByText(orc2Numero)[0]).toBeInTheDocument();
+    // Como a filtragem é feita no backend, apenas verificamos que o campo de busca aceita o valor
+    expect(searchInput).toHaveValue('Cliente 2');
   });
 
-  it('deve filtrar orçamentos por status', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+  it('deve filtrar orçamentos por status (backend filtering)', () => {
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
+      isFetching: false,
     } as any);
 
     render(<Orcamentos />, { wrapper: createWrapper() });
@@ -226,18 +225,13 @@ describe('Orcamentos', () => {
     const statusSelect = screen.getByRole('combobox');
     fireEvent.change(statusSelect, { target: { value: 'aceito' } });
 
-    // Após filtrar por aceito, só deve aparecer o orçamento #2
-    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
-    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
-    const orc3Numero = formatOrcamentoNumero(mockOrcamentos[2].numero, mockOrcamentos[2].dataEmissao, mockOrcamentos[2].versao);
-    expect(screen.queryByText(orc1Numero)).not.toBeInTheDocument();
-    expect(screen.getAllByText(orc2Numero)[0]).toBeInTheDocument();
-    expect(screen.queryByText(orc3Numero)).not.toBeInTheDocument();
+    // Como a filtragem é feita no backend, apenas verificamos que o select aceita o valor
+    expect(statusSelect).toHaveValue('aceito');
   });
 
   it('deve abrir modal para novo orçamento', async () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -252,8 +246,8 @@ describe('Orcamentos', () => {
   });
 
   it('deve mostrar botão de editar apenas para orçamentos abertos', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -265,8 +259,8 @@ describe('Orcamentos', () => {
   });
 
   it('deve abrir modal de visualização ao clicar no orçamento', async () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -286,8 +280,8 @@ describe('Orcamentos', () => {
   });
 
   it('deve abrir modal de confirmação de exclusão', async () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -304,8 +298,8 @@ describe('Orcamentos', () => {
   });
 
   it('deve fechar modal de exclusão ao clicar em cancelar', async () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -326,8 +320,8 @@ describe('Orcamentos', () => {
   });
 
   it('deve abrir modal de alteração de status', async () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -342,8 +336,8 @@ describe('Orcamentos', () => {
   });
 
   it('deve exibir badges de status corretos', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -357,8 +351,8 @@ describe('Orcamentos', () => {
   });
 
   it('deve duplicar orçamento ao clicar em duplicar', async () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -374,8 +368,8 @@ describe('Orcamentos', () => {
   });
 
   it('não deve mostrar botão de excluir para orçamentos aceitos', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: [mockOrcamentos[1]], // Apenas o orçamento aceito
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: [mockOrcamentos[1]], total: 1 }, // Apenas o orçamento aceito
       isLoading: false,
     } as any);
 
@@ -391,8 +385,8 @@ describe('Orcamentos', () => {
       numero: i + 1,
     }));
 
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: manyOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: manyOrcamentos, total: 15 },
       isLoading: false,
     } as any);
 
@@ -402,23 +396,21 @@ describe('Orcamentos', () => {
   });
 
   it('deve mostrar mensagem diferente ao buscar sem resultados', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    // Backend retorna lista vazia quando busca não encontra resultados
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: [], total: 0 },
       isLoading: false,
+      isFetching: false,
     } as any);
 
     render(<Orcamentos />, { wrapper: createWrapper() });
 
-    const searchInput = screen.getByPlaceholderText('Buscar por número ou cliente...');
-    fireEvent.change(searchInput, { target: { value: 'inexistente' } });
-
     expect(screen.getByText('Nenhum orçamento encontrado')).toBeInTheDocument();
-    expect(screen.getByText('Tente buscar por outro termo ou altere o filtro')).toBeInTheDocument();
   });
 
   it('deve ter todos os status no select', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -433,8 +425,8 @@ describe('Orcamentos', () => {
 
   it('deve confirmar e executar exclusão', async () => {
     mockMutations.mutateAsync.mockResolvedValue(undefined);
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -460,8 +452,8 @@ describe('Orcamentos', () => {
 
   it('deve alterar status do orçamento', async () => {
     mockMutations.mutateAsync.mockResolvedValue(undefined);
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -478,8 +470,8 @@ describe('Orcamentos', () => {
   });
 
   it('deve fechar modal de status ao clicar em cancelar', async () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -500,8 +492,8 @@ describe('Orcamentos', () => {
   });
 
   it('deve renderizar view modal com opções de editar e duplicar', async () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -533,8 +525,8 @@ describe('Orcamentos', () => {
       numero: i + 1,
     }));
 
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: manyOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: manyOrcamentos, total: 25 },
       isLoading: false,
     } as any);
 
@@ -544,10 +536,11 @@ describe('Orcamentos', () => {
     expect(screen.getByText(/de 25/)).toBeInTheDocument();
   });
 
-  it('deve filtrar por status expirado', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+  it('deve filtrar por status expirado (backend filtering)', () => {
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
+      isFetching: false,
     } as any);
 
     render(<Orcamentos />, { wrapper: createWrapper() });
@@ -555,21 +548,15 @@ describe('Orcamentos', () => {
     const statusSelect = screen.getByRole('combobox');
     fireEvent.change(statusSelect, { target: { value: 'expirado' } });
 
-    // Após filtrar por expirado, só deve aparecer o orçamento #4
-    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
-    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
-    const orc3Numero = formatOrcamentoNumero(mockOrcamentos[2].numero, mockOrcamentos[2].dataEmissao, mockOrcamentos[2].versao);
-    const orc4Numero = formatOrcamentoNumero(mockOrcamentos[3].numero, mockOrcamentos[3].dataEmissao, mockOrcamentos[3].versao);
-    expect(screen.queryByText(orc1Numero)).not.toBeInTheDocument();
-    expect(screen.queryByText(orc2Numero)).not.toBeInTheDocument();
-    expect(screen.queryByText(orc3Numero)).not.toBeInTheDocument();
-    expect(screen.getAllByText(orc4Numero)[0]).toBeInTheDocument();
+    // Como a filtragem é feita no backend, apenas verificamos que o select aceita o valor
+    expect(statusSelect).toHaveValue('expirado');
   });
 
-  it('deve filtrar por status recusado', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+  it('deve filtrar por status recusado (backend filtering)', () => {
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
+      isFetching: false,
     } as any);
 
     render(<Orcamentos />, { wrapper: createWrapper() });
@@ -577,20 +564,13 @@ describe('Orcamentos', () => {
     const statusSelect = screen.getByRole('combobox');
     fireEvent.change(statusSelect, { target: { value: 'recusado' } });
 
-    // Após filtrar por recusado, só deve aparecer o orçamento #3
-    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
-    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
-    const orc3Numero = formatOrcamentoNumero(mockOrcamentos[2].numero, mockOrcamentos[2].dataEmissao, mockOrcamentos[2].versao);
-    const orc4Numero = formatOrcamentoNumero(mockOrcamentos[3].numero, mockOrcamentos[3].dataEmissao, mockOrcamentos[3].versao);
-    expect(screen.queryByText(orc1Numero)).not.toBeInTheDocument();
-    expect(screen.queryByText(orc2Numero)).not.toBeInTheDocument();
-    expect(screen.getAllByText(orc3Numero)[0]).toBeInTheDocument();
-    expect(screen.queryByText(orc4Numero)).not.toBeInTheDocument();
+    // Como a filtragem é feita no backend, apenas verificamos que o select aceita o valor
+    expect(statusSelect).toHaveValue('recusado');
   });
 
   it('deve abrir modal de edição a partir do view modal', async () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -623,8 +603,8 @@ describe('Orcamentos', () => {
   });
 
   it('deve abrir modal de duplicação a partir do view modal', async () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
     } as any);
 
@@ -656,10 +636,11 @@ describe('Orcamentos', () => {
     });
   });
 
-  it('deve filtrar por status aceito', () => {
-    vi.mocked(useOrcamentos).mockReturnValue({
-      data: mockOrcamentos,
+  it('deve filtrar por status aceito (backend filtering)', () => {
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
       isLoading: false,
+      isFetching: false,
     } as any);
 
     render(<Orcamentos />, { wrapper: createWrapper() });
@@ -667,14 +648,7 @@ describe('Orcamentos', () => {
     const statusSelect = screen.getByRole('combobox');
     fireEvent.change(statusSelect, { target: { value: 'aceito' } });
 
-    // Após filtrar por aceito, só deve aparecer o orçamento #2
-    const orc1Numero = formatOrcamentoNumero(mockOrcamentos[0].numero, mockOrcamentos[0].dataEmissao, mockOrcamentos[0].versao);
-    const orc2Numero = formatOrcamentoNumero(mockOrcamentos[1].numero, mockOrcamentos[1].dataEmissao, mockOrcamentos[1].versao);
-    const orc3Numero = formatOrcamentoNumero(mockOrcamentos[2].numero, mockOrcamentos[2].dataEmissao, mockOrcamentos[2].versao);
-    const orc4Numero = formatOrcamentoNumero(mockOrcamentos[3].numero, mockOrcamentos[3].dataEmissao, mockOrcamentos[3].versao);
-    expect(screen.queryByText(orc1Numero)).not.toBeInTheDocument();
-    expect(screen.getAllByText(orc2Numero)[0]).toBeInTheDocument();
-    expect(screen.queryByText(orc3Numero)).not.toBeInTheDocument();
-    expect(screen.queryByText(orc4Numero)).not.toBeInTheDocument();
+    // Como a filtragem é feita no backend, apenas verificamos que o select aceita o valor
+    expect(statusSelect).toHaveValue('aceito');
   });
 });

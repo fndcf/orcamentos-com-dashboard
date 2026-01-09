@@ -43,7 +43,8 @@ const mockNotificacoes = [
   {
     id: '1',
     orcamentoId: 'orc-1',
-    orcamentoNumero: 1001,
+    orcamentoNumero: 1,
+    orcamentoDataEmissao: new Date(),
     clienteId: 'cli-1',
     clienteNome: 'Cliente Teste',
     itemDescricao: 'Extintor ABC 6kg - Vencimento da validade',
@@ -55,7 +56,8 @@ const mockNotificacoes = [
   {
     id: '2',
     orcamentoId: 'orc-2',
-    orcamentoNumero: 1002,
+    orcamentoNumero: 2,
+    orcamentoDataEmissao: new Date(),
     clienteId: 'cli-2',
     clienteNome: 'Outro Cliente',
     itemDescricao: 'Hidrante de Parede - Vencimento da manutenção',
@@ -67,7 +69,8 @@ const mockNotificacoes = [
   {
     id: '3',
     orcamentoId: 'orc-3',
-    orcamentoNumero: 1003,
+    orcamentoNumero: 3,
+    orcamentoDataEmissao: new Date(),
     clienteId: 'cli-3',
     clienteNome: 'Terceiro Cliente',
     itemDescricao: 'Este é um texto muito longo que deve ser truncado para exibição no dropdown porque ultrapassa 80 caracteres facilmente',
@@ -201,8 +204,9 @@ describe('NotificacaoDropdown', () => {
 
     fireEvent.click(screen.getByTitle('Notificações'));
 
-    expect(screen.getByText(/Cliente Teste - Orç. #1001/)).toBeInTheDocument();
-    expect(screen.getByText(/Outro Cliente - Orç. #1002/)).toBeInTheDocument();
+    // Formato: Cliente - Orç. [ano][numero] (ex: 260001)
+    expect(screen.getByText(/Cliente Teste - Orç\.\s+\d+/)).toBeInTheDocument();
+    expect(screen.getByText(/Outro Cliente - Orç\.\s+\d+/)).toBeInTheDocument();
   });
 
   it('deve truncar descrição longa', () => {
@@ -293,7 +297,7 @@ describe('NotificacaoDropdown', () => {
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
 
     fireEvent.click(screen.getByTitle('Notificações'));
-    fireEvent.click(screen.getByText(/Cliente Teste - Orç. #1001/));
+    fireEvent.click(screen.getByText(/Cliente Teste - Orç\.\s+\d+/));
 
     expect(mockNavigate).toHaveBeenCalledWith('/orcamentos?id=orc-1');
   });
@@ -302,7 +306,7 @@ describe('NotificacaoDropdown', () => {
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
 
     fireEvent.click(screen.getByTitle('Notificações'));
-    fireEvent.click(screen.getByText(/Cliente Teste - Orç. #1001/));
+    fireEvent.click(screen.getByText(/Cliente Teste - Orç\.\s+\d+/));
 
     expect(mockMarcarLida.mutate).toHaveBeenCalledWith('1');
   });
@@ -311,7 +315,7 @@ describe('NotificacaoDropdown', () => {
     render(<NotificacaoDropdown />, { wrapper: createWrapper() });
 
     fireEvent.click(screen.getByTitle('Notificações'));
-    fireEvent.click(screen.getByText(/Outro Cliente - Orç. #1002/));
+    fireEvent.click(screen.getByText(/Outro Cliente - Orç\.\s+\d+/));
 
     // Notificação 2 já está lida
     expect(mockMarcarLida.mutate).not.toHaveBeenCalled();
@@ -383,7 +387,8 @@ describe('NotificacaoDropdown', () => {
     const manyNotifications = Array.from({ length: 10 }, (_, i) => ({
       id: `${i + 1}`,
       orcamentoId: `orc-${i + 1}`,
-      orcamentoNumero: 1000 + i,
+      orcamentoNumero: i + 1,
+      orcamentoDataEmissao: new Date(),
       clienteId: `cli-${i + 1}`,
       clienteNome: `Cliente ${i + 1}`,
       itemDescricao: `Item ${i + 1}`,
@@ -408,8 +413,8 @@ describe('NotificacaoDropdown', () => {
     fireEvent.click(screen.getByTitle('Notificações'));
 
     // Com paginação, mostra todas as notificações carregadas na página
-    expect(screen.getByText(/Cliente 1 - Orç. #1000/)).toBeInTheDocument();
-    expect(screen.getByText(/Cliente 10 - Orç. #1009/)).toBeInTheDocument();
+    expect(screen.getByText(/Cliente 1 - Orç\.\s+\d+/)).toBeInTheDocument();
+    expect(screen.getByText(/Cliente 10 - Orç\.\s+\d+/)).toBeInTheDocument();
     // Deve mostrar botão de carregar mais quando há mais páginas
     expect(screen.getByText('Carregar mais notificações')).toBeInTheDocument();
   });

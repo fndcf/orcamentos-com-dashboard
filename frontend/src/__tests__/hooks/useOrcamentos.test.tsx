@@ -7,8 +7,11 @@ import {
   useOrcamento,
   useOrcamentosPorCliente,
   useOrcamentosPorStatus,
+  useOrcamentosPorPeriodo,
+  useOrcamentosPaginados,
   useHistoricoCliente,
   useEstatisticasOrcamentos,
+  useDashboardStats,
   useCriarOrcamento,
   useAtualizarOrcamento,
   useAtualizarStatusOrcamento,
@@ -22,11 +25,14 @@ import { orcamentoService } from '../../services/orcamentoService';
 vi.mock('../../services/orcamentoService', () => ({
   orcamentoService: {
     listar: vi.fn(),
+    listarPaginado: vi.fn(),
     buscarPorId: vi.fn(),
     buscarPorCliente: vi.fn(),
     buscarPorStatus: vi.fn(),
+    buscarPorPeriodo: vi.fn(),
     getHistoricoCliente: vi.fn(),
     getEstatisticas: vi.fn(),
+    getDashboardStats: vi.fn(),
     criar: vi.fn(),
     atualizar: vi.fn(),
     atualizarStatus: vi.fn(),
@@ -212,6 +218,110 @@ describe('useOrcamentos hooks', () => {
 
       expect(result.current.data).toEqual(mockOrcamentos);
       expect(orcamentoService.buscarPorStatus).toHaveBeenCalledWith('aberto');
+    });
+  });
+
+  describe('useOrcamentosPorPeriodo', () => {
+    it('deve retornar orçamentos por período', async () => {
+      const mockOrcamentos = [
+        { id: '1', numero: 1, dataEmissao: '2024-01-15' },
+        { id: '2', numero: 2, dataEmissao: '2024-01-20' },
+      ];
+      vi.mocked(orcamentoService.buscarPorPeriodo).mockResolvedValue(mockOrcamentos as any);
+
+      const { result } = renderHook(() => useOrcamentosPorPeriodo('2024-01-01', '2024-01-31'), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data).toEqual(mockOrcamentos);
+      expect(orcamentoService.buscarPorPeriodo).toHaveBeenCalledWith('2024-01-01', '2024-01-31');
+    });
+
+    it('não deve buscar quando dataInicio está vazia', () => {
+      const { result } = renderHook(() => useOrcamentosPorPeriodo('', '2024-01-31'), {
+        wrapper: createWrapper(),
+      });
+
+      expect(result.current.isIdle).toBe(true);
+      expect(orcamentoService.buscarPorPeriodo).not.toHaveBeenCalled();
+    });
+
+    it('não deve buscar quando dataFim está vazia', () => {
+      const { result } = renderHook(() => useOrcamentosPorPeriodo('2024-01-01', ''), {
+        wrapper: createWrapper(),
+      });
+
+      expect(result.current.isIdle).toBe(true);
+      expect(orcamentoService.buscarPorPeriodo).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('useOrcamentosPaginados', () => {
+    it('deve retornar orçamentos paginados', async () => {
+      const mockResponse = {
+        items: [{ id: '1', numero: 1 }],
+        total: 50,
+        page: 1,
+        totalPages: 5,
+        hasMore: true,
+      };
+      vi.mocked(orcamentoService.listarPaginado).mockResolvedValue(mockResponse as any);
+
+      const { result } = renderHook(() => useOrcamentosPaginados(1, 10), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data).toEqual(mockResponse);
+      expect(orcamentoService.listarPaginado).toHaveBeenCalledWith(1, 10, undefined);
+    });
+
+    it('deve retornar orçamentos paginados com filtros', async () => {
+      const mockResponse = {
+        items: [{ id: '1', numero: 1, status: 'aceito' }],
+        total: 10,
+        page: 2,
+        totalPages: 2,
+        hasMore: false,
+      };
+      vi.mocked(orcamentoService.listarPaginado).mockResolvedValue(mockResponse as any);
+
+      const { result } = renderHook(() => useOrcamentosPaginados(2, 20, { status: 'aceito', busca: 'teste' }), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data).toEqual(mockResponse);
+      expect(orcamentoService.listarPaginado).toHaveBeenCalledWith(2, 20, { status: 'aceito', busca: 'teste' });
+    });
+  });
+
+  describe('useDashboardStats', () => {
+    it('deve retornar estatísticas do dashboard', async () => {
+      const mockStats = {
+        totalOrcamentos: 150,
+        orcamentosAbertos: 30,
+        orcamentosAceitos: 80,
+        orcamentosRecusados: 25,
+        orcamentosExpirados: 15,
+        valorTotalAceitos: 500000,
+        ticketMedio: 6250,
+        taxaConversao: 53.33,
+      };
+      vi.mocked(orcamentoService.getDashboardStats).mockResolvedValue(mockStats as any);
+
+      const { result } = renderHook(() => useDashboardStats(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data).toEqual(mockStats);
+      expect(orcamentoService.getDashboardStats).toHaveBeenCalled();
     });
   });
 

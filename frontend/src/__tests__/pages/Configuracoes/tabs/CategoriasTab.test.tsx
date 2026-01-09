@@ -10,7 +10,7 @@ import {
   useExcluirCategoriaItem,
 } from '../../../../hooks/useCategoriasItem';
 import {
-  useItensServicoPorCategoria,
+  useInfiniteItensServicoPorCategoria,
   useCriarItemServico,
   useAtualizarItemServico,
   useToggleItemServico,
@@ -26,7 +26,7 @@ vi.mock('../../../../hooks/useCategoriasItem', () => ({
 }));
 
 vi.mock('../../../../hooks/useItensServico', () => ({
-  useItensServicoPorCategoria: vi.fn(),
+  useInfiniteItensServicoPorCategoria: vi.fn(),
   useCriarItemServico: vi.fn(),
   useAtualizarItemServico: vi.fn(),
   useToggleItemServico: vi.fn(),
@@ -86,9 +86,15 @@ describe('CategoriasTab', () => {
       mutateAsync: mockExcluirCategoriaMutateAsync,
     } as any);
 
-    vi.mocked(useItensServicoPorCategoria).mockReturnValue({
-      data: mockItensServico,
+    vi.mocked(useInfiniteItensServicoPorCategoria).mockReturnValue({
+      data: {
+        pages: [{ itens: mockItensServico, total: mockItensServico.length }],
+        pageParams: [undefined],
+      },
       isLoading: false,
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
     } as any);
 
     vi.mocked(useCriarItemServico).mockReturnValue({
@@ -453,9 +459,12 @@ describe('CategoriasTab', () => {
     });
 
     it('deve mostrar loading ao carregar itens', async () => {
-      vi.mocked(useItensServicoPorCategoria).mockReturnValue({
+      vi.mocked(useInfiniteItensServicoPorCategoria).mockReturnValue({
         data: undefined,
         isLoading: true,
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
       } as any);
 
       render(<CategoriasTab />, { wrapper: createWrapper() });
@@ -469,9 +478,15 @@ describe('CategoriasTab', () => {
     });
 
     it('deve mostrar mensagem quando nao ha itens', async () => {
-      vi.mocked(useItensServicoPorCategoria).mockReturnValue({
-        data: [],
+      vi.mocked(useInfiniteItensServicoPorCategoria).mockReturnValue({
+        data: {
+          pages: [{ itens: [], total: 0 }],
+          pageParams: [undefined],
+        },
         isLoading: false,
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
       } as any);
 
       render(<CategoriasTab />, { wrapper: createWrapper() });

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { OrcamentoModal } from '../../../components/orcamentos/OrcamentoModal';
-import { useClientes, useCriarCliente, useBuscarCnpjBrasilAPI } from '../../../hooks/useClientes';
+import { useClientesInfiniteScroll, useCliente, useCriarCliente, useBuscarCnpjBrasilAPI } from '../../../hooks/useClientes';
 import { useServicosAtivos } from '../../../hooks/useServicos';
 import { useCategoriasItemAtivas } from '../../../hooks/useCategoriasItem';
 import { useLimitacoesAtivas } from '../../../hooks/useLimitacoes';
@@ -11,7 +11,8 @@ import { useConfiguracoesGerais } from '../../../hooks/useConfiguracoesGerais';
 
 // Mock dos hooks
 vi.mock('../../../hooks/useClientes', () => ({
-  useClientes: vi.fn(),
+  useClientesInfiniteScroll: vi.fn(),
+  useCliente: vi.fn(),
   useCriarCliente: vi.fn(),
   useBuscarCnpjBrasilAPI: vi.fn(),
 }));
@@ -30,6 +31,13 @@ vi.mock('../../../hooks/useLimitacoes', () => ({
 
 vi.mock('../../../hooks/useItensServico', () => ({
   useItensServicoAtivosPorCategoria: vi.fn(),
+  useInfiniteItensServicoAtivos: vi.fn(() => ({
+    itens: [],
+    isLoading: false,
+    isFetchingNextPage: false,
+    hasNextPage: false,
+    fetchNextPage: vi.fn(),
+  })),
 }));
 
 vi.mock('../../../hooks/useConfiguracoesGerais', () => ({
@@ -145,9 +153,19 @@ const selectCliente = async (clienteNome: string) => {
 describe('OrcamentoModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useClientes).mockReturnValue({
-      data: mockClientes,
-      refetch: vi.fn(),
+    vi.mocked(useClientesInfiniteScroll).mockReturnValue({
+      data: {
+        pages: [{ items: mockClientes, total: mockClientes.length, hasMore: false }],
+        pageParams: [1],
+      },
+      isLoading: false,
+      isFetchingNextPage: false,
+      hasNextPage: false,
+      fetchNextPage: vi.fn(),
+    } as any);
+    vi.mocked(useCliente).mockReturnValue({
+      data: undefined,
+      isLoading: false,
     } as any);
     vi.mocked(useCriarCliente).mockReturnValue({
       mutateAsync: vi.fn(),
@@ -221,7 +239,8 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    expect(screen.getByText(/Editar Orçamento #/)).toBeInTheDocument();
+    // O formato do título é "Editar Orçamento [numero formatado]" (ex: 260001-A)
+    expect(screen.getByText(/Editar Orçamento\s+\d+/)).toBeInTheDocument();
   });
 
   it('deve renderizar título para duplicar orçamento', () => {
@@ -235,7 +254,8 @@ describe('OrcamentoModal', () => {
       { wrapper: createWrapper() }
     );
 
-    expect(screen.getByText(/Duplicar Orçamento #/)).toBeInTheDocument();
+    // O formato do título é "Duplicar Orçamento [numero formatado]" (ex: 260001-A)
+    expect(screen.getByText(/Duplicar Orçamento\s+\d+/)).toBeInTheDocument();
   });
 
   it('deve mostrar campo de busca de clientes', () => {
@@ -270,7 +290,7 @@ describe('OrcamentoModal', () => {
     });
   });
 
-  it('deve filtrar clientes ao digitar no campo de busca', async () => {
+  it('deve filtrar clientes ao digitar no campo de busca (backend filtering)', async () => {
     render(
       <OrcamentoModal
         isOpen={true}
@@ -283,10 +303,8 @@ describe('OrcamentoModal', () => {
     const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
     fireEvent.change(searchInput, { target: { value: 'Cliente 1' } });
 
-    await waitFor(() => {
-      expect(screen.getByText('Cliente 1')).toBeInTheDocument();
-      expect(screen.queryByText('Cliente 2')).not.toBeInTheDocument();
-    });
+    // Como a filtragem é feita no backend, apenas verificamos que o campo aceita o valor
+    expect(searchInput).toHaveValue('Cliente 1');
   });
 
   it('deve exibir informações do cliente ao selecionar', async () => {
@@ -784,7 +802,8 @@ describe('OrcamentoModal', () => {
         { wrapper: createWrapper() }
       );
 
-      expect(screen.getByText(/Duplicar Orçamento #/)).toBeInTheDocument();
+      // O formato do título é "Duplicar Orçamento [numero formatado]" (ex: 260001-A)
+      expect(screen.getByText(/Duplicar Orçamento\s+\d+/)).toBeInTheDocument();
       expect(screen.getByDisplayValue('Item Completo 1')).toBeInTheDocument();
     });
 
@@ -1046,6 +1065,18 @@ describe('OrcamentoModal', () => {
     });
 
     it('deve mostrar mensagem quando não encontrar clientes', async () => {
+      // Mock para retornar lista vazia (backend retorna vazio quando não encontra)
+      vi.mocked(useClientesInfiniteScroll).mockReturnValue({
+        data: {
+          pages: [{ items: [], total: 0, hasMore: false }],
+          pageParams: [1],
+        },
+        isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+      } as any);
+
       render(
         <OrcamentoModal
           isOpen={true}
@@ -1056,14 +1087,14 @@ describe('OrcamentoModal', () => {
       );
 
       const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
-      fireEvent.change(searchInput, { target: { value: 'Cliente Inexistente XYZ' } });
+      fireEvent.focus(searchInput);
 
       await waitFor(() => {
         expect(screen.getByText('Nenhum cliente encontrado')).toBeInTheDocument();
       });
     });
 
-    it('deve buscar por CNPJ', async () => {
+    it('deve buscar por CNPJ (backend filtering)', async () => {
       render(
         <OrcamentoModal
           isOpen={true}
@@ -1076,13 +1107,16 @@ describe('OrcamentoModal', () => {
       const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...');
       fireEvent.change(searchInput, { target: { value: '12345678901234' } });
 
-      await waitFor(() => {
-        expect(screen.getByText('Cliente 1')).toBeInTheDocument();
-        expect(screen.queryByText('Cliente 2')).not.toBeInTheDocument();
-      });
+      // Como a filtragem é feita no backend, apenas verificamos que o campo aceita o valor
+      expect(searchInput).toHaveValue('12345678901234');
     });
 
     it('deve preencher campo de busca ao editar orçamento existente', () => {
+      vi.mocked(useCliente).mockReturnValue({
+        data: mockClientes[0],
+        isLoading: false,
+      } as any);
+
       render(
         <OrcamentoModal
           isOpen={true}

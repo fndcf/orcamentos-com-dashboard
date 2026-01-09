@@ -136,7 +136,7 @@ describe('NovoClienteForm', () => {
       fireEvent.click(checkbox);
 
       await waitFor(() => {
-        expect(screen.getByLabelText('CPF *')).toBeInTheDocument();
+        expect(screen.getByLabelText('CPF')).toBeInTheDocument();
         expect(screen.getByLabelText('Nome *')).toBeInTheDocument();
         expect(screen.queryByLabelText('Nome Fantasia')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'Buscar CNPJ' })).not.toBeInTheDocument();
@@ -165,7 +165,7 @@ describe('NovoClienteForm', () => {
 
       // Verificar que campos foram limpos
       await waitFor(() => {
-        const cpfInput = screen.getByLabelText('CPF *');
+        const cpfInput = screen.getByLabelText('CPF');
         expect(cpfInput).toHaveValue('');
       });
     });
@@ -201,10 +201,10 @@ describe('NovoClienteForm', () => {
       fireEvent.click(checkbox);
 
       await waitFor(() => {
-        expect(screen.getByLabelText('CPF *')).toBeInTheDocument();
+        expect(screen.getByLabelText('CPF')).toBeInTheDocument();
       });
 
-      const cpfInput = screen.getByLabelText('CPF *');
+      const cpfInput = screen.getByLabelText('CPF');
       fireEvent.change(cpfInput, { target: { value: '12345678901' } });
 
       expect(cpfInput).toHaveValue('12345678901');
@@ -389,11 +389,13 @@ describe('NovoClienteForm', () => {
       fireEvent.click(salvarButton);
 
       await waitFor(() => {
-        expect(screen.getByText('CNPJ é obrigatório')).toBeInTheDocument();
+        expect(screen.getByText('CNPJ deve ter 14 dígitos')).toBeInTheDocument();
       });
     });
 
-    it('deve mostrar erro quando CPF vazio para pessoa fisica', async () => {
+    it('deve permitir salvar pessoa fisica sem CPF (CPF é opcional)', async () => {
+      mockCriarMutateAsync.mockResolvedValue({ id: 'novo-cliente-id' });
+
       render(
         <NovoClienteForm
           onClienteCriado={mockOnClienteCriado}
@@ -405,11 +407,18 @@ describe('NovoClienteForm', () => {
       const checkbox = screen.getByLabelText('Pessoa Física (CPF)');
       fireEvent.click(checkbox);
 
+      await waitFor(() => {
+        expect(screen.getByLabelText('Nome *')).toBeInTheDocument();
+      });
+
+      const nomeInput = screen.getByLabelText('Nome *');
+      fireEvent.change(nomeInput, { target: { value: 'João da Silva' } });
+
       const salvarButton = screen.getByRole('button', { name: 'Salvar Cliente e Continuar' });
       fireEvent.click(salvarButton);
 
       await waitFor(() => {
-        expect(screen.getByText('CPF é obrigatório')).toBeInTheDocument();
+        expect(mockCriarMutateAsync).toHaveBeenCalled();
       });
     });
 
@@ -445,9 +454,11 @@ describe('NovoClienteForm', () => {
       const checkbox = screen.getByLabelText('Pessoa Física (CPF)');
       fireEvent.click(checkbox);
 
-      const cpfInput = screen.getByLabelText('CPF *');
-      fireEvent.change(cpfInput, { target: { value: '12345678901' } });
+      await waitFor(() => {
+        expect(screen.getByLabelText('CPF')).toBeInTheDocument();
+      });
 
+      // CPF é opcional, mas nome é obrigatório
       const salvarButton = screen.getByRole('button', { name: 'Salvar Cliente e Continuar' });
       fireEvent.click(salvarButton);
 

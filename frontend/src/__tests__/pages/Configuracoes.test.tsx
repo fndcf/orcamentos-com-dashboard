@@ -35,7 +35,7 @@ import {
   useAtualizarConfiguracoesGerais,
 } from '../../hooks/useConfiguracoesGerais';
 import {
-  useItensServicoPorCategoria,
+  useInfiniteItensServicoPorCategoria,
   useCriarItemServico,
   useAtualizarItemServico,
   useToggleItemServico,
@@ -87,7 +87,7 @@ vi.mock('../../hooks/useConfiguracoesGerais', () => ({
 
 // Mock dos hooks de itens de serviço
 vi.mock('../../hooks/useItensServico', () => ({
-  useItensServicoPorCategoria: vi.fn(),
+  useInfiniteItensServicoPorCategoria: vi.fn(),
   useCriarItemServico: vi.fn(),
   useAtualizarItemServico: vi.fn(),
   useToggleItemServico: vi.fn(),
@@ -228,9 +228,13 @@ describe('Configuracoes', () => {
     vi.mocked(useAtualizarConfiguracoesGerais).mockReturnValue(mockMutations as any);
 
     // Mock itens de serviço hooks
-    vi.mocked(useItensServicoPorCategoria).mockReturnValue({
-      data: [],
+    vi.mocked(useInfiniteItensServicoPorCategoria).mockReturnValue({
+      data: { pages: [{ itens: [], total: 0 }], pageParams: [undefined] },
+      itens: [],
       isLoading: false,
+      isFetchingNextPage: false,
+      hasNextPage: false,
+      fetchNextPage: vi.fn(),
     } as any);
     vi.mocked(useCriarItemServico).mockReturnValue(mockMutations as any);
     vi.mocked(useAtualizarItemServico).mockReturnValue(mockMutations as any);
@@ -757,18 +761,23 @@ describe('Configuracoes', () => {
     });
 
     it('deve expandir categoria para mostrar itens', async () => {
-      vi.mocked(useItensServicoPorCategoria).mockReturnValue({
-        data: [
-          {
-            id: 'item-1',
-            categoriaId: '1',
-            descricao: 'Extintor ABC 6kg',
-            unidade: 'UN',
-            ativo: true,
-            ordem: 1,
-          },
-        ],
+      const mockItens = [
+        {
+          id: 'item-1',
+          categoriaId: '1',
+          descricao: 'Extintor ABC 6kg',
+          unidade: 'UN',
+          ativo: true,
+          ordem: 1,
+        },
+      ];
+      vi.mocked(useInfiniteItensServicoPorCategoria).mockReturnValue({
+        data: { pages: [{ itens: mockItens, total: mockItens.length }], pageParams: [undefined] },
+        itens: mockItens,
         isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
       } as any);
 
       render(<Configuracoes />, { wrapper: createWrapper() });
@@ -789,18 +798,23 @@ describe('Configuracoes', () => {
     });
 
     it('deve ocultar itens ao clicar novamente', async () => {
-      vi.mocked(useItensServicoPorCategoria).mockReturnValue({
-        data: [
-          {
-            id: 'item-1',
-            categoriaId: '1',
-            descricao: 'Extintor ABC 6kg',
-            unidade: 'UN',
-            ativo: true,
-            ordem: 1,
-          },
-        ],
+      const mockItens = [
+        {
+          id: 'item-1',
+          categoriaId: '1',
+          descricao: 'Extintor ABC 6kg',
+          unidade: 'UN',
+          ativo: true,
+          ordem: 1,
+        },
+      ];
+      vi.mocked(useInfiniteItensServicoPorCategoria).mockReturnValue({
+        data: { pages: [{ itens: mockItens, total: mockItens.length }], pageParams: [undefined] },
+        itens: mockItens,
         isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
       } as any);
 
       render(<Configuracoes />, { wrapper: createWrapper() });
@@ -864,9 +878,13 @@ describe('Configuracoes', () => {
   describe('Itens de Serviço', () => {
     it('deve adicionar novo item de serviço', async () => {
       mockMutations.mutateAsync.mockResolvedValue(undefined);
-      vi.mocked(useItensServicoPorCategoria).mockReturnValue({
-        data: [],
+      vi.mocked(useInfiniteItensServicoPorCategoria).mockReturnValue({
+        data: { pages: [{ itens: [], total: 0 }], pageParams: [undefined] },
+        itens: [],
         isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
       } as any);
 
       render(<Configuracoes />, { wrapper: createWrapper() });
@@ -903,9 +921,13 @@ describe('Configuracoes', () => {
     });
 
     it('deve mostrar estado vazio em itens de serviço', async () => {
-      vi.mocked(useItensServicoPorCategoria).mockReturnValue({
-        data: [],
+      vi.mocked(useInfiniteItensServicoPorCategoria).mockReturnValue({
+        data: { pages: [{ itens: [], total: 0 }], pageParams: [undefined] },
+        itens: [],
         isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
       } as any);
 
       render(<Configuracoes />, { wrapper: createWrapper() });

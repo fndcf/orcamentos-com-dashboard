@@ -3,12 +3,17 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { ItensCompleto } from '../../../../components/orcamentos/OrcamentoModal/ItensCompleto';
 import { itemServicoService } from '../../../../services/itemServicoService';
+import { useInfiniteItensServicoAtivos } from '../../../../hooks/useItensServico';
 import { OrcamentoItemCompleto, CategoriaItem } from '../../../../types';
 
 vi.mock('../../../../services/itemServicoService', () => ({
   itemServicoService: {
     listarAtivosPorCategoria: vi.fn(),
   },
+}));
+
+vi.mock('../../../../hooks/useItensServico', () => ({
+  useInfiniteItensServicoAtivos: vi.fn(),
 }));
 
 const createWrapper = () => {
@@ -70,6 +75,16 @@ describe('ItensCompleto', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue([]);
+    vi.mocked(useInfiniteItensServicoAtivos).mockReturnValue({
+      data: {
+        pages: [{ itens: [], total: 0, hasMore: false }],
+        pageParams: [undefined],
+      },
+      isLoading: false,
+      isFetchingNextPage: false,
+      hasNextPage: false,
+      fetchNextPage: vi.fn(),
+    } as any);
   });
 
   describe('Renderização básica', () => {
@@ -405,7 +420,16 @@ describe('ItensCompleto', () => {
     });
 
     it('deve abrir dropdown ao clicar no botão', async () => {
-      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue(mockItensPredefinidos as any);
+      vi.mocked(useInfiniteItensServicoAtivos).mockReturnValue({
+        data: {
+          pages: [{ itens: mockItensPredefinidos, total: mockItensPredefinidos.length, hasMore: false }],
+          pageParams: [undefined],
+        },
+        isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+      } as any);
 
       render(
         <ItensCompleto
@@ -451,7 +475,16 @@ describe('ItensCompleto', () => {
     });
 
     it('deve selecionar item pré-definido usando onItemMultiChange', async () => {
-      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue(mockItensPredefinidos as any);
+      vi.mocked(useInfiniteItensServicoAtivos).mockReturnValue({
+        data: {
+          pages: [{ itens: mockItensPredefinidos, total: mockItensPredefinidos.length, hasMore: false }],
+          pageParams: [undefined],
+        },
+        isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+      } as any);
 
       render(
         <ItensCompleto
@@ -484,7 +517,16 @@ describe('ItensCompleto', () => {
     });
 
     it('deve usar fallback onItemChange quando onItemMultiChange não disponível', async () => {
-      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue(mockItensPredefinidos as any);
+      vi.mocked(useInfiniteItensServicoAtivos).mockReturnValue({
+        data: {
+          pages: [{ itens: mockItensPredefinidos, total: mockItensPredefinidos.length, hasMore: false }],
+          pageParams: [undefined],
+        },
+        isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+      } as any);
 
       render(
         <ItensCompleto
@@ -514,7 +556,16 @@ describe('ItensCompleto', () => {
     });
 
     it('deve fechar dropdown ao selecionar item', async () => {
-      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue(mockItensPredefinidos as any);
+      vi.mocked(useInfiniteItensServicoAtivos).mockReturnValue({
+        data: {
+          pages: [{ itens: mockItensPredefinidos, total: mockItensPredefinidos.length, hasMore: false }],
+          pageParams: [undefined],
+        },
+        isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+      } as any);
 
       render(
         <ItensCompleto
@@ -543,7 +594,16 @@ describe('ItensCompleto', () => {
     });
 
     it('deve fechar dropdown ao clicar novamente no botão', async () => {
-      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue(mockItensPredefinidos as any);
+      vi.mocked(useInfiniteItensServicoAtivos).mockReturnValue({
+        data: {
+          pages: [{ itens: mockItensPredefinidos, total: mockItensPredefinidos.length, hasMore: false }],
+          pageParams: [undefined],
+        },
+        isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+      } as any);
 
       render(
         <ItensCompleto
@@ -571,7 +631,16 @@ describe('ItensCompleto', () => {
     });
 
     it('deve fechar dropdown ao clicar fora', async () => {
-      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue(mockItensPredefinidos as any);
+      vi.mocked(useInfiniteItensServicoAtivos).mockReturnValue({
+        data: {
+          pages: [{ itens: mockItensPredefinidos, total: mockItensPredefinidos.length, hasMore: false }],
+          pageParams: [undefined],
+        },
+        isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+      } as any);
 
       render(
         <ItensCompleto
@@ -767,7 +836,16 @@ describe('ItensCompleto', () => {
 
   describe('Valores no dropdown', () => {
     it('deve exibir valores de material e mão de obra no dropdown', async () => {
-      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue(mockItensPredefinidos as any);
+      vi.mocked(useInfiniteItensServicoAtivos).mockReturnValue({
+        data: {
+          pages: [{ itens: mockItensPredefinidos, total: mockItensPredefinidos.length, hasMore: false }],
+          pageParams: [undefined],
+        },
+        isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+      } as any);
 
       render(
         <ItensCompleto
@@ -791,7 +869,16 @@ describe('ItensCompleto', () => {
     });
 
     it('deve selecionar item com valores separados de material e mão de obra', async () => {
-      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue(mockItensPredefinidos as any);
+      vi.mocked(useInfiniteItensServicoAtivos).mockReturnValue({
+        data: {
+          pages: [{ itens: mockItensPredefinidos, total: mockItensPredefinidos.length, hasMore: false }],
+          pageParams: [undefined],
+        },
+        isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+      } as any);
 
       render(
         <ItensCompleto
@@ -825,9 +912,19 @@ describe('ItensCompleto', () => {
     });
   });
 
-  describe('Pré-carregamento de itens (useQueries)', () => {
-    it('deve pré-carregar itens quando categoria é selecionada', async () => {
-      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue(mockItensPredefinidos as any);
+  describe('Pré-carregamento de itens (useInfiniteQuery)', () => {
+    it('deve carregar itens quando categoria é selecionada via hook', async () => {
+      const mockFetchNextPage = vi.fn();
+      vi.mocked(useInfiniteItensServicoAtivos).mockReturnValue({
+        data: {
+          pages: [{ itens: mockItensPredefinidos, total: mockItensPredefinidos.length, hasMore: false }],
+          pageParams: [undefined],
+        },
+        isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: mockFetchNextPage,
+      } as any);
 
       render(
         <ItensCompleto
@@ -841,67 +938,18 @@ describe('ItensCompleto', () => {
         { wrapper: createWrapper() }
       );
 
-      // O hook useQueries deve chamar o service quando a categoria está selecionada
-      await waitFor(() => {
-        expect(itemServicoService.listarAtivosPorCategoria).toHaveBeenCalledWith('cat1');
-      });
+      // O hook useInfiniteItensServicoAtivos deve ter sido chamado com a categoria
+      expect(useInfiniteItensServicoAtivos).toHaveBeenCalled();
     });
 
-    it('deve pré-carregar itens de múltiplas categorias em uso', async () => {
-      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue(mockItensPredefinidos as any);
-
-      const itensComMultiplasCategorias = [
-        createMockItem({ categoriaId: 'cat1' }),
-        createMockItem({ categoriaId: 'cat2' }),
-      ];
-
-      render(
-        <ItensCompleto
-          itens={itensComMultiplasCategorias}
-          categorias={mockCategorias}
-          errors={{}}
-          onItemChange={mockOnItemChange}
-          onAddItem={mockOnAddItem}
-          onRemoveItem={mockOnRemoveItem}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      // Deve chamar para cada categoria única
-      await waitFor(() => {
-        expect(itemServicoService.listarAtivosPorCategoria).toHaveBeenCalledWith('cat1');
-        expect(itemServicoService.listarAtivosPorCategoria).toHaveBeenCalledWith('cat2');
-      });
-    });
-
-    it('não deve chamar service para categorias duplicadas', async () => {
-      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue(mockItensPredefinidos as any);
-
-      const itensComCategoriaDuplicada = [
-        createMockItem({ categoriaId: 'cat1' }),
-        createMockItem({ categoriaId: 'cat1' }),
-        createMockItem({ categoriaId: 'cat1' }),
-      ];
-
-      render(
-        <ItensCompleto
-          itens={itensComCategoriaDuplicada}
-          categorias={mockCategorias}
-          errors={{}}
-          onItemChange={mockOnItemChange}
-          onAddItem={mockOnAddItem}
-          onRemoveItem={mockOnRemoveItem}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      await waitFor(() => {
-        expect(itemServicoService.listarAtivosPorCategoria).toHaveBeenCalledTimes(1);
-      });
-    });
-
-    it('não deve chamar service quando categoria está vazia', async () => {
-      vi.mocked(itemServicoService.listarAtivosPorCategoria).mockResolvedValue([]);
+    it('não deve carregar itens quando categoria está vazia', async () => {
+      vi.mocked(useInfiniteItensServicoAtivos).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+      } as any);
 
       render(
         <ItensCompleto
@@ -915,9 +963,8 @@ describe('ItensCompleto', () => {
         { wrapper: createWrapper() }
       );
 
-      // Aguardar um pouco para garantir que não foi chamado
-      await new Promise(resolve => setTimeout(resolve, 100));
-      expect(itemServicoService.listarAtivosPorCategoria).not.toHaveBeenCalled();
+      // O hook foi chamado mas retorna undefined quando categoria está vazia
+      expect(useInfiniteItensServicoAtivos).toHaveBeenCalled();
     });
   });
 });

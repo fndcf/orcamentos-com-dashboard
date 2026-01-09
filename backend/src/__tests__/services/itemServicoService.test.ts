@@ -7,6 +7,11 @@ import { ItemServico, CategoriaItem } from '../../models';
 // Mock dos repositories
 jest.mock('../../repositories/itemServicoRepository');
 jest.mock('../../repositories/categoriaItemRepository');
+jest.mock('../../repositories/historicoValoresRepository', () => ({
+  historicoValoresRepository: {
+    salvarHistoricoItem: jest.fn().mockResolvedValue(undefined),
+  },
+}));
 
 describe('itemServicoService', () => {
   beforeEach(() => {
@@ -353,6 +358,175 @@ describe('itemServicoService', () => {
       (itemServicoRepository.findById as jest.Mock).mockResolvedValue(null);
 
       await expect(itemServicoService.toggleAtivo('inexistente')).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('listarAtivosPorCategoriaPaginado', () => {
+    it('deve retornar itens ativos paginados de uma categoria', async () => {
+      const mockResult = {
+        itens: [mockItemServico],
+        nextCursor: 'cursor123',
+        hasMore: true,
+        total: 10,
+      };
+      (itemServicoRepository.findAtivosByCategoriaPaginado as jest.Mock).mockResolvedValue(mockResult);
+
+      const resultado = await itemServicoService.listarAtivosPorCategoriaPaginado('cat1', 10, undefined, undefined);
+
+      expect(itemServicoRepository.findAtivosByCategoriaPaginado).toHaveBeenCalledWith('cat1', 10, undefined, undefined);
+      expect(resultado).toEqual(mockResult);
+    });
+
+    it('deve lançar erro quando categoriaId não for fornecido', async () => {
+      await expect(itemServicoService.listarAtivosPorCategoriaPaginado('', 10)).rejects.toThrow(ValidationError);
+    });
+  });
+
+  describe('listarPorCategoriaPaginado', () => {
+    it('deve retornar itens paginados de uma categoria', async () => {
+      const mockResult = {
+        itens: [mockItemServico],
+        nextCursor: 'cursor123',
+        hasMore: true,
+        total: 10,
+      };
+      (categoriaItemRepository.findById as jest.Mock).mockResolvedValue(mockCategoria);
+      (itemServicoRepository.findByCategoriaPaginado as jest.Mock).mockResolvedValue(mockResult);
+
+      const resultado = await itemServicoService.listarPorCategoriaPaginado('cat1', 10, undefined, 'busca');
+
+      expect(categoriaItemRepository.findById).toHaveBeenCalledWith('cat1');
+      expect(itemServicoRepository.findByCategoriaPaginado).toHaveBeenCalledWith('cat1', 10, undefined, 'busca');
+      expect(resultado).toEqual(mockResult);
+    });
+
+    it('deve lançar erro quando categoriaId não for fornecido', async () => {
+      await expect(itemServicoService.listarPorCategoriaPaginado('', 10)).rejects.toThrow(ValidationError);
+    });
+
+    it('deve lançar erro quando categoria não existir', async () => {
+      (categoriaItemRepository.findById as jest.Mock).mockResolvedValue(null);
+
+      await expect(itemServicoService.listarPorCategoriaPaginado('cat-inexistente', 10)).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('criar com histórico', () => {
+    it('deve salvar histórico ao criar item com valores', async () => {
+      const { historicoValoresRepository } = require('../../repositories/historicoValoresRepository');
+      const novoItem = {
+        categoriaId: 'cat1',
+        descricao: 'Novo item com valores',
+        unidade: 'UN',
+        valorUnitario: 100,
+        valorMaoDeObraUnitario: 50,
+        valorCusto: 80,
+        valorMaoDeObraCusto: 40,
+      };
+      const itemCriado = { ...mockItemServico, ...novoItem };
+
+      (categoriaItemRepository.findById as jest.Mock).mockResolvedValue(mockCategoria);
+      (itemServicoRepository.findByDescricaoInCategoria as jest.Mock).mockResolvedValue(null);
+      (itemServicoRepository.getNextOrdem as jest.Mock).mockResolvedValue(1);
+      (itemServicoRepository.create as jest.Mock).mockResolvedValue(itemCriado);
+
+      await itemServicoService.criar(novoItem);
+
+      expect(historicoValoresRepository.salvarHistoricoItem).toHaveBeenCalledWith(
+        expect.objectContaining({
+          itemServicoId: itemCriado.id,
+          descricao: itemCriado.descricao,
+          valorUnitario: 100,
+          valorMaoDeObraUnitario: 50,
+          valorCusto: 80,
+          valorMaoDeObraCusto: 40,
+        })
+      );
+    });
+  });
+
+  describe('atualizar com histórico', () => {
+    it('deve salvar histórico ao atualizar valores', async () => {
+      const { historicoValoresRepository } = require('../../repositories/historicoValoresRepository');
+      const itemExistente = {
+        ...mockItemServico,
+        valorUnitario: 100,
+        valorMaoDeObraUnitario: 50,
+      };
+      const itemAtualizado = {
+        ...itemExistente,
+        valorUnitario: 150,
+        valorMaoDeObraUnitario: 75,
+      };
+
+      (itemServicoRepository.findById as jest.Mock).mockResolvedValue(itemExistente);
+      (itemServicoRepository.update as jest.Mock).mockResolvedValue(itemAtualizado);
+
+      await itemServicoService.atualizar('1', { valorUnitario: 150, valorMaoDeObraUnitario: 75 });
+
+      expect(historicoValoresRepository.salvarHistoricoItem).toHaveBeenCalledWith(
+        expect.objectContaining({
+          itemServicoId: '1',
+          valorUnitario: 150,
+          valorMaoDeObraUnitario: 75,
+        })
+      );
+    });
+
+    it('deve salvar histórico ao atualizar valorCusto', async () => {
+      const { historicoValoresRepository } = require('../../repositories/historicoValoresRepository');
+      const itemExistente = {
+        ...mockItemServico,
+        valorCusto: 80,
+      };
+      const itemAtualizado = {
+        ...itemExistente,
+        valorCusto: 100,
+      };
+
+      (itemServicoRepository.findById as jest.Mock).mockResolvedValue(itemExistente);
+      (itemServicoRepository.update as jest.Mock).mockResolvedValue(itemAtualizado);
+
+      await itemServicoService.atualizar('1', { valorCusto: 100 });
+
+      expect(historicoValoresRepository.salvarHistoricoItem).toHaveBeenCalled();
+    });
+
+    it('deve salvar histórico ao atualizar valorMaoDeObraCusto', async () => {
+      const { historicoValoresRepository } = require('../../repositories/historicoValoresRepository');
+      const itemExistente = {
+        ...mockItemServico,
+        valorMaoDeObraCusto: 40,
+      };
+      const itemAtualizado = {
+        ...itemExistente,
+        valorMaoDeObraCusto: 60,
+      };
+
+      (itemServicoRepository.findById as jest.Mock).mockResolvedValue(itemExistente);
+      (itemServicoRepository.update as jest.Mock).mockResolvedValue(itemAtualizado);
+
+      await itemServicoService.atualizar('1', { valorMaoDeObraCusto: 60 });
+
+      expect(historicoValoresRepository.salvarHistoricoItem).toHaveBeenCalled();
+    });
+
+    it('não deve salvar histórico quando valores não mudaram', async () => {
+      const { historicoValoresRepository } = require('../../repositories/historicoValoresRepository');
+      historicoValoresRepository.salvarHistoricoItem.mockClear();
+
+      const itemExistente = {
+        ...mockItemServico,
+        valorUnitario: 100,
+      };
+
+      (itemServicoRepository.findById as jest.Mock).mockResolvedValue(itemExistente);
+      (itemServicoRepository.update as jest.Mock).mockResolvedValue(itemExistente);
+
+      // Atualizar apenas a descrição, não os valores
+      await itemServicoService.atualizar('1', { descricao: 'Nova descrição' });
+
+      expect(historicoValoresRepository.salvarHistoricoItem).not.toHaveBeenCalled();
     });
   });
 });

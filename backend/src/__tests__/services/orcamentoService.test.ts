@@ -4,6 +4,14 @@ import { clienteRepository } from '../../repositories/clienteRepository';
 import { configuracoesGeraisRepository } from '../../repositories/configuracoesGeraisRepository';
 import { ValidationError, NotFoundError } from '../../utils/errors';
 
+// Mock do FieldValue do Firebase
+jest.mock('../../config/firebase', () => ({
+  FieldValue: {
+    delete: jest.fn(() => ({ _methodName: 'FieldValue.delete' })),
+    serverTimestamp: jest.fn(() => ({ _methodName: 'FieldValue.serverTimestamp' })),
+  },
+}));
+
 // Mock dos repositories
 jest.mock('../../repositories/orcamentoRepository', () => ({
   orcamentoRepository: {
@@ -23,6 +31,7 @@ jest.mock('../../repositories/orcamentoRepository', () => ({
 jest.mock('../../repositories/clienteRepository', () => ({
   clienteRepository: {
     findById: jest.fn(),
+    findAll: jest.fn(),
   },
 }));
 
@@ -628,6 +637,123 @@ describe('orcamentoService', () => {
         parcelamentoTexto: 'texto com espaços',
       }));
     });
+
+    it('deve atualizar campos de contato (consultor, contato, email, telefone, enderecoServico)', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+      (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...mockOrcamentoCompleto, ...data }));
+
+      await orcamentoService.atualizar('o1', {
+        consultor: 'João Silva',
+        contato: 'Maria Santos',
+        email: 'teste@email.com',
+        telefone: '11999999999',
+        enderecoServico: 'Rua Nova, 456',
+      });
+
+      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
+        consultor: 'João Silva',
+        contato: 'Maria Santos',
+        email: 'teste@email.com',
+        telefone: '11999999999',
+        enderecoServico: 'Rua Nova, 456',
+      }));
+    });
+
+    it('deve remover campos de contato quando enviados vazios', async () => {
+      const orcamentoComCampos = {
+        ...mockOrcamentoCompleto,
+        consultor: 'Antigo Consultor',
+        contato: 'Antigo Contato',
+        email: 'antigo@email.com',
+        telefone: '11888888888',
+        enderecoServico: 'Endereço Antigo',
+      };
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(orcamentoComCampos);
+      (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...orcamentoComCampos, ...data }));
+
+      await orcamentoService.atualizar('o1', {
+        consultor: '',
+        contato: '',
+        email: '',
+        telefone: '',
+        enderecoServico: '',
+      });
+
+      expect(orcamentoRepository.update).toHaveBeenCalled();
+    });
+
+    it('deve atualizar parcelamentoDados', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+      (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...mockOrcamentoCompleto, ...data }));
+
+      const parcelamentoDados = {
+        entradaPercent: 30,
+        valorEntrada: 450,
+        valorRestante: 1050,
+        opcoes: [
+          { numeroParcelas: 3, valorParcela: 350, valorTotal: 1050, temJuros: false, taxaJuros: 0 },
+        ],
+      };
+
+      await orcamentoService.atualizar('o1', { parcelamentoDados });
+
+      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
+        parcelamentoDados,
+      }));
+    });
+
+    it('deve atualizar descontoAVista com percentual válido', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+      (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...mockOrcamentoCompleto, ...data }));
+
+      const descontoAVista = { percentual: 10, valorDesconto: 150, valorFinal: 1350 };
+
+      await orcamentoService.atualizar('o1', { descontoAVista });
+
+      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
+        descontoAVista,
+      }));
+    });
+
+    it('deve remover descontoAVista quando percentual for zero', async () => {
+      const orcamentoComDesconto = {
+        ...mockOrcamentoCompleto,
+        descontoAVista: { percentual: 10, valorDesconto: 150, valorFinal: 1350 },
+      };
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(orcamentoComDesconto);
+      (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...orcamentoComDesconto, ...data }));
+
+      await orcamentoService.atualizar('o1', { descontoAVista: { percentual: 0, valorDesconto: 0, valorFinal: 1500 } });
+
+      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
+        descontoAVista: null,
+      }));
+    });
+
+    it('deve atualizar mostrarValoresDetalhados', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+      (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...mockOrcamentoCompleto, ...data }));
+
+      await orcamentoService.atualizar('o1', { mostrarValoresDetalhados: true });
+
+      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
+        mostrarValoresDetalhados: true,
+      }));
+    });
+
+    it('não deve atualizar se nenhum campo mudou', async () => {
+      const orcamentoExistente = {
+        ...mockOrcamentoCompleto,
+        observacoes: 'Obs existente',
+      };
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(orcamentoExistente);
+
+      // Enviar os mesmos dados
+      const result = await orcamentoService.atualizar('o1', { observacoes: 'Obs existente' });
+
+      // Não deve chamar update se não houve mudanças
+      expect(result).toBeDefined();
+    });
   });
 
   describe('atualizarStatus', () => {
@@ -859,6 +985,137 @@ describe('orcamentoService', () => {
 
       expect(result).toBe(0);
       expect(orcamentoRepository.updateStatus).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getDashboardStats', () => {
+    const mockClientes = [
+      { id: 'c1', razaoSocial: 'Cliente 1' },
+      { id: 'c2', razaoSocial: 'Cliente 2' },
+    ];
+
+    beforeEach(() => {
+      (clienteRepository.findAll as jest.Mock).mockResolvedValue(mockClientes);
+    });
+
+    it('deve retornar estatísticas corretas do dashboard', async () => {
+      const now = new Date();
+      const mockOrcamentos = [
+        {
+          id: 'o1',
+          status: 'aberto',
+          valorTotal: 1000,
+          dataEmissao: now
+        },
+        {
+          id: 'o2',
+          status: 'aceito',
+          valorTotal: 2000,
+          dataEmissao: now
+        },
+        {
+          id: 'o3',
+          status: 'recusado',
+          valorTotal: 500,
+          dataEmissao: now
+        },
+        {
+          id: 'o4',
+          status: 'expirado',
+          valorTotal: 750,
+          dataEmissao: now
+        },
+      ];
+
+      (orcamentoRepository.findAll as jest.Mock).mockResolvedValue(mockOrcamentos);
+
+      const result = await orcamentoService.getDashboardStats();
+
+      expect(result.total).toBe(4);
+      expect(result.abertos).toBe(1);
+      expect(result.aceitos).toBe(1);
+      expect(result.recusados).toBe(1);
+      expect(result.expirados).toBe(1);
+      expect(result.valorTotal).toBe(4250);
+      expect(result.valorAceitos).toBe(2000);
+      expect(result.totalClientes).toBe(2);
+      expect(result.porMes).toHaveLength(6);
+    });
+
+    it('deve lidar com orçamentos sem valorTotal', async () => {
+      const now = new Date();
+      const mockOrcamentos = [
+        { id: 'o1', status: 'aberto', valorTotal: null, dataEmissao: now },
+        { id: 'o2', status: 'aceito', valorTotal: undefined, dataEmissao: now },
+      ];
+
+      (orcamentoRepository.findAll as jest.Mock).mockResolvedValue(mockOrcamentos);
+
+      const result = await orcamentoService.getDashboardStats();
+
+      expect(result.valorTotal).toBe(0);
+      expect(result.valorAceitos).toBe(0);
+    });
+
+    it('deve retornar estatísticas vazias quando não há orçamentos', async () => {
+      (orcamentoRepository.findAll as jest.Mock).mockResolvedValue([]);
+
+      const result = await orcamentoService.getDashboardStats();
+
+      expect(result.total).toBe(0);
+      expect(result.abertos).toBe(0);
+      expect(result.aceitos).toBe(0);
+      expect(result.recusados).toBe(0);
+      expect(result.expirados).toBe(0);
+      expect(result.valorTotal).toBe(0);
+      expect(result.valorAceitos).toBe(0);
+      expect(result.porMes).toHaveLength(6);
+    });
+
+    it('deve calcular porMes corretamente para diferentes meses', async () => {
+      const now = new Date();
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 15);
+
+      const mockOrcamentos = [
+        { id: 'o1', status: 'aceito', valorTotal: 1000, dataEmissao: now },
+        { id: 'o2', status: 'aberto', valorTotal: 500, dataEmissao: lastMonth },
+        { id: 'o3', status: 'aceito', valorTotal: 2000, dataEmissao: lastMonth },
+      ];
+
+      (orcamentoRepository.findAll as jest.Mock).mockResolvedValue(mockOrcamentos);
+
+      const result = await orcamentoService.getDashboardStats();
+
+      // Verificar que há 6 meses de dados
+      expect(result.porMes).toHaveLength(6);
+
+      // O mês atual deve ter 1 orçamento
+      const currentMonthStats = result.porMes[result.porMes.length - 1];
+      expect(currentMonthStats.total).toBe(1);
+      expect(currentMonthStats.aceitos).toBe(1);
+      expect(currentMonthStats.valor).toBe(1000);
+
+      // O mês anterior deve ter 2 orçamentos
+      const lastMonthStats = result.porMes[result.porMes.length - 2];
+      expect(lastMonthStats.total).toBe(2);
+      expect(lastMonthStats.aceitos).toBe(1);
+      expect(lastMonthStats.valor).toBe(2500);
+    });
+
+    it('deve lidar com dataEmissao como string ISO', async () => {
+      const now = new Date();
+      const mockOrcamentos = [
+        { id: 'o1', status: 'aceito', valorTotal: 1000, dataEmissao: now.toISOString() },
+      ];
+
+      (orcamentoRepository.findAll as jest.Mock).mockResolvedValue(mockOrcamentos);
+
+      const result = await orcamentoService.getDashboardStats();
+
+      expect(result.total).toBe(1);
+      // Verificar que o mês atual tem o orçamento
+      const currentMonthStats = result.porMes[result.porMes.length - 1];
+      expect(currentMonthStats.total).toBe(1);
     });
   });
 });

@@ -49,7 +49,8 @@ const mockNotificacoesTodas = [
   {
     id: '1',
     orcamentoId: 'orc-1',
-    orcamentoNumero: 1001,
+    orcamentoNumero: 1,
+    orcamentoDataEmissao: new Date(),
     clienteId: 'cli-1',
     clienteNome: 'Cliente Teste',
     itemDescricao: 'Extintor ABC 6kg - Vencimento da validade',
@@ -61,7 +62,8 @@ const mockNotificacoesTodas = [
   {
     id: '2',
     orcamentoId: 'orc-2',
-    orcamentoNumero: 1002,
+    orcamentoNumero: 2,
+    orcamentoDataEmissao: new Date(),
     clienteId: 'cli-2',
     clienteNome: 'Outro Cliente',
     itemDescricao: 'Hidrante de Parede',
@@ -76,7 +78,8 @@ const mockNotificacoesVencidas = [
   {
     id: '2',
     orcamentoId: 'orc-2',
-    orcamentoNumero: 1002,
+    orcamentoNumero: 2,
+    orcamentoDataEmissao: new Date(),
     clienteId: 'cli-2',
     clienteNome: 'Outro Cliente',
     itemDescricao: 'Hidrante de Parede',
@@ -91,7 +94,8 @@ const mockNotificacoesProximas = [
   {
     id: '1',
     orcamentoId: 'orc-1',
-    orcamentoNumero: 1001,
+    orcamentoNumero: 1,
+    orcamentoDataEmissao: new Date(),
     clienteId: 'cli-1',
     clienteNome: 'Cliente Teste',
     itemDescricao: 'Extintor ABC 6kg - Vencimento da validade',
@@ -212,7 +216,9 @@ describe('NotificacoesPage', () => {
       render(<NotificacoesPage />, { wrapper: createWrapper() });
 
       expect(screen.getByText('Cliente Teste')).toBeInTheDocument();
-      expect(screen.getByText('Orçamento #1001')).toBeInTheDocument();
+      // O formato do orçamento é [ano][numero] (ex: 260001) - pode haver múltiplos
+      const orcamentoElements = screen.getAllByText(/Orçamento\s+\d+/);
+      expect(orcamentoElements.length).toBeGreaterThan(0);
       expect(screen.getByText('Extintor ABC 6kg - Vencimento da validade')).toBeInTheDocument();
       expect(screen.getByText('VALIDADE')).toBeInTheDocument();
     });
