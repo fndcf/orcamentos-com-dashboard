@@ -96,7 +96,6 @@ const mockLimitacoes = [
 
 const mockOnClose = vi.fn();
 const mockOnSave = vi.fn();
-const mockRefetch = vi.fn();
 
 describe('OrcamentoModal', () => {
   beforeEach(() => {

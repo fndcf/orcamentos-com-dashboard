@@ -766,9 +766,7 @@ describe('Relatorios', () => {
 
       render(<Relatorios />, { wrapper: createWrapper() });
 
-      // Verifica que existem badges de margem
-      const margemElements = document.querySelectorAll('[class*="MargemBadge"]');
-      // Se há orçamentos com lucro, deve mostrar badges
+      // Se há orçamentos com lucro, deve mostrar badges de margem
       expect(screen.getByText(/Análise de Lucro/)).toBeInTheDocument();
     });
 

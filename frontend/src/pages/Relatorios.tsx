@@ -803,8 +803,8 @@ function obterValoresVigentes(
 
   if (vigente) {
     return {
-      valorCusto: vigente.valorCusto,
-      valorMaoDeObraCusto: vigente.valorMaoDeObraCusto,
+      valorCusto: vigente.valorCusto || 0,
+      valorMaoDeObraCusto: vigente.valorMaoDeObraCusto || 0,
     };
   }
 
@@ -813,8 +813,8 @@ function obterValoresVigentes(
   // pois representa os valores que existiam antes de qualquer alteração registrada.
   const maisAntigo = historicosItem[historicosItem.length - 1];
   return {
-    valorCusto: maisAntigo.valorCusto,
-    valorMaoDeObraCusto: maisAntigo.valorMaoDeObraCusto,
+    valorCusto: maisAntigo.valorCusto || 0,
+    valorMaoDeObraCusto: maisAntigo.valorMaoDeObraCusto || 0,
   };
 }
 
@@ -1125,10 +1125,13 @@ export function Relatorios() {
           historicoItens,
           itensServico
         );
-        return valores.valorCusto > 0 || valores.valorMaoDeObraCusto > 0;
+        if (valores.valorCusto > 0 || valores.valorMaoDeObraCusto > 0) {
+          return true;
+        }
+        // Se obterValoresVigentes retornou zeros, ainda tenta fallback direto
       }
 
-      // Fallback: usar valores atuais
+      // Fallback: usar valores atuais diretamente
       const itemInfo = itensPorDescricao[key];
       return !!(
         itemInfo &&
@@ -1142,6 +1145,8 @@ export function Relatorios() {
       quantidade: number,
       dataEmissao: Date
     ) => {
+      const key = descricao.toLowerCase().trim();
+
       // Tentar buscar no histórico primeiro
       if (historicoItens && historicoItens.length > 0) {
         const valores = obterValoresVigentes(
@@ -1150,14 +1155,16 @@ export function Relatorios() {
           historicoItens,
           itensServico
         );
-        return {
-          custoMaterial: valores.valorCusto * quantidade,
-          custoMaoDeObra: valores.valorMaoDeObraCusto * quantidade,
-        };
+        if (valores.valorCusto > 0 || valores.valorMaoDeObraCusto > 0) {
+          return {
+            custoMaterial: valores.valorCusto * quantidade,
+            custoMaoDeObra: valores.valorMaoDeObraCusto * quantidade,
+          };
+        }
+        // Se obterValoresVigentes retornou zeros, tenta fallback direto
       }
 
-      // Fallback: usar valores atuais
-      const key = descricao.toLowerCase().trim();
+      // Fallback: usar valores atuais diretamente
       const itemInfo = itensPorDescricao[key];
       if (itemInfo) {
         return {
@@ -1535,14 +1542,19 @@ export function Relatorios() {
 
     // Função para obter valores de custo de um item
     const obterCustosItem = (descricao: string, quantidade: number, dataEmissao: Date) => {
+      const key = descricao.toLowerCase().trim();
+
       if (historicoItens && historicoItens.length > 0) {
         const valores = obterValoresVigentes(descricao, dataEmissao, historicoItens, itensServico || []);
-        return {
-          custoMaterial: valores.valorCusto * quantidade,
-          custoMaoDeObra: valores.valorMaoDeObraCusto * quantidade,
-        };
+        if (valores.valorCusto > 0 || valores.valorMaoDeObraCusto > 0) {
+          return {
+            custoMaterial: valores.valorCusto * quantidade,
+            custoMaoDeObra: valores.valorMaoDeObraCusto * quantidade,
+          };
+        }
+        // Se obterValoresVigentes retornou zeros, tenta fallback direto
       }
-      const key = descricao.toLowerCase().trim();
+
       const itemInfo = itensPorDescricao[key];
       if (itemInfo) {
         return {

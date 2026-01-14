@@ -218,7 +218,7 @@ describe('useItensServico hooks', () => {
     it('deve retornar itens ativos com search', async () => {
       const mockResponse = {
         itens: [mockItensServico[0]],
-        nextCursor: null,
+        nextCursor: undefined,
         hasMore: false,
         total: 1,
       };
@@ -267,7 +267,7 @@ describe('useItensServico hooks', () => {
     it('deve retornar itens com search e limit customizado', async () => {
       const mockResponse = {
         itens: [mockItensServico[1]],
-        nextCursor: null,
+        nextCursor: undefined,
         hasMore: false,
         total: 1,
       };
