@@ -2038,6 +2038,17 @@ export function OrcamentoCompletoPDFDocument({
 
               return (
                 <>
+                  {/* Desconto no parcelamento (se houver) */}
+                  {orcamento.descontoAVista &&
+                    orcamento.descontoAVista.percentual > 0 && (
+                    <View style={{ marginBottom: 8 }}>
+                      <Text style={stylesCompleto.precosCondicao}>
+                        Desconto de {orcamento.descontoAVista.percentual}%: de{" "}
+                        {formatCurrency(orcamento.valorTotal)} por{" "}
+                        {formatCurrency(orcamento.descontoAVista.valorFinal)}
+                      </Text>
+                    </View>
+                  )}
                   {/* Box de entrada */}
                   <View style={stylesCompleto.parcelamentoEntradaBox}>
                     <Text style={stylesCompleto.parcelamentoEntradaText}>
