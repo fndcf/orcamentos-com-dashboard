@@ -115,7 +115,7 @@ const sizeWidths = {
   small: '400px',
   medium: '500px',
   large: '800px',
-  xlarge: '1100px',
+  xlarge: '1400px',
 };
 
 export function Modal({ isOpen, onClose, title, children, footer, width, size }: ModalProps) {

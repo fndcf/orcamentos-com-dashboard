@@ -509,11 +509,12 @@ export function CondicaoPagamentoFormSection({
           <DescontoContainer>
             <div className="label">Desconto para pagamento à vista (opcional)</div>
             <div className="input-row">
+              <span className="input-prefix"></span>
               <input
                 type="number"
                 min="0"
                 max="100"
-                step="0.5"
+                step="any"
                 value={descontoPercent || ""}
                 placeholder="0"
                 onChange={(e) => {
@@ -541,6 +542,41 @@ export function CondicaoPagamentoFormSection({
                 }}
               />
               <span>% de desconto</span>
+            </div>
+            <div className="input-row">
+              <span className="input-prefix">R$</span>
+              <input
+                type="number"
+                min="0"
+                max={valorTotal}
+                step="0.01"
+                value={descontoPercent > 0 ? parseFloat(((valorTotal * descontoPercent) / 100).toFixed(2)) : ""}
+                placeholder="0,00"
+                onChange={(e) => {
+                  const valorDescInput = parseFloat(e.target.value) || 0;
+                  const novoValorDesc = Math.min(valorTotal, Math.max(0, valorDescInput));
+                  const novoPercentual = valorTotal > 0
+                    ? parseFloat(((novoValorDesc / valorTotal) * 100).toFixed(2))
+                    : 0;
+                  setDescontoPercent(novoPercentual);
+
+                  if (novoPercentual > 0) {
+                    const novoValorFinal = valorTotal - novoValorDesc;
+                    lastExternalPercentual.current = novoPercentual;
+                    lastDescontoSent.current = `${novoPercentual}-${novoValorDesc}-${novoValorFinal}`;
+                    onDescontoAVistaChange({
+                      percentual: novoPercentual,
+                      valorDesconto: novoValorDesc,
+                      valorFinal: novoValorFinal,
+                    });
+                  } else {
+                    lastExternalPercentual.current = undefined;
+                    lastDescontoSent.current = "none";
+                    onDescontoAVistaChange(undefined);
+                  }
+                }}
+              />
+              <span>de desconto</span>
             </div>
             {descontoPercent > 0 && (
               <div className="desconto-resumo">

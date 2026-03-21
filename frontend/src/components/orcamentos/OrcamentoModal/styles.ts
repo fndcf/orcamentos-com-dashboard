@@ -713,6 +713,12 @@ export const DescontoContainer = styled.div`
     gap: 8px;
     margin-bottom: 12px;
 
+    .input-prefix {
+      width: 24px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
     input {
       width: 100px;
       padding: 8px 12px;
