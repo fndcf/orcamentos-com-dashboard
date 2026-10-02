@@ -36,11 +36,23 @@ describe('Modal Component', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('deve chamar onClose ao clicar no overlay', () => {
+  it('não deve chamar onClose ao clicar no overlay por padrão', () => {
     const onClose = vi.fn();
     const { container } = render(<Modal {...defaultProps} onClose={onClose} />);
 
     // O overlay é o primeiro elemento com position fixed
+    const overlay = container.firstChild;
+    if (overlay) {
+      fireEvent.click(overlay);
+    }
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('deve chamar onClose ao clicar no overlay quando closeOnOverlayClick é true', () => {
+    const onClose = vi.fn();
+    const { container } = render(<Modal {...defaultProps} onClose={onClose} closeOnOverlayClick />);
+
     const overlay = container.firstChild;
     if (overlay) {
       fireEvent.click(overlay);

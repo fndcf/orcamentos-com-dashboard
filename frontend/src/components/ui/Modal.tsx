@@ -119,7 +119,7 @@ const sizeWidths = {
   xlarge: '1400px',
 };
 
-export function Modal({ isOpen, onClose, title, children, footer, width, size, closeOnOverlayClick = true }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, footer, width, size, closeOnOverlayClick = false }: ModalProps) {
   const modalWidth = width || (size ? sizeWidths[size] : sizeWidths.medium);
   useEffect(() => {
     if (isOpen) {
