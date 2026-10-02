@@ -646,6 +646,7 @@ export function OrcamentoModal({
           : "Novo Orçamento"
       }
       size="xlarge"
+      closeOnOverlayClick={false}
     >
       <Form ref={formRef} onSubmit={handleSubmit}>
         {/* Seleção de Cliente */}

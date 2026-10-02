@@ -109,6 +109,7 @@ interface ModalProps {
   footer?: ReactNode;
   width?: string;
   size?: 'small' | 'medium' | 'large' | 'xlarge';
+  closeOnOverlayClick?: boolean;
 }
 
 const sizeWidths = {
@@ -118,7 +119,7 @@ const sizeWidths = {
   xlarge: '1400px',
 };
 
-export function Modal({ isOpen, onClose, title, children, footer, width, size }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, footer, width, size, closeOnOverlayClick = true }: ModalProps) {
   const modalWidth = width || (size ? sizeWidths[size] : sizeWidths.medium);
   useEffect(() => {
     if (isOpen) {
@@ -135,7 +136,7 @@ export function Modal({ isOpen, onClose, title, children, footer, width, size }:
   if (!isOpen) return null;
 
   return (
-    <Overlay onClick={onClose}>
+    <Overlay onClick={closeOnOverlayClick ? onClose : undefined}>
       <ModalContainer $width={modalWidth} onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
           <h2>{title}</h2>
