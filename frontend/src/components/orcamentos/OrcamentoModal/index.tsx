@@ -136,6 +136,9 @@ export function OrcamentoModal({
 
   const formRef = useRef<HTMLFormElement>(null);
   const isInitializedRef = useRef(false);
+  // Garante que o cliente original (edição/duplicação) só seja preenchido uma vez por abertura,
+  // para que o usuário possa limpar o campo e escolher outro cliente
+  const clienteExistenteAplicadoRef = useRef(false);
 
   // Debounce da busca
   useEffect(() => {
@@ -195,7 +198,8 @@ export function OrcamentoModal({
 
   // Quando cliente existente é carregado (para edição/duplicação)
   useEffect(() => {
-    if (clienteExistente && !clienteSelecionado && isOpen) {
+    if (clienteExistente && !clienteSelecionado && isOpen && !clienteExistenteAplicadoRef.current) {
+      clienteExistenteAplicadoRef.current = true;
       setClienteSelecionado(clienteExistente);
       setClienteSearchText(clienteExistente.razaoSocial);
     }
@@ -314,6 +318,7 @@ export function OrcamentoModal({
     } else {
       // Quando o modal fecha, resetar a flag para a próxima abertura
       isInitializedRef.current = false;
+      clienteExistenteAplicadoRef.current = false;
     }
   }, [isOpen, orcamento, duplicarDe, limitacoesAtivas]);
 

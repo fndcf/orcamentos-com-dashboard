@@ -574,6 +574,32 @@ describe('OrcamentoModal', () => {
     expect(searchInput).not.toBeDisabled();
   });
 
+  it('não deve repreencher o cliente original ao limpar o campo na duplicação', async () => {
+    vi.mocked(useCliente).mockReturnValue({
+      data: mockClientes[0],
+      isLoading: false,
+    } as any);
+
+    render(
+      <OrcamentoModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+        duplicarDe={mockOrcamento}
+      />,
+      { wrapper: createWrapper() }
+    );
+
+    const searchInput = screen.getByPlaceholderText('Digite para buscar um cliente...') as HTMLInputElement;
+    await waitFor(() => {
+      expect(searchInput.value).toBe('Cliente 1');
+    });
+
+    fireEvent.change(searchInput, { target: { value: '' } });
+
+    expect(searchInput.value).toBe('');
+  });
+
   it('deve desabilitar botão de submit quando loading', () => {
     render(
       <OrcamentoModal
