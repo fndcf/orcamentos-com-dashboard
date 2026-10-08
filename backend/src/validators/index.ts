@@ -40,7 +40,8 @@ export const configuracoesGeraisAtualizarSchema = z
     enderecoEmpresa: texto,
     telefoneEmpresa: texto,
     emailEmpresa: texto,
-    logoUrl: texto,
+    // Ainda não é exibido; só https para não virar vetor de javascript:/data: quando passar a ser usado
+    logoUrl: z.union([z.literal(""), z.string().url().startsWith("https://")]),
     parcelamentoMaxParcelas: inteiro.min(1),
     parcelamentoValorMinimo: numero.nonnegative(),
     parcelamentoJurosAPartirDe: inteiro.min(1),

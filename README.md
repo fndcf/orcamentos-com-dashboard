@@ -179,6 +179,27 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=seu_sender_id
 VITE_FIREBASE_APP_ID=seu_app_id
 ```
 
+A API key do `.env` é a de produção e só aceita requisições dos domínios de produção. Para desenvolvimento, crie `frontend/.env.development.local` com uma key restrita a `http://localhost:5173/*` (lida apenas pelo `npm run dev`; o build de produção nunca a usa):
+
+```env
+VITE_FIREBASE_API_KEY=sua_api_key_de_desenvolvimento
+```
+
+### Acesso ao sistema (claim `staff`)
+
+A API só aceita contas com a custom claim `staff`. **Toda conta `staff` é administradora**: lê, altera e exclui todos os clientes e orçamentos, altera configurações gerais, catálogo, custos e impostos, vê relatórios de lucro e dispara ações em massa. Não existem papéis nem separação por dono dos registros.
+
+Por isso, dê a claim apenas a quem deve ter acesso total e remova-a de quem sair da equipe:
+
+```bash
+cd backend
+npm run staff -- --listar
+npm run staff -- --adicionar email@empresa.com   # o usuário precisa sair e entrar de novo
+npm run staff -- --remover email@empresa.com     # também encerra as sessões abertas
+```
+
+Antes de criar qualquer perfil com acesso parcial (vendedor, estagiário, cliente), é preciso implementar papéis no backend (middleware por rota) e filtro por dono nas consultas. Esconder telas no frontend não basta.
+
 ## Executando o Projeto
 
 ### Desenvolvimento
@@ -407,7 +428,7 @@ lsof -ti:3001 | xargs kill -9
 
 ### Erro de CORS
 
-Verificar se `FRONTEND_URL` no backend corresponde à URL do frontend.
+Em desenvolvimento, verificar se `FRONTEND_URL` no backend corresponde à URL do frontend (padrão: `http://localhost:5173`). Em produção o CORS fica desligado de propósito: o frontend chama a API pela mesma origem (rewrite `/api/**` do Hosting).
 
 ### Firebase não conecta
 

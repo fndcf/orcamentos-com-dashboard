@@ -79,6 +79,20 @@ describe('validators', () => {
       );
     });
 
+    it.each(['javascript:alert(1)', 'data:image/svg+xml,<svg onload=alert(1)>', 'http://exemplo.com/logo.png', 'logo.png'])(
+      'deve rejeitar logoUrl fora de https (%s)',
+      (logoUrl) => {
+        esperarErro(
+          () => validar(configuracoesGeraisAtualizarSchema, { logoUrl }),
+          'Campo "logoUrl" inválido'
+        );
+      }
+    );
+
+    it.each(['', 'https://exemplo.com/logo.png'])('deve aceitar logoUrl vazio ou https (%s)', (logoUrl) => {
+      expect(validar(configuracoesGeraisAtualizarSchema, { logoUrl })).toEqual({ logoUrl });
+    });
+
     it('deve descartar chaves arbitrárias', () => {
       const resultado = validar(configuracoesGeraisAtualizarSchema, {
         telefoneEmpresa: '13 3411-5455',

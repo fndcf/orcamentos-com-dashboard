@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import * as functions from "firebase-functions";
 import routes from "./routes";
 import { errorHandler } from "./middlewares/errorHandler";
+import { origemCors } from "./config/cors";
 import { inicializarEventHandlers } from "./services/notificacaoService";
 
 dotenv.config();
@@ -16,7 +17,7 @@ const app = express();
 // Middlewares
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: origemCors(),
     credentials: true,
   })
 );
