@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from "express";
+import type { DecodedIdToken } from "firebase-admin/auth";
 import { auth } from "../config/firebase";
-import { UnauthorizedError } from "../utils/errors";
+import { ForbiddenError, UnauthorizedError } from "../utils/errors";
+
+// Custom claim que marca as contas autorizadas a usar a API (definida via scripts/definirStaff.ts)
+export const STAFF_CLAIM = "staff";
 
 export interface AuthRequest extends Request {
   user?: {
@@ -14,6 +18,8 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  let decodedToken: DecodedIdToken;
+
   try {
     const authHeader = req.headers.authorization;
 
@@ -23,15 +29,23 @@ export const authMiddleware = async (
 
     const token = authHeader.split("Bearer ")[1];
 
-    const decodedToken = await auth.verifyIdToken(token);
-
-    req.user = {
-      uid: decodedToken.uid,
-      email: decodedToken.email || "",
-    };
-
-    next();
+    // checkRevoked: contas desativadas ou com tokens revogados perdem acesso imediatamente
+    decodedToken = await auth.verifyIdToken(token, true);
   } catch (_error) {
     next(new UnauthorizedError("Token inválido ou expirado"));
+    return;
   }
+
+  // Ter uma conta no Firebase não basta: só contas marcadas como staff acessam a API
+  if (decodedToken[STAFF_CLAIM] !== true) {
+    next(new ForbiddenError("Usuário sem permissão de acesso"));
+    return;
+  }
+
+  req.user = {
+    uid: decodedToken.uid,
+    email: decodedToken.email || "",
+  };
+
+  next();
 };

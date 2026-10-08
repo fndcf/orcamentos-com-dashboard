@@ -226,12 +226,13 @@ describe('api response interceptor', () => {
     }
   });
 
-  it('deve tratar erro 403 sem redirecionar', async () => {
+  it('deve deslogar e redirecionar para login com aviso em caso de erro 403', async () => {
     const mockError = { response: { status: 403 } };
 
     if (responseErrorInterceptor) {
       await expect(responseErrorInterceptor(mockError)).rejects.toEqual(mockError);
-      expect(mockSignOut).not.toHaveBeenCalled();
+      expect(mockSignOut).toHaveBeenCalled();
+      expect(window.location.href).toBe('/login?acesso=negado');
     }
   });
 

@@ -1,11 +1,7 @@
 import { Router } from 'express';
 import { clienteController } from '../controllers/clienteController';
-import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
-
-// Todas as rotas requerem autenticação
-router.use(authMiddleware);
 
 // GET /api/clientes - Listar todos os clientes
 router.get('/', clienteController.listar);

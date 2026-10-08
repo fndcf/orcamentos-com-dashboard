@@ -41,6 +41,18 @@ describe('Login Page', () => {
     expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument();
   });
 
+  it('deve exibir aviso quando redirecionado por falta de permissão', () => {
+    render(
+      <MemoryRouter initialEntries={['/login?acesso=negado']}>
+        <Login />
+      </MemoryRouter>
+    );
+
+    expect(
+      screen.getByText('Sua conta não tem permissão de acesso ao sistema. Fale com o administrador.')
+    ).toBeInTheDocument();
+  });
+
   it('deve atualizar campos de input', async () => {
     render(
       <MemoryRouter>

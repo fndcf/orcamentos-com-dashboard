@@ -1,11 +1,7 @@
 import { Router } from 'express';
 import { orcamentoController } from '../controllers/orcamentoController';
-import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
-
-// Todas as rotas requerem autenticação
-router.use(authMiddleware);
 
 // GET /api/orcamentos - Listar todos os orçamentos
 router.get('/', orcamentoController.listar);

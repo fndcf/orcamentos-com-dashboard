@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { authMiddleware, AuthRequest } from '../../middlewares/authMiddleware';
-import { UnauthorizedError } from '../../utils/errors';
+import { ForbiddenError, UnauthorizedError } from '../../utils/errors';
 
 // Mock do Firebase Auth
 jest.mock('../../config/firebase', () => ({
@@ -59,6 +59,7 @@ describe('authMiddleware', () => {
     (auth.verifyIdToken as jest.Mock).mockResolvedValue({
       uid: 'user-123',
       email: 'test@example.com',
+      staff: true,
     });
 
     await authMiddleware(mockReq as AuthRequest, mockRes as Response, mockNext);
@@ -75,6 +76,7 @@ describe('authMiddleware', () => {
     (auth.verifyIdToken as jest.Mock).mockResolvedValue({
       uid: 'user-123',
       email: undefined,
+      staff: true,
     });
 
     await authMiddleware(mockReq as AuthRequest, mockRes as Response, mockNext);
@@ -84,5 +86,36 @@ describe('authMiddleware', () => {
       email: '',
     });
     expect(mockNext).toHaveBeenCalledWith();
+  });
+
+  it('deve verificar o token checando revogação', async () => {
+    mockReq.headers = { authorization: 'Bearer valid-token' };
+    (auth.verifyIdToken as jest.Mock).mockResolvedValue({ uid: 'user-123', staff: true });
+
+    await authMiddleware(mockReq as AuthRequest, mockRes as Response, mockNext);
+
+    expect(auth.verifyIdToken).toHaveBeenCalledWith('valid-token', true);
+  });
+
+  it('deve retornar ForbiddenError quando a conta não tem a claim staff', async () => {
+    mockReq.headers = { authorization: 'Bearer valid-token' };
+    (auth.verifyIdToken as jest.Mock).mockResolvedValue({
+      uid: 'user-123',
+      email: 'test@example.com',
+    });
+
+    await authMiddleware(mockReq as AuthRequest, mockRes as Response, mockNext);
+
+    expect(mockNext).toHaveBeenCalledWith(expect.any(ForbiddenError));
+    expect(mockReq.user).toBeUndefined();
+  });
+
+  it('deve retornar ForbiddenError quando a claim staff não é exatamente true', async () => {
+    mockReq.headers = { authorization: 'Bearer valid-token' };
+    (auth.verifyIdToken as jest.Mock).mockResolvedValue({ uid: 'user-123', staff: 'true' });
+
+    await authMiddleware(mockReq as AuthRequest, mockRes as Response, mockNext);
+
+    expect(mockNext).toHaveBeenCalledWith(expect.any(ForbiddenError));
   });
 });

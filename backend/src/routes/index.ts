@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authMiddleware } from '../middlewares/authMiddleware';
 import healthRoutes from './health';
 import clienteRoutes from './clientes';
 import orcamentoRoutes from './orcamentos';
@@ -14,6 +15,10 @@ import historicoValoresRoutes from './historicoValores';
 const router = Router();
 
 router.use('/health', healthRoutes);
+
+// Todas as rotas abaixo requerem autenticação
+router.use(authMiddleware);
+
 router.use('/clientes', clienteRoutes);
 router.use('/orcamentos', orcamentoRoutes);
 router.use('/palavras-chave', palavrasChaveRoutes);

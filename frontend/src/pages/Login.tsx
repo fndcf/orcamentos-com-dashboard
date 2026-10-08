@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -122,7 +122,12 @@ const ErrorMessage = styled.p`
 export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [searchParams] = useSearchParams();
+  const [error, setError] = useState(
+    searchParams.get("acesso") === "negado"
+      ? "Sua conta não tem permissão de acesso ao sistema. Fale com o administrador."
+      : ""
+  );
   const [loading, setLoading] = useState(false);
 
   const { signIn } = useAuth();

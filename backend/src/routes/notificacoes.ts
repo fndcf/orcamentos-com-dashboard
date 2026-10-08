@@ -1,11 +1,7 @@
 import { Router } from 'express';
 import { notificacaoController } from '../controllers/notificacaoController';
-import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
-
-// Todas as rotas requerem autenticação
-router.use(authMiddleware);
 
 // GET /api/notificacoes/resumo - Obter resumo (total, não lidas, vencidas, próximas)
 router.get('/resumo', notificacaoController.obterResumo);

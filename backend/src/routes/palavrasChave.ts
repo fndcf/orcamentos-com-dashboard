@@ -1,11 +1,7 @@
 import { Router } from 'express';
 import { palavraChaveController } from '../controllers/palavraChaveController';
-import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
-
-// Todas as rotas requerem autenticação
-router.use(authMiddleware);
 
 // GET /api/palavras-chave - Listar todas
 router.get('/', palavraChaveController.listar);

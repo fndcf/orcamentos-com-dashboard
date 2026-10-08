@@ -25,6 +25,10 @@ api.interceptors.response.use(
       // Token expirado ou inválido
       auth.signOut();
       window.location.href = '/login';
+    } else if (error.response?.status === 403) {
+      // Conta autenticada, mas sem permissão de acesso ao sistema
+      auth.signOut();
+      window.location.href = '/login?acesso=negado';
     }
     return Promise.reject(error);
   }
