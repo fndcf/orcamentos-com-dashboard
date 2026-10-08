@@ -633,8 +633,8 @@ describe('NovoClienteForm', () => {
       expect(screen.getByDisplayValue('RUA TESTE')).toBeInTheDocument();
       expect(screen.getByDisplayValue('CIDADE TESTE')).toBeInTheDocument();
       expect(screen.getByDisplayValue('SP')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('01234567')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('11999999999')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('01234-567')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('(11) 99999-9999')).toBeInTheDocument();
       // Email mantém minúsculas
       expect(screen.getByDisplayValue('test@test.com')).toBeInTheDocument();
     });

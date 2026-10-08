@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { clienteService } from '../services/clienteService';
+import { validar, clienteCriarSchema, clienteAtualizarSchema } from '../validators';
 
 export const clienteController = {
   async listar(req: Request, res: Response, next: NextFunction) {
@@ -57,7 +58,7 @@ export const clienteController = {
 
   async criar(req: Request, res: Response, next: NextFunction) {
     try {
-      const cliente = await clienteService.criar(req.body);
+      const cliente = await clienteService.criar(validar(clienteCriarSchema, req.body));
       res.status(201).json({ success: true, data: cliente });
     } catch (error) {
       next(error);
@@ -67,7 +68,7 @@ export const clienteController = {
   async atualizar(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const cliente = await clienteService.atualizar(id, req.body);
+      const cliente = await clienteService.atualizar(id, validar(clienteAtualizarSchema, req.body));
       res.json({ success: true, data: cliente });
     } catch (error) {
       next(error);

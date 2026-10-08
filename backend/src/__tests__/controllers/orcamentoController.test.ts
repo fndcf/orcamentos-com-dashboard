@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { orcamentoController } from '../../controllers/orcamentoController';
 import { orcamentoService } from '../../services/orcamentoService';
+import { ValidationError } from '../../utils/errors';
 
 // Mock do service
 jest.mock('../../services/orcamentoService', () => ({
@@ -141,10 +142,26 @@ describe('orcamentoController', () => {
   });
 
   describe('criar', () => {
+    const itemValido = {
+      etapa: 'comercial',
+      categoriaId: 'cat1',
+      categoriaNome: 'Categoria',
+      descricao: 'Item 1',
+      unidade: 'un',
+      quantidade: 1,
+      valorUnitarioMaoDeObra: 500,
+      valorUnitarioMaterial: 500,
+      valorTotalMaoDeObra: 500,
+      valorTotalMaterial: 500,
+      valorTotal: 1000,
+    };
+
     it('deve criar um novo orçamento', async () => {
       mockReq.body = {
+        tipo: 'completo',
         clienteId: 'c1',
-        itens: [{ descricao: 'Item 1', quantidade: 1, valorUnitario: 1000 }],
+        servicoId: 's1',
+        itensCompleto: [itemValido],
       };
       (orcamentoService.criar as jest.Mock).mockResolvedValue(mockOrcamento);
 
@@ -153,6 +170,72 @@ describe('orcamentoController', () => {
       expect(orcamentoService.criar).toHaveBeenCalledWith(mockReq.body);
       expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(mockRes.json).toHaveBeenCalledWith({ success: true, data: mockOrcamento });
+    });
+
+    it('deve descartar campos desconhecidos do orçamento e dos itens', async () => {
+      mockReq.body = {
+        clienteId: 'c1',
+        status: 'aceito',
+        valorTotal: 1,
+        itensCompleto: [{ ...itemValido, campoExtra: 'x' }],
+      };
+      (orcamentoService.criar as jest.Mock).mockResolvedValue(mockOrcamento);
+
+      await orcamentoController.criar(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(orcamentoService.criar).toHaveBeenCalledWith({
+        tipo: 'completo',
+        clienteId: 'c1',
+        itensCompleto: [itemValido],
+      });
+    });
+
+    it('deve rejeitar item com valor não numérico', async () => {
+      mockReq.body = {
+        clienteId: 'c1',
+        itensCompleto: [{ ...itemValido, valorUnitarioMaterial: 'abc' }],
+      };
+
+      await orcamentoController.criar(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(orcamentoService.criar).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledWith(expect.any(ValidationError));
+      const erro = (mockNext as jest.Mock).mock.calls[0][0];
+      expect(erro.message).toBe('Campo "itensCompleto.0.valorUnitarioMaterial" deve ser número');
+    });
+
+    it('deve aceitar prazoVistoriaBombeiros e descontoAVista nulos', async () => {
+      mockReq.body = { clienteId: 'c1', prazoVistoriaBombeiros: null, descontoAVista: null };
+      (orcamentoService.criar as jest.Mock).mockResolvedValue(mockOrcamento);
+
+      await orcamentoController.criar(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(orcamentoService.criar).toHaveBeenCalledWith({
+        tipo: 'completo',
+        clienteId: 'c1',
+        prazoVistoriaBombeiros: null,
+        descontoAVista: null,
+      });
+    });
+
+    it('deve manter parcelasSelecionadas e abaixoDoMinimo do parcelamento', async () => {
+      const parcelamentoDados = {
+        entradaPercent: 30,
+        valorEntrada: 300,
+        valorRestante: 700,
+        opcoes: [
+          { numeroParcelas: 2, valorParcela: 350, valorTotal: 700, temJuros: false, taxaJuros: 0, abaixoDoMinimo: true },
+        ],
+        parcelasSelecionadas: [2],
+      };
+      mockReq.body = { clienteId: 'c1', condicaoPagamento: 'parcelado', parcelamentoDados };
+      (orcamentoService.criar as jest.Mock).mockResolvedValue(mockOrcamento);
+
+      await orcamentoController.criar(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(orcamentoService.criar).toHaveBeenCalledWith(
+        expect.objectContaining({ parcelamentoDados })
+      );
     });
 
     it('deve chamar next em caso de erro', async () => {

@@ -69,11 +69,11 @@ interface CriarOrcamentoDTO {
   itensCompleto?: OrcamentoItemCompleto[];
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
-  prazoVistoriaBombeiros?: number;
+  prazoVistoriaBombeiros?: number | null;
   condicaoPagamento?: "a_vista" | "a_combinar" | "parcelado";
   parcelamentoTexto?: string;
-  parcelamentoDados?: ParcelamentoDados;
-  descontoAVista?: DescontoAVistaDados;
+  parcelamentoDados?: ParcelamentoDados | null;
+  descontoAVista?: DescontoAVistaDados | null;
   mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;
@@ -92,11 +92,11 @@ interface AtualizarOrcamentoDTO {
   itensCompleto?: OrcamentoItemCompleto[];
   limitacoesSelecionadas?: string[];
   prazoExecucaoServicos?: number;
-  prazoVistoriaBombeiros?: number;
+  prazoVistoriaBombeiros?: number | null;
   condicaoPagamento?: "a_vista" | "a_combinar" | "parcelado";
   parcelamentoTexto?: string;
-  parcelamentoDados?: ParcelamentoDados;
-  descontoAVista?: DescontoAVistaDados;
+  parcelamentoDados?: ParcelamentoDados | null;
+  descontoAVista?: DescontoAVistaDados | null;
   mostrarValoresDetalhados?: boolean;
   // Campos comuns
   observacoes?: string;

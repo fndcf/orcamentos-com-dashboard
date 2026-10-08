@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { orcamentoService } from '../services/orcamentoService';
+import { validar, orcamentoCriarSchema, orcamentoAtualizarSchema } from '../validators';
 import { OrcamentoStatus } from '../models';
 
 export const orcamentoController = {
@@ -88,7 +89,7 @@ export const orcamentoController = {
 
   async criar(req: Request, res: Response, next: NextFunction) {
     try {
-      const orcamento = await orcamentoService.criar(req.body);
+      const orcamento = await orcamentoService.criar(validar(orcamentoCriarSchema, req.body));
       res.status(201).json({ success: true, data: orcamento });
     } catch (error) {
       next(error);
@@ -98,7 +99,7 @@ export const orcamentoController = {
   async atualizar(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const orcamento = await orcamentoService.atualizar(id, req.body);
+      const orcamento = await orcamentoService.atualizar(id, validar(orcamentoAtualizarSchema, req.body));
       res.json({ success: true, data: orcamento });
     } catch (error) {
       next(error);

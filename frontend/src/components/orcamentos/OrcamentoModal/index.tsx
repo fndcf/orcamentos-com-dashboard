@@ -7,7 +7,7 @@ import {
   ParcelamentoDados,
   DescontoAVistaDados,
 } from "../../../types";
-import { formatOrcamentoNumero } from "../../../utils/constants";
+import { formatOrcamentoNumero, maskPhone } from "../../../utils/constants";
 import { useClientesInfiniteScroll, useCliente } from "../../../hooks/useClientes";
 import { useServicosAtivos } from "../../../hooks/useServicos";
 import { useCategoriasItemAtivas } from "../../../hooks/useCategoriasItem";
@@ -878,7 +878,7 @@ export function OrcamentoModal({
             <Input
               placeholder="Telefone para contato (prioridade sobre cadastro do cliente)"
               value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
+              onChange={(e) => setTelefone(maskPhone(e.target.value))}
             />
           </InputGroup>
         </InputRow>

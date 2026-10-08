@@ -5,6 +5,7 @@ import {
   useBuscarCnpjBrasilAPI,
 } from "../../../hooks/useClientes";
 import { Button, Input, InputGroup, Label, InputRow } from "../../ui";
+import { maskCEP, maskPhone } from "../../../utils/constants";
 import {
   NovoClienteSection,
   NovoClienteHeader,
@@ -47,8 +48,15 @@ export function NovoClienteForm({ onClienteCriado }: NovoClienteFormProps) {
 
   const handleClienteFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    // Converter para maiúsculas todos os campos exceto email
-    const finalValue = name === "email" ? value : value.toUpperCase();
+    // CEP e telefone com máscara; demais campos em maiúsculas, exceto email
+    const finalValue =
+      name === "cep"
+        ? maskCEP(value)
+        : name === "telefone"
+        ? maskPhone(value)
+        : name === "email"
+        ? value
+        : value.toUpperCase();
     setClienteForm((prev) => ({ ...prev, [name]: finalValue }));
   };
 
@@ -114,9 +122,8 @@ export function NovoClienteForm({ onClienteCriado }: NovoClienteFormProps) {
         endereco: endereco.toUpperCase(),
         cidade: (dados.municipio || prev.cidade).toUpperCase(),
         estado: (dados.uf || prev.estado).toUpperCase(),
-        cep: dados.cep?.replace(/\D/g, "") || prev.cep,
-        telefone:
-          dados.telefone?.replace(/\D/g, "").slice(0, 11) || prev.telefone,
+        cep: dados.cep ? maskCEP(dados.cep) : prev.cep,
+        telefone: dados.telefone ? maskPhone(dados.telefone) : prev.telefone,
         email: dados.email || prev.email,
       };
     });

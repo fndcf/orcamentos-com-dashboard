@@ -74,6 +74,26 @@ export const formatPhone = (phone: string): string => {
   return cleaned.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
 };
 
+// Máscara de digitação de CEP: só números, no máximo 8 dígitos (00000-000)
+export const maskCEP = (value: string): string => {
+  const numeros = value.replace(/\D/g, "").slice(0, 8);
+  return numeros.replace(/^(\d{5})(\d)/, "$1-$2");
+};
+
+// Máscara de digitação de telefone: só números, no máximo 11 dígitos
+// ((00) 0000-0000 para fixo, (00) 00000-0000 para celular)
+export const maskPhone = (value: string): string => {
+  const numeros = value.replace(/\D/g, "").slice(0, 11);
+  if (numeros.length <= 10) {
+    return numeros
+      .replace(/^(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  }
+  return numeros
+    .replace(/^(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2");
+};
+
 // Formatação do número do orçamento no padrão #AANNNN_vXX
 // Exemplo: #260084_v00 (ano 2026, número 84, versão 0)
 export const formatOrcamentoNumero = (

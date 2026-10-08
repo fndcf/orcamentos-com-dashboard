@@ -7,6 +7,8 @@ import {
   formatPhone,
   formatCurrency,
   formatDate,
+  maskCEP,
+  maskPhone,
 } from '../../utils/constants';
 
 describe('Funções de Formatação', () => {
@@ -115,6 +117,39 @@ describe('Funções de Formatação', () => {
       // Usa uma data com horário para evitar problemas de timezone
       const result = formatDate('2024-06-15T12:00:00.000Z');
       expect(result).toMatch(/\d{2}\/\d{2}\/2024/);
+    });
+  });
+
+  describe('maskCEP', () => {
+    it.each([
+      ['1', '1'],
+      ['11740', '11740'],
+      ['117406', '11740-6'],
+      ['11740630', '11740-630'],
+      ['11740-630', '11740-630'],
+    ])('deve formatar %s como %s enquanto digita', (entrada, esperado) => {
+      expect(maskCEP(entrada)).toBe(esperado);
+    });
+
+    it('deve remover letras e limitar a 8 dígitos', () => {
+      expect(maskCEP('D11111111111111111111')).toBe('11111-111');
+    });
+  });
+
+  describe('maskPhone', () => {
+    it.each([
+      ['13', '13'],
+      ['134', '(13) 4'],
+      ['1334115455', '(13) 3411-5455'],
+      ['13991737341', '(13) 99173-7341'],
+      ['(13) 99173-7341', '(13) 99173-7341'],
+    ])('deve formatar %s como %s', (entrada, esperado) => {
+      expect(maskPhone(entrada)).toBe(esperado);
+    });
+
+    it('deve remover letras e limitar a 11 dígitos', () => {
+      expect(maskPhone('1111111111111111111111111')).toBe('(11) 11111-1111');
+      expect(maskPhone('abc13x99173y7341')).toBe('(13) 99173-7341');
     });
   });
 });

@@ -7,6 +7,7 @@ import { useBuscarCnpjBrasilAPI } from '../../../hooks/useClientes';
 import { Button, Input } from '../../../components/ui';
 import { ConfiguracoesGerais, BrasilAPICNPJ } from '../../../types';
 import { logger } from '../../../utils/logger';
+import { maskPhone } from '../../../utils/constants';
 import {
   Section,
   FormGroup,
@@ -91,18 +92,6 @@ export function EmpresaTab() {
       .replace(/(\d{4})(\d)/, '$1-$2');
   };
 
-  const formatarTelefone = (value: string) => {
-    const numeros = value.replace(/\D/g, '').slice(0, 11);
-    if (numeros.length <= 10) {
-      return numeros
-        .replace(/^(\d{2})(\d)/, '($1) $2')
-        .replace(/(\d{4})(\d)/, '$1-$2');
-    }
-    return numeros
-      .replace(/^(\d{2})(\d)/, '($1) $2')
-      .replace(/(\d{5})(\d)/, '$1-$2');
-  };
-
   const preencherComDadosBrasilAPI = (dados: BrasilAPICNPJ) => {
     setEmpresaForm((prev) => ({
       ...prev,
@@ -110,7 +99,7 @@ export function EmpresaTab() {
       enderecoEmpresa: dados.logradouro
         ? `${dados.logradouro}, ${dados.numero}${dados.complemento ? `, ${dados.complemento}` : ''}, ${dados.bairro} - ${dados.municipio}/${dados.uf} - CEP ${dados.cep}`
         : prev.enderecoEmpresa,
-      telefoneEmpresa: dados.telefone ? formatarTelefone(dados.telefone.replace(/\D/g, '').slice(0, 11)) : prev.telefoneEmpresa,
+      telefoneEmpresa: dados.telefone ? maskPhone(dados.telefone) : prev.telefoneEmpresa,
       emailEmpresa: dados.email || prev.emailEmpresa,
     }));
     setEmpresaFormDirty(true);
@@ -225,7 +214,7 @@ export function EmpresaTab() {
           <Label>Telefone</Label>
           <Input
             value={empresaForm.telefoneEmpresa || ''}
-            onChange={(e) => handleEmpresaFormChange('telefoneEmpresa', formatarTelefone(e.target.value))}
+            onChange={(e) => handleEmpresaFormChange('telefoneEmpresa', maskPhone(e.target.value))}
             placeholder="(11) 99999-9999"
           />
         </FormGroup>

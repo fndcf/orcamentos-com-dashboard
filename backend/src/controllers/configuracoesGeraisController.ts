@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { configuracoesGeraisService } from '../services/configuracoesGeraisService';
+import { validar, configuracoesGeraisAtualizarSchema } from '../validators';
 
 export const configuracoesGeraisController = {
   async buscar(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -13,7 +14,7 @@ export const configuracoesGeraisController = {
 
   async atualizar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const configuracoes = await configuracoesGeraisService.atualizar(req.body);
+      const configuracoes = await configuracoesGeraisService.atualizar(validar(configuracoesGeraisAtualizarSchema, req.body));
       res.json(configuracoes);
     } catch (error) {
       next(error);

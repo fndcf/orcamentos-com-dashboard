@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { Cliente, BrasilAPICNPJ } from "../../types";
 import { Modal, Button, Input, InputGroup, Label, InputRow } from "../ui";
 import { useBuscarCnpjBrasilAPI } from "../../hooks/useClientes";
+import { maskCEP, maskPhone } from "../../utils/constants";
 
 const Form = styled.form`
   display: flex;
@@ -135,8 +136,8 @@ export function ClienteModal({
         endereco: cliente.endereco || "",
         cidade: cliente.cidade || "",
         estado: cliente.estado || "",
-        cep: cliente.cep || "",
-        telefone: cliente.telefone || "",
+        cep: maskCEP(cliente.cep || ""),
+        telefone: maskPhone(cliente.telefone || ""),
         email: cliente.email || "",
       });
     } else {
@@ -147,8 +148,15 @@ export function ClienteModal({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    // Converter para maiúsculas todos os campos exceto email
-    const finalValue = name === "email" ? value : value.toUpperCase();
+    // CEP e telefone com máscara; demais campos em maiúsculas, exceto email
+    const finalValue =
+      name === "cep"
+        ? maskCEP(value)
+        : name === "telefone"
+        ? maskPhone(value)
+        : name === "email"
+        ? value
+        : value.toUpperCase();
     setForm((prev) => ({ ...prev, [name]: finalValue }));
   };
 
@@ -210,9 +218,8 @@ export function ClienteModal({
         endereco: endereco.toUpperCase(),
         cidade: (dados.municipio || prev.cidade).toUpperCase(),
         estado: (dados.uf || prev.estado).toUpperCase(),
-        cep: dados.cep?.replace(/\D/g, "") || prev.cep,
-        telefone:
-          dados.telefone?.replace(/\D/g, "").slice(0, 11) || prev.telefone,
+        cep: dados.cep ? maskCEP(dados.cep) : prev.cep,
+        telefone: dados.telefone ? maskPhone(dados.telefone) : prev.telefone,
         email: dados.email || prev.email,
       };
     });

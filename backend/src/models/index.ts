@@ -49,6 +49,7 @@ export interface ParcelamentoOpcao {
   valorTotal: number;
   temJuros: boolean;
   taxaJuros: number;
+  abaixoDoMinimo?: boolean; // Indica se está abaixo do valor mínimo configurado
 }
 
 // Interface para dados de parcelamento completos
@@ -57,6 +58,7 @@ export interface ParcelamentoDados {
   valorEntrada: number;
   valorRestante: number;
   opcoes: ParcelamentoOpcao[];
+  parcelasSelecionadas?: number[]; // Parcelas selecionadas para exibir no PDF
 }
 
 // Interface para dados de desconto à vista
