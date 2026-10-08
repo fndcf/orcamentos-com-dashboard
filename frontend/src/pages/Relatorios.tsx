@@ -28,6 +28,7 @@ import {
   formatCurrency,
   formatOrcamentoNumeroSimples,
 } from "../utils/constants";
+import { gerarCSV } from "../utils/csv";
 import {
   OrcamentoStatus,
   HistoricoValorItem,
@@ -1640,10 +1641,7 @@ export function Relatorios() {
       ];
     });
 
-    const csvContent = [
-      headers.join(";"),
-      ...rows.map((row) => row.join(";")),
-    ].join("\n");
+    const csvContent = gerarCSV([headers, ...rows]);
 
     const blob = new Blob(["\ufeff" + csvContent], {
       type: "text/csv;charset=utf-8;",
