@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { limitacaoService } from '../services/limitacaoService';
+import { validar, limitacaoCriarSchema, limitacaoAtualizarSchema } from '../validators';
 
 export const limitacaoController = {
   async listar(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -32,8 +33,7 @@ export const limitacaoController = {
 
   async criar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { texto, ativo } = req.body;
-      const limitacao = await limitacaoService.criar({ texto, ativo });
+      const limitacao = await limitacaoService.criar(validar(limitacaoCriarSchema, req.body));
       res.status(201).json(limitacao);
     } catch (error) {
       next(error);
@@ -43,8 +43,7 @@ export const limitacaoController = {
   async atualizar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const { texto, ativo, ordem } = req.body;
-      const limitacao = await limitacaoService.atualizar(id, { texto, ativo, ordem });
+      const limitacao = await limitacaoService.atualizar(id, validar(limitacaoAtualizarSchema, req.body));
       res.json(limitacao);
     } catch (error) {
       next(error);

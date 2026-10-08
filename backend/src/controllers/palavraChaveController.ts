@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { palavraChaveService } from '../services/palavraChaveService';
+import { validar, palavraChaveCriarSchema, palavraChaveAtualizarSchema } from '../validators';
 
 export const palavraChaveController = {
   async listar(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -32,8 +33,7 @@ export const palavraChaveController = {
 
   async criar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { palavra, prazoDias, ativo } = req.body;
-      const palavraChave = await palavraChaveService.criar({ palavra, prazoDias, ativo });
+      const palavraChave = await palavraChaveService.criar(validar(palavraChaveCriarSchema, req.body));
       res.status(201).json(palavraChave);
     } catch (error) {
       next(error);
@@ -43,8 +43,7 @@ export const palavraChaveController = {
   async atualizar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const { palavra, prazoDias, ativo } = req.body;
-      const palavraChave = await palavraChaveService.atualizar(id, { palavra, prazoDias, ativo });
+      const palavraChave = await palavraChaveService.atualizar(id, validar(palavraChaveAtualizarSchema, req.body));
       res.json(palavraChave);
     } catch (error) {
       next(error);

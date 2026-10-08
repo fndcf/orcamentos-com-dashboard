@@ -5,6 +5,15 @@ import {
   configuracoesGeraisAtualizarSchema,
   orcamentoCriarSchema,
   orcamentoAtualizarSchema,
+  orcamentoStatusSchema,
+  servicoCriarSchema,
+  servicoAtualizarSchema,
+  categoriaItemCriarSchema,
+  limitacaoAtualizarSchema,
+  palavraChaveCriarSchema,
+  palavraChaveAtualizarSchema,
+  itemServicoCriarSchema,
+  itemServicoAtualizarSchema,
 } from '../../validators';
 import { ValidationError } from '../../utils/errors';
 
@@ -144,6 +153,91 @@ describe('validators', () => {
           }),
         'Campo obrigatório ausente: itensCompleto.0.etapa'
       );
+    });
+  });
+
+  describe('catálogo', () => {
+    const itemDaTela = {
+      categoriaId: 'cat1',
+      descricao: 'Extintor PQS 4kg',
+      unidade: 'UN',
+      valorUnitario: 150.5,
+      valorMaoDeObraUnitario: 30,
+      valorCusto: 90,
+      valorMaoDeObraCusto: 10,
+    };
+
+    it('deve aceitar o payload de item enviado pela tela de Configurações', () => {
+      expect(validar(itemServicoCriarSchema, itemDaTela)).toEqual(itemDaTela);
+    });
+
+    it('deve aceitar item sem valores (campos vazios são omitidos pela tela)', () => {
+      const semValores = { categoriaId: 'cat1', descricao: 'Item sem preço', unidade: 'UN' };
+      expect(validar(itemServicoCriarSchema, semValores)).toEqual(semValores);
+    });
+
+    it('deve rejeitar valorCusto como texto', () => {
+      esperarErro(
+        () => validar(itemServicoAtualizarSchema, { valorCusto: 'abc' }),
+        'Campo "valorCusto" deve ser número'
+      );
+    });
+
+    it('deve rejeitar valor nulo (NaN da tela vira null no JSON)', () => {
+      esperarErro(
+        () => validar(itemServicoAtualizarSchema, { valorUnitario: null }),
+        'Campo "valorUnitario" deve ser número'
+      );
+    });
+
+    it('deve rejeitar valores negativos', () => {
+      esperarErro(() => validar(itemServicoAtualizarSchema, { valorCusto: -1 }), 'Campo "valorCusto" inválido');
+    });
+
+    it('deve rejeitar ativo como texto', () => {
+      esperarErro(
+        () => validar(servicoAtualizarSchema, { ativo: 'false' }),
+        'Campo "ativo" deve ser verdadeiro ou falso'
+      );
+    });
+
+    it('deve rejeitar ordem negativa ou fracionária', () => {
+      esperarErro(() => validar(limitacaoAtualizarSchema, { ordem: -1 }), 'Campo "ordem" inválido');
+      esperarErro(() => validar(limitacaoAtualizarSchema, { ordem: 1.5 }), 'Campo "ordem" deve ser número inteiro');
+    });
+
+    it('deve rejeitar prazoDias como texto', () => {
+      esperarErro(
+        () => validar(palavraChaveAtualizarSchema, { prazoDias: 'abc' }),
+        'Campo "prazoDias" deve ser número'
+      );
+    });
+
+    it('deve aceitar os payloads de serviço, categoria e palavra-chave das telas', () => {
+      expect(validar(servicoCriarSchema, { descricao: 'Manutenção de extintores' })).toEqual({
+        descricao: 'Manutenção de extintores',
+      });
+      expect(validar(categoriaItemCriarSchema, { nome: 'Hidrantes' })).toEqual({ nome: 'Hidrantes' });
+      expect(validar(palavraChaveCriarSchema, { palavra: 'EXTINTOR', prazoDias: 365 })).toEqual({
+        palavra: 'EXTINTOR',
+        prazoDias: 365,
+      });
+    });
+
+    it('deve descartar campos extras do catálogo', () => {
+      expect(validar(servicoAtualizarSchema, { descricao: 'Serviço X', createdAt: 'x', id: 'y' })).toEqual({
+        descricao: 'Serviço X',
+      });
+    });
+  });
+
+  describe('status do orçamento', () => {
+    it('deve aceitar status conhecido', () => {
+      expect(validar(orcamentoStatusSchema, { status: 'aceito' })).toEqual({ status: 'aceito' });
+    });
+
+    it('deve rejeitar status desconhecido', () => {
+      esperarErro(() => validar(orcamentoStatusSchema, { status: 'pago' }), 'Campo "status" inválido');
     });
   });
 

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { itemServicoService } from '../services/itemServicoService';
+import { validar, itemServicoCriarSchema, itemServicoAtualizarSchema } from '../validators';
 
 export const itemServicoController = {
   async listar(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -75,17 +76,7 @@ export const itemServicoController = {
 
   async criar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { categoriaId, descricao, unidade, ativo, valorUnitario, valorMaoDeObraUnitario, valorCusto, valorMaoDeObraCusto } = req.body;
-      const item = await itemServicoService.criar({
-        categoriaId,
-        descricao,
-        unidade,
-        ativo,
-        valorUnitario,
-        valorMaoDeObraUnitario,
-        valorCusto,
-        valorMaoDeObraCusto,
-      });
+      const item = await itemServicoService.criar(validar(itemServicoCriarSchema, req.body));
       res.status(201).json(item);
     } catch (error) {
       next(error);
@@ -95,17 +86,7 @@ export const itemServicoController = {
   async atualizar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const { descricao, unidade, ativo, ordem, valorUnitario, valorMaoDeObraUnitario, valorCusto, valorMaoDeObraCusto } = req.body;
-      const item = await itemServicoService.atualizar(id, {
-        descricao,
-        unidade,
-        ativo,
-        ordem,
-        valorUnitario,
-        valorMaoDeObraUnitario,
-        valorCusto,
-        valorMaoDeObraCusto,
-      });
+      const item = await itemServicoService.atualizar(id, validar(itemServicoAtualizarSchema, req.body));
       res.json(item);
     } catch (error) {
       next(error);

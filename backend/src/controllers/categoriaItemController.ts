@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { categoriaItemService } from '../services/categoriaItemService';
+import { validar, categoriaItemCriarSchema, categoriaItemAtualizarSchema } from '../validators';
 
 export const categoriaItemController = {
   async listar(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -32,8 +33,7 @@ export const categoriaItemController = {
 
   async criar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { nome, ativo } = req.body;
-      const categoria = await categoriaItemService.criar({ nome, ativo });
+      const categoria = await categoriaItemService.criar(validar(categoriaItemCriarSchema, req.body));
       res.status(201).json(categoria);
     } catch (error) {
       next(error);
@@ -43,8 +43,7 @@ export const categoriaItemController = {
   async atualizar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const { nome, ativo, ordem } = req.body;
-      const categoria = await categoriaItemService.atualizar(id, { nome, ativo, ordem });
+      const categoria = await categoriaItemService.atualizar(id, validar(categoriaItemAtualizarSchema, req.body));
       res.json(categoria);
     } catch (error) {
       next(error);

@@ -121,11 +121,47 @@ export const orcamentoAtualizarSchema = orcamentoCamposComunsSchema.extend({
   dataValidade: z.coerce.date().optional(),
 });
 
+export const orcamentoStatusSchema = z.object({
+  status: z.enum(["aberto", "aceito", "recusado", "expirado"]),
+});
+
+// ---------------------------------------------------------------- Catálogo (Configurações)
+
+const ativo = z.boolean().optional();
+const ordem = inteiro.nonnegative().optional();
+const valorMonetario = numero.nonnegative().optional();
+
+export const servicoCriarSchema = z.object({ descricao: texto, ativo });
+export const servicoAtualizarSchema = servicoCriarSchema.partial().extend({ ordem });
+
+export const categoriaItemCriarSchema = z.object({ nome: texto, ativo });
+export const categoriaItemAtualizarSchema = categoriaItemCriarSchema.partial().extend({ ordem });
+
+export const limitacaoCriarSchema = z.object({ texto, ativo });
+export const limitacaoAtualizarSchema = limitacaoCriarSchema.partial().extend({ ordem });
+
+export const palavraChaveCriarSchema = z.object({ palavra: texto, prazoDias: inteiro, ativo });
+export const palavraChaveAtualizarSchema = palavraChaveCriarSchema.partial();
+
+const itemServicoCamposSchema = z.object({
+  descricao: texto,
+  unidade: texto,
+  ativo,
+  valorUnitario: valorMonetario,
+  valorMaoDeObraUnitario: valorMonetario,
+  valorCusto: valorMonetario,
+  valorMaoDeObraCusto: valorMonetario,
+});
+
+export const itemServicoCriarSchema = itemServicoCamposSchema.extend({ categoriaId: texto });
+export const itemServicoAtualizarSchema = itemServicoCamposSchema.partial().extend({ ordem });
+
 // ---------------------------------------------------------------- Helper
 
 const NOMES_DE_TIPO: Record<string, string> = {
   string: "texto",
   number: "número",
+  integer: "número inteiro",
   boolean: "verdadeiro ou falso",
   array: "lista",
   object: "objeto",

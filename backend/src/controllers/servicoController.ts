@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { servicoService } from '../services/servicoService';
+import { validar, servicoCriarSchema, servicoAtualizarSchema } from '../validators';
 
 export const servicoController = {
   async listar(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -32,8 +33,7 @@ export const servicoController = {
 
   async criar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { descricao, ativo } = req.body;
-      const servico = await servicoService.criar({ descricao, ativo });
+      const servico = await servicoService.criar(validar(servicoCriarSchema, req.body));
       res.status(201).json(servico);
     } catch (error) {
       next(error);
@@ -43,8 +43,7 @@ export const servicoController = {
   async atualizar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const { descricao, ativo, ordem } = req.body;
-      const servico = await servicoService.atualizar(id, { descricao, ativo, ordem });
+      const servico = await servicoService.atualizar(id, validar(servicoAtualizarSchema, req.body));
       res.json(servico);
     } catch (error) {
       next(error);
