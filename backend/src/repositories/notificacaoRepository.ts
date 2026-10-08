@@ -16,14 +16,15 @@ const mapDocToNotificacao = (doc: FirebaseFirestore.DocumentSnapshot): Notificac
 const encodeCursor = (id: string): string => Buffer.from(id).toString('base64');
 const decodeCursor = (cursor: string): string => Buffer.from(cursor, 'base64').toString();
 
-export const notificacaoRepository = {
-  async findAll(): Promise<Notificacao[]> {
-    const snapshot = await db
-      .collection(COLLECTION)
-      .orderBy('dataVencimento', 'asc')
-      .get();
+// count() cobra 1 leitura a cada 1.000 documentos contados, em vez de 1 por documento
+async function contar(query: FirebaseFirestore.Query): Promise<number> {
+  const snapshot = await query.count().get();
+  return snapshot.data().count;
+}
 
-    return snapshot.docs.map(mapDocToNotificacao);
+export const notificacaoRepository = {
+  async countTodas(): Promise<number> {
+    return contar(db.collection(COLLECTION));
   },
 
   async findById(id: string): Promise<Notificacao | null> {
@@ -42,43 +43,29 @@ export const notificacaoRepository = {
     return snapshot.docs.map(mapDocToNotificacao);
   },
 
-  async findNaoLidas(): Promise<Notificacao[]> {
-    const snapshot = await db
-      .collection(COLLECTION)
-      .where('lida', '==', false)
-      .orderBy('dataVencimento', 'asc')
-      .get();
-
-    return snapshot.docs.map(mapDocToNotificacao);
+  async countNaoLidas(): Promise<number> {
+    return contar(db.collection(COLLECTION).where('lida', '==', false));
   },
 
-  async findProximas(dias: number = 30): Promise<Notificacao[]> {
+  async countProximas(dias: number = 30): Promise<number> {
     const hoje = new Date();
     const limite = new Date();
     limite.setDate(limite.getDate() + dias);
 
-    const snapshot = await db
-      .collection(COLLECTION)
-      .where('dataVencimento', '>=', hoje)
-      .where('dataVencimento', '<=', limite)
-      .orderBy('dataVencimento', 'asc')
-      .get();
-
-    return snapshot.docs.map(mapDocToNotificacao);
+    return contar(
+      db
+        .collection(COLLECTION)
+        .where('dataVencimento', '>=', hoje)
+        .where('dataVencimento', '<=', limite)
+    );
   },
 
-  async findVencidas(): Promise<Notificacao[]> {
+  async countVencidas(): Promise<number> {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
-    // Busca todas as notificações vencidas, independente se foram lidas ou não
-    const snapshot = await db
-      .collection(COLLECTION)
-      .where('dataVencimento', '<', hoje)
-      .orderBy('dataVencimento', 'asc')
-      .get();
-
-    return snapshot.docs.map(mapDocToNotificacao);
+    // Conta todas as notificações vencidas, independente se foram lidas ou não
+    return contar(db.collection(COLLECTION).where('dataVencimento', '<', hoje));
   },
 
   async create(data: Omit<Notificacao, 'id' | 'createdAt'>): Promise<Notificacao> {
@@ -186,22 +173,17 @@ export const notificacaoRepository = {
     return !snapshot.empty;
   },
 
-  // Busca notificações ativas (não lidas E que já venceram ou vão vencer em até X dias)
-  async findAtivas(diasAntecedencia: number = 60): Promise<Notificacao[]> {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+  // Conta notificações ativas (não lidas E que já venceram ou vão vencer em até X dias)
+  async countAtivas(diasAntecedencia: number = 60): Promise<number> {
     const limite = new Date();
     limite.setDate(limite.getDate() + diasAntecedencia);
 
-    // Buscar não lidas que vencem até o limite
-    const snapshot = await db
-      .collection(COLLECTION)
-      .where('lida', '==', false)
-      .where('dataVencimento', '<=', limite)
-      .orderBy('dataVencimento', 'asc')
-      .get();
-
-    return snapshot.docs.map(mapDocToNotificacao);
+    return contar(
+      db
+        .collection(COLLECTION)
+        .where('lida', '==', false)
+        .where('dataVencimento', '<=', limite)
+    );
   },
 
   // ========== MÉTODOS PAGINADOS ==========

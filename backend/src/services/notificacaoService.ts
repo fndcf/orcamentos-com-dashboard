@@ -182,8 +182,7 @@ export const notificacaoService = {
    * Conta notificações não lidas
    */
   async contarNaoLidas(): Promise<number> {
-    const naoLidas = await notificacaoRepository.findNaoLidas();
-    return naoLidas.length;
+    return notificacaoRepository.countNaoLidas();
   },
 
   /**
@@ -196,21 +195,15 @@ export const notificacaoService = {
     proximasVencer: number;
     ativas: number;
   }> {
-    const [todas, naoLidas, vencidas, proximas, ativas] = await Promise.all([
-      notificacaoRepository.findAll(),
-      notificacaoRepository.findNaoLidas(),
-      notificacaoRepository.findVencidas(),
-      notificacaoRepository.findProximas(30),
-      notificacaoRepository.findAtivas(10),
+    const [total, naoLidas, vencidas, proximasVencer, ativas] = await Promise.all([
+      notificacaoRepository.countTodas(),
+      notificacaoRepository.countNaoLidas(),
+      notificacaoRepository.countVencidas(),
+      notificacaoRepository.countProximas(30),
+      notificacaoRepository.countAtivas(10),
     ]);
 
-    return {
-      total: todas.length,
-      naoLidas: naoLidas.length,
-      vencidas: vencidas.length,
-      proximasVencer: proximas.length,
-      ativas: ativas.length,
-    };
+    return { total, naoLidas, vencidas, proximasVencer, ativas };
   },
 
 };

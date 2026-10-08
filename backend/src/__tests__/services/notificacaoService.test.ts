@@ -359,7 +359,7 @@ describe('notificacaoService', () => {
 
   describe('contarNaoLidas', () => {
     it('deve contar notificações não lidas', async () => {
-      (notificacaoRepository.findNaoLidas as jest.Mock).mockResolvedValue([mockNotificacao, { ...mockNotificacao, id: '2' }]);
+      (notificacaoRepository.countNaoLidas as jest.Mock).mockResolvedValue(2);
 
       const resultado = await notificacaoService.contarNaoLidas();
 
@@ -367,7 +367,7 @@ describe('notificacaoService', () => {
     });
 
     it('deve retornar zero quando não há notificações não lidas', async () => {
-      (notificacaoRepository.findNaoLidas as jest.Mock).mockResolvedValue([]);
+      (notificacaoRepository.countNaoLidas as jest.Mock).mockResolvedValue(0);
 
       const resultado = await notificacaoService.contarNaoLidas();
 
@@ -377,13 +377,17 @@ describe('notificacaoService', () => {
 
   describe('obterResumo', () => {
     it('deve retornar resumo das notificações', async () => {
-      (notificacaoRepository.findAll as jest.Mock).mockResolvedValue([mockNotificacao, { ...mockNotificacao, id: '2' }]);
-      (notificacaoRepository.findNaoLidas as jest.Mock).mockResolvedValue([mockNotificacao]);
-      (notificacaoRepository.findVencidas as jest.Mock).mockResolvedValue([]);
-      (notificacaoRepository.findProximas as jest.Mock).mockResolvedValue([mockNotificacao, { ...mockNotificacao, id: '2' }]);
-      (notificacaoRepository.findAtivas as jest.Mock).mockResolvedValue([mockNotificacao]);
+      (notificacaoRepository.countTodas as jest.Mock).mockResolvedValue(2);
+      (notificacaoRepository.countNaoLidas as jest.Mock).mockResolvedValue(1);
+      (notificacaoRepository.countVencidas as jest.Mock).mockResolvedValue(0);
+      (notificacaoRepository.countProximas as jest.Mock).mockResolvedValue(2);
+      (notificacaoRepository.countAtivas as jest.Mock).mockResolvedValue(1);
 
       const resultado = await notificacaoService.obterResumo();
+
+      // Mesmos períodos usados pelo sino de notificações
+      expect(notificacaoRepository.countProximas).toHaveBeenCalledWith(30);
+      expect(notificacaoRepository.countAtivas).toHaveBeenCalledWith(10);
 
       expect(resultado).toEqual({
         total: 2,
