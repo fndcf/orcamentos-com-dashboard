@@ -54,7 +54,7 @@ Sistema completo de gestão de orçamentos para empresas de proteção contra in
 
 | Tecnologia         | Versão | Uso                      |
 | ------------------ | ------ | ------------------------ |
-| Node.js            | 20+    | Runtime                  |
+| Node.js            | 22+    | Runtime                  |
 | Express            | 4.18   | Framework HTTP           |
 | TypeScript         | 5.3    | Tipagem estática         |
 | Firebase Admin SDK | 12.0   | Autenticação e Firestore |
@@ -138,7 +138,7 @@ flama/
 
 ### Pré-requisitos
 
-- Node.js 20+
+- Node.js 22+
 - npm ou yarn
 - Conta no Firebase com projeto configurado
 - Firebase CLI (`npm install -g firebase-tools`)
