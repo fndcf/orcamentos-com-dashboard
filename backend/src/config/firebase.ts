@@ -17,6 +17,10 @@ if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert(firebaseConfig as admin.ServiceAccount),
     });
+  } else if (process.env.FIREBASE_PROJECT_ID) {
+    // Desenvolvimento local com Application Default Credentials (gcloud auth application-default login).
+    // O projectId explícito faz o Admin SDK enviar o quota project exigido pela API do Auth.
+    admin.initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID });
   } else {
     // Em Cloud Functions, inicializa sem credenciais explícitas
     admin.initializeApp();
