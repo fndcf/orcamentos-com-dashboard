@@ -24,6 +24,7 @@ import {
   PageHeader,
   SearchBar,
   Loading,
+  RefreshingArea,
   DesktopOnly,
   MobileOnly,
   MobileCardList,
@@ -427,10 +428,10 @@ export function Orcamentos() {
         </FilterGroup>
       </SearchBar>
 
-      {isLoading || isFetching ? (
+      {isLoading ? (
         <Loading />
       ) : orcamentosPaginados && orcamentosPaginados.length > 0 ? (
-        <>
+        <RefreshingArea $refreshing={isFetching} aria-busy={isFetching}>
           {/* Versão Desktop - Tabela */}
           <DesktopOnly>
             <TableContainer>
@@ -638,7 +639,7 @@ export function Orcamentos() {
             itemsPerPage={ITEMS_PER_PAGE}
             onPageChange={setCurrentPage}
           />
-        </>
+        </RefreshingArea>
       ) : (
         <EmptyState>
           <h3>Nenhum orçamento encontrado</h3>

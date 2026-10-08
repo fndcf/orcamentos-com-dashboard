@@ -203,8 +203,11 @@ export function useVerificarExpirados() {
   return useMutation(
     () => orcamentoService.verificarExpirados(),
     {
-      onSuccess: () => {
-        queryClient.invalidateQueries('orcamentos');
+      // Só recarrega as listas se algum orçamento realmente mudou para "expirado"
+      onSuccess: (expirados) => {
+        if (expirados > 0) {
+          queryClient.invalidateQueries('orcamentos');
+        }
       },
     }
   );

@@ -21,6 +21,7 @@ import {
   PageHeader,
   SearchBar,
   Loading,
+  RefreshingArea,
   DesktopOnly,
   MobileOnly,
   MobileCardList,
@@ -199,10 +200,10 @@ export function Clientes() {
         />
       </SearchBar>
 
-      {isLoading || isFetching ? (
+      {isLoading ? (
         <Loading />
       ) : clientesPaginados && clientesPaginados.length > 0 ? (
-        <>
+        <RefreshingArea $refreshing={isFetching} aria-busy={isFetching}>
           {/* Versão Desktop - Tabela */}
           <DesktopOnly>
             <TableContainer>
@@ -361,7 +362,7 @@ export function Clientes() {
             itemsPerPage={ITEMS_PER_PAGE}
             onPageChange={setCurrentPage}
           />
-        </>
+        </RefreshingArea>
       ) : (
         <EmptyState>
           <h3>Nenhum cliente encontrado</h3>

@@ -34,6 +34,12 @@ export function Loading({ size }: LoadingProps) {
   );
 }
 
+// Mantém o conteúdo visível (esmaecido) enquanto os dados são atualizados em segundo plano
+export const RefreshingArea = styled.div<{ $refreshing?: boolean }>`
+  opacity: ${({ $refreshing }) => ($refreshing ? 0.55 : 1)};
+  transition: opacity 0.2s;
+`;
+
 export const LoadingOverlay = styled.div`
   position: absolute;
   top: 0;

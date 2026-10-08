@@ -14,6 +14,9 @@ inicializarEventHandlers();
 
 const app = express();
 
+// Não anunciar a tecnologia do backend nas respostas
+app.disable("x-powered-by");
+
 // Middlewares
 app.use(
   cors({
@@ -30,6 +33,7 @@ app.use("/api", routes);
 app.use(errorHandler);
 
 // Export para Firebase Cloud Functions
-export const api = functions.https.onRequest(app);
+// Roda com a service account dedicada (Firestore + leitura do Firebase Auth), não com a padrão do Compute
+export const api = functions.https.onRequest({ serviceAccount: "flama-api@" }, app);
 
 export default app;

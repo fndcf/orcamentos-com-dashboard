@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { orcamentoService } from '../services/orcamentoService';
 import { validar, orcamentoCriarSchema, orcamentoAtualizarSchema, orcamentoStatusSchema } from '../validators';
+import { numeroPagina, tamanhoPagina } from '../utils/paginacao';
 import { OrcamentoStatus } from '../models';
 
 export const orcamentoController = {
@@ -15,8 +16,8 @@ export const orcamentoController = {
 
   async listarPaginado(req: Request, res: Response, next: NextFunction) {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
+      const page = numeroPagina(req.query.page);
+      const limit = tamanhoPagina(req.query.limit, 10);
       const status = req.query.status as OrcamentoStatus | undefined;
       const clienteId = req.query.clienteId as string | undefined;
       const busca = req.query.busca as string | undefined;
@@ -56,7 +57,7 @@ export const orcamentoController = {
   async historicoCliente(req: Request, res: Response, next: NextFunction) {
     try {
       const { clienteId } = req.params;
-      const limit = parseInt(req.query.limit as string) || 5;
+      const limit = tamanhoPagina(req.query.limit, 5);
       const historico = await orcamentoService.getHistoricoCliente(clienteId, limit);
       res.json({ success: true, data: historico });
     } catch (error) {

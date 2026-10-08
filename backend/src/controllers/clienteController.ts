@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { clienteService } from '../services/clienteService';
 import { validar, clienteCriarSchema, clienteAtualizarSchema } from '../validators';
+import { numeroPagina, tamanhoPagina } from '../utils/paginacao';
 
 export const clienteController = {
   async listar(req: Request, res: Response, next: NextFunction) {
@@ -14,8 +15,8 @@ export const clienteController = {
 
   async listarPaginado(req: Request, res: Response, next: NextFunction) {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
+      const page = numeroPagina(req.query.page);
+      const limit = tamanhoPagina(req.query.limit, 10);
       const busca = req.query.busca as string | undefined;
 
       const result = await clienteService.listarPaginado(page, limit, { busca });

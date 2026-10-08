@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { itemServicoService } from '../services/itemServicoService';
 import { validar, itemServicoCriarSchema, itemServicoAtualizarSchema } from '../validators';
+import { tamanhoPagina } from '../utils/paginacao';
 
 export const itemServicoController = {
   async listar(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -35,10 +36,10 @@ export const itemServicoController = {
   async listarAtivosPorCategoriaPaginado(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { categoriaId } = req.params;
-      const { limit = '10', cursor, search } = req.query;
+      const { cursor, search } = req.query;
       const result = await itemServicoService.listarAtivosPorCategoriaPaginado(
         categoriaId,
-        parseInt(limit as string, 10),
+        tamanhoPagina(req.query.limit, 10),
         cursor as string | undefined,
         search as string | undefined
       );
@@ -51,10 +52,10 @@ export const itemServicoController = {
   async listarPorCategoriaPaginado(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { categoriaId } = req.params;
-      const { limit = '10', cursor, search } = req.query;
+      const { cursor, search } = req.query;
       const result = await itemServicoService.listarPorCategoriaPaginado(
         categoriaId,
-        parseInt(limit as string, 10),
+        tamanhoPagina(req.query.limit, 10),
         cursor as string | undefined,
         search as string | undefined
       );

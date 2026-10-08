@@ -125,6 +125,23 @@ describe('Clientes', () => {
     expect(screen.getByTestId('loading')).toBeInTheDocument();
   });
 
+  it('deve manter a lista visível durante atualização em segundo plano', () => {
+    vi.mocked(useClientesPaginados).mockReturnValue({
+      data: { items: mockClientes, total: mockClientes.length },
+      isLoading: false,
+      isFetching: true,
+    } as any);
+    vi.mocked(useOrcamentos).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as any);
+
+    render(<Clientes />, { wrapper: createWrapper() });
+
+    expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Empresa Teste 1')[0]).toBeInTheDocument();
+  });
+
   it('deve mostrar mensagem quando não há clientes', () => {
     vi.mocked(useClientesPaginados).mockReturnValue({
       data: { items: [], total: 0 },

@@ -152,6 +152,19 @@ describe('Orcamentos', () => {
     expect(screen.getByTestId('loading')).toBeInTheDocument();
   });
 
+  it('deve manter a lista visível durante atualização em segundo plano', () => {
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: { items: mockOrcamentos, total: mockOrcamentos.length },
+      isLoading: false,
+      isFetching: true,
+    } as any);
+
+    render(<Orcamentos />, { wrapper: createWrapper() });
+
+    expect(screen.queryByTestId('loading')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Cliente 1')[0]).toBeInTheDocument();
+  });
+
   it('deve mostrar mensagem quando não há orçamentos', () => {
     vi.mocked(useOrcamentosPaginados).mockReturnValue({
       data: { items: [], total: 0 },

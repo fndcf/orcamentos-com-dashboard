@@ -446,5 +446,37 @@ describe('useOrcamentos hooks', () => {
 
       expect(orcamentoService.verificarExpirados).toHaveBeenCalled();
     });
+
+    it('deve invalidar as listas quando algum orçamento expirou', async () => {
+      vi.mocked(orcamentoService.verificarExpirados).mockResolvedValue(2);
+      const invalidar = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
+
+      const { result } = renderHook(() => useVerificarExpirados(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate();
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(invalidar).toHaveBeenCalledWith('orcamentos');
+      invalidar.mockRestore();
+    });
+
+    it('não deve invalidar as listas quando nenhum orçamento expirou', async () => {
+      vi.mocked(orcamentoService.verificarExpirados).mockResolvedValue(0);
+      const invalidar = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
+
+      const { result } = renderHook(() => useVerificarExpirados(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate();
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(invalidar).not.toHaveBeenCalled();
+      invalidar.mockRestore();
+    });
   });
 });

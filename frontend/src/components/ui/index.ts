@@ -20,5 +20,5 @@ export {
   MobileCardActions,
 } from './Table';
 export { Card, CardHeader, PageHeader, SearchBar } from './Card';
-export { Loading, LoadingOverlay } from './Loading';
+export { Loading, LoadingOverlay, RefreshingArea } from './Loading';
 export { Pagination } from './Pagination';
