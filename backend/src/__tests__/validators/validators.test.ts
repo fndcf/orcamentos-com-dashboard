@@ -125,6 +125,19 @@ describe('validators', () => {
   });
 
   describe('orçamento', () => {
+    it('deve preservar o tipo do desconto (campo digitado em R$ ou %)', () => {
+      const descontoAVista = { percentual: 3.87, valorDesconto: 121, valorFinal: 3009, tipo: 'valor' };
+
+      expect(validar(orcamentoAtualizarSchema, { descontoAVista })).toEqual({ descontoAVista });
+    });
+
+    it('deve rejeitar tipo de desconto desconhecido', () => {
+      esperarErro(
+        () => validar(orcamentoAtualizarSchema, { descontoAVista: { percentual: 1, valorDesconto: 1, valorFinal: 1, tipo: 'outro' } }),
+        'Campo "descontoAVista.tipo" inválido'
+      );
+    });
+
     it('deve exigir clienteId na criação', () => {
       esperarErro(() => validar(orcamentoCriarSchema, {}), 'Campo obrigatório ausente: clienteId');
     });

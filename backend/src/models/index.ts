@@ -66,6 +66,8 @@ export interface DescontoAVistaDados {
   percentual: number;
   valorDesconto: number;
   valorFinal: number;
+  // Campo digitado pelo usuário: ele é o valor exato, o outro é derivado (ausente em orçamentos antigos)
+  tipo?: "percentual" | "valor";
 }
 
 // Interface do Orçamento

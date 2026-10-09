@@ -248,6 +248,19 @@ interface ParcelaInfo {
   motivoDisabled?: string;
 }
 
+type TipoDesconto = NonNullable<DescontoAVistaDados["tipo"]>;
+
+const arredondarCentavos = (valor: number) => Math.round(valor * 100) / 100;
+
+// Qual campo do desconto foi digitado. Orçamentos antigos não guardam o tipo: se o valor em R$
+// não bate com o percentual aplicado ao total, ele foi digitado em reais.
+function tipoDescontoSalvo(desconto: DescontoAVistaDados | undefined, valorTotal: number): TipoDesconto {
+  if (!desconto) return "percentual";
+  if (desconto.tipo) return desconto.tipo;
+  const calculado = arredondarCentavos((valorTotal * desconto.percentual) / 100);
+  return valorTotal > 0 && calculado !== arredondarCentavos(desconto.valorDesconto) ? "valor" : "percentual";
+}
+
 interface CondicaoPagamentoSectionProps {
   condicao: "a_vista" | "a_combinar" | "parcelado";
   parcelamentoTexto: string;
@@ -288,7 +301,7 @@ export function CondicaoPagamentoFormSection({
   );
 
   // Estados separados para desconto: percentual e valor absoluto
-  // "editadoPor" indica qual campo o usuário está editando (fonte da verdade)
+  // "editadoPor" indica qual campo o usuário digitou (fonte da verdade); o outro é derivado
   const lastExternalPercentual = useRef<number | undefined>(descontoAVista?.percentual);
   const [descontoPercent, setDescontoPercent] = useState<number>(
     descontoAVista?.percentual ?? 0
@@ -296,7 +309,9 @@ export function CondicaoPagamentoFormSection({
   const [descontoValorAbsoluto, setDescontoValorAbsoluto] = useState<number>(
     descontoAVista?.valorDesconto ?? 0,
   );
-  const [descontoEditadoPor, setDescontoEditadoPor] = useState<"percent" | "valor">("percent");
+  const [descontoEditadoPor, setDescontoEditadoPor] = useState<TipoDesconto>(
+    tipoDescontoSalvo(descontoAVista, valorTotal)
+  );
 
   // Atualiza o estado quando parcelamentoDados mudar (ex: ao abrir modal de edição)
   // Só sincroniza uma vez na inicialização, depois o estado local é controlado pelo usuário
@@ -321,8 +336,9 @@ export function CondicaoPagamentoFormSection({
       lastExternalPercentual.current = externalPercentual;
       setDescontoPercent(externalPercentual ?? 0);
       setDescontoValorAbsoluto(descontoAVista?.valorDesconto ?? 0);
-      setDescontoEditadoPor("percent");
+      setDescontoEditadoPor(tipoDescontoSalvo(descontoAVista, valorTotal));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [descontoAVista?.percentual, descontoAVista?.valorDesconto]);
 
   // Configurações de parcelamento
@@ -331,21 +347,29 @@ export function CondicaoPagamentoFormSection({
   const jurosAPartirDe = configuracoes?.parcelamentoJurosAPartirDe ?? 3;
   const taxaJuros = configuracoes?.parcelamentoTaxaJuros ?? 2.5;
 
-  // Calcular valor do desconto baseado em quem foi editado por último
+  // Valor do desconto vem do campo digitado: em R$ fica fixo, em % acompanha o total
   const valorDesconto = useMemo(() => {
     if (descontoEditadoPor === "valor") {
-      return descontoValorAbsoluto;
+      return arredondarCentavos(Math.min(descontoValorAbsoluto, valorTotal));
     }
-    return (valorTotal * descontoPercent) / 100;
+    return arredondarCentavos((valorTotal * descontoPercent) / 100);
   }, [valorTotal, descontoPercent, descontoValorAbsoluto, descontoEditadoPor]);
+
+  // Percentual exibido/salvo: o digitado, ou a proporção do valor em R$ sobre o total
+  const percentualDesconto = useMemo(() => {
+    if (descontoEditadoPor === "percentual") {
+      return descontoPercent;
+    }
+    return valorTotal > 0 ? arredondarCentavos((valorDesconto / valorTotal) * 100) : 0;
+  }, [descontoEditadoPor, descontoPercent, valorDesconto, valorTotal]);
 
   // Calcular valor final com desconto
   const valorFinalComDesconto = useMemo(() => {
-    return valorTotal - valorDesconto;
+    return arredondarCentavos(valorTotal - valorDesconto);
   }, [valorTotal, valorDesconto]);
 
   // Valor base para cálculos de parcelamento (com desconto aplicado, se houver)
-  const valorBaseParcelamento = condicao === "parcelado" && descontoPercent > 0
+  const valorBaseParcelamento = condicao === "parcelado" && valorDesconto > 0
     ? valorFinalComDesconto
     : valorTotal;
 
@@ -408,9 +432,9 @@ export function CondicaoPagamentoFormSection({
 
   useEffect(() => {
     // Criar uma chave única para o estado atual
-    const temDesconto = (condicao === "a_vista" || condicao === "parcelado") && descontoPercent > 0;
+    const temDesconto = (condicao === "a_vista" || condicao === "parcelado") && valorDesconto > 0;
     const currentKey = temDesconto
-      ? `${descontoPercent}-${valorDesconto}-${valorFinalComDesconto}`
+      ? `${descontoEditadoPor}-${percentualDesconto}-${valorDesconto}-${valorFinalComDesconto}`
       : "none";
 
     // Só atualiza se o valor mudou
@@ -420,11 +444,12 @@ export function CondicaoPagamentoFormSection({
       if (temDesconto) {
         // Atualiza a ref para evitar que o useEffect de sincronização
         // pense que o valor veio de fora e tente resetar
-        lastExternalPercentual.current = descontoPercent;
+        lastExternalPercentual.current = percentualDesconto;
         onDescontoAVistaChange({
-          percentual: descontoPercent,
+          percentual: percentualDesconto,
           valorDesconto,
           valorFinal: valorFinalComDesconto,
+          tipo: descontoEditadoPor,
         });
       } else {
         // Atualiza a ref para undefined quando não há desconto
@@ -432,7 +457,51 @@ export function CondicaoPagamentoFormSection({
         onDescontoAVistaChange(undefined);
       }
     }
-  }, [condicao, descontoPercent, valorDesconto, valorFinalComDesconto, onDescontoAVistaChange]);
+  }, [condicao, descontoEditadoPor, percentualDesconto, valorDesconto, valorFinalComDesconto, onDescontoAVistaChange]);
+
+  // Cada campo vira a fonte do desconto ao ser digitado; o envio ao pai fica no efeito acima
+  const alterarDescontoPercentual = (texto: string) => {
+    const valor = parseFloat(texto) || 0;
+    setDescontoPercent(Math.min(100, Math.max(0, valor)));
+    setDescontoEditadoPor("percentual");
+  };
+
+  const alterarDescontoValor = (texto: string) => {
+    const valor = parseFloat(texto) || 0;
+    setDescontoValorAbsoluto(Math.min(valorTotal, Math.max(0, valor)));
+    setDescontoEditadoPor("valor");
+  };
+
+  const camposDesconto = (
+    <>
+      <div className="input-row">
+        <span className="input-prefix"></span>
+        <input
+          type="number"
+          min="0"
+          max="100"
+          step="any"
+          value={percentualDesconto || ""}
+          placeholder="0"
+          onChange={(e) => alterarDescontoPercentual(e.target.value)}
+        />
+        <span>% de desconto</span>
+      </div>
+      <div className="input-row">
+        <span className="input-prefix">R$</span>
+        <input
+          type="number"
+          min="0"
+          max={valorTotal}
+          step="0.01"
+          value={descontoEditadoPor === "valor" ? (descontoValorAbsoluto || "") : (valorDesconto || "")}
+          placeholder="0,00"
+          onChange={(e) => alterarDescontoValor(e.target.value)}
+        />
+        <span>de desconto</span>
+      </div>
+    </>
+  );
 
   // Função para alternar seleção de parcela
   const toggleParcelaSelecionada = (numero: number) => {
@@ -523,80 +592,7 @@ export function CondicaoPagamentoFormSection({
         {condicao === "a_vista" && (
           <DescontoContainer>
             <div className="label">Desconto para pagamento à vista (opcional)</div>
-            <div className="input-row">
-              <span className="input-prefix"></span>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="any"
-                value={descontoPercent || ""}
-                placeholder="0"
-                onChange={(e) => {
-                  const valor = parseFloat(e.target.value) || 0;
-                  const novoPercentual = Math.min(100, Math.max(0, valor));
-                  setDescontoPercent(novoPercentual);
-                  setDescontoValorAbsoluto((valorTotal * novoPercentual) / 100);
-                  setDescontoEditadoPor("percent");
-
-                  const novoDesconto = (valorTotal * novoPercentual) / 100;
-                  const novoValorFinal = valorTotal - novoDesconto;
-                  if (novoPercentual > 0) {
-                    lastExternalPercentual.current = novoPercentual;
-                    lastDescontoSent.current = `${novoPercentual}-${novoDesconto}-${novoValorFinal}`;
-                    onDescontoAVistaChange({
-                      percentual: novoPercentual,
-                      valorDesconto: novoDesconto,
-                      valorFinal: novoValorFinal,
-                    });
-                  } else {
-                    lastExternalPercentual.current = undefined;
-                    lastDescontoSent.current = "none";
-                    onDescontoAVistaChange(undefined);
-                  }
-                }}
-              />
-              <span>% de desconto</span>
-            </div>
-            <div className="input-row">
-              <span className="input-prefix">R$</span>
-              <input
-                type="number"
-                min="0"
-                max={valorTotal}
-                step="0.01"
-                value={descontoEditadoPor === "valor"
-                  ? (descontoValorAbsoluto || "")
-                  : (descontoPercent > 0 ? parseFloat(((valorTotal * descontoPercent) / 100).toFixed(2)) : "")}
-                placeholder="0,00"
-                onChange={(e) => {
-                  const valorDescInput = parseFloat(e.target.value) || 0;
-                  const novoValorDesc = Math.min(valorTotal, Math.max(0, valorDescInput));
-                  const novoPercentual = valorTotal > 0
-                    ? parseFloat(((novoValorDesc / valorTotal) * 100).toFixed(2))
-                    : 0;
-                  setDescontoValorAbsoluto(novoValorDesc);
-                  setDescontoPercent(novoPercentual);
-                  setDescontoEditadoPor("valor");
-
-                  const novoValorFinal = valorTotal - novoValorDesc;
-                  if (novoValorDesc > 0) {
-                    lastExternalPercentual.current = novoPercentual;
-                    lastDescontoSent.current = `${novoPercentual}-${novoValorDesc}-${novoValorFinal}`;
-                    onDescontoAVistaChange({
-                      percentual: novoPercentual,
-                      valorDesconto: novoValorDesc,
-                      valorFinal: novoValorFinal,
-                    });
-                  } else {
-                    lastExternalPercentual.current = undefined;
-                    lastDescontoSent.current = "none";
-                    onDescontoAVistaChange(undefined);
-                  }
-                }}
-              />
-              <span>de desconto</span>
-            </div>
+            {camposDesconto}
             {valorDesconto > 0 && (
               <div className="desconto-resumo">
                 <div className="desconto-detalhe">
@@ -642,80 +638,7 @@ export function CondicaoPagamentoFormSection({
               <div className="label">
                 Desconto no parcelamento (opcional)
               </div>
-              <div className="input-row">
-                <span className="input-prefix"></span>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="any"
-                  value={descontoPercent || ""}
-                  placeholder="0"
-                  onChange={(e) => {
-                    const valor = parseFloat(e.target.value) || 0;
-                    const novoPercentual = Math.min(100, Math.max(0, valor));
-                    setDescontoPercent(novoPercentual);
-                    setDescontoValorAbsoluto((valorTotal * novoPercentual) / 100);
-                    setDescontoEditadoPor("percent");
-
-                    const novoDesconto = (valorTotal * novoPercentual) / 100;
-                    const novoValorFinal = valorTotal - novoDesconto;
-                    if (novoPercentual > 0) {
-                      lastExternalPercentual.current = novoPercentual;
-                      lastDescontoSent.current = `${novoPercentual}-${novoDesconto}-${novoValorFinal}`;
-                      onDescontoAVistaChange({
-                        percentual: novoPercentual,
-                        valorDesconto: novoDesconto,
-                        valorFinal: novoValorFinal,
-                      });
-                    } else {
-                      lastExternalPercentual.current = undefined;
-                      lastDescontoSent.current = "none";
-                      onDescontoAVistaChange(undefined);
-                    }
-                  }}
-                />
-                <span>% de desconto</span>
-              </div>
-              <div className="input-row">
-                <span className="input-prefix">R$</span>
-                <input
-                  type="number"
-                  min="0"
-                  max={valorTotal}
-                  step="0.01"
-                  value={descontoEditadoPor === "valor"
-                    ? (descontoValorAbsoluto || "")
-                    : (descontoPercent > 0 ? parseFloat(((valorTotal * descontoPercent) / 100).toFixed(2)) : "")}
-                  placeholder="0,00"
-                  onChange={(e) => {
-                    const valorDescInput = parseFloat(e.target.value) || 0;
-                    const novoValorDesc = Math.min(valorTotal, Math.max(0, valorDescInput));
-                    const novoPercentual = valorTotal > 0
-                      ? parseFloat(((novoValorDesc / valorTotal) * 100).toFixed(2))
-                      : 0;
-                    setDescontoValorAbsoluto(novoValorDesc);
-                    setDescontoPercent(novoPercentual);
-                    setDescontoEditadoPor("valor");
-
-                    const novoValorFinal = valorTotal - novoValorDesc;
-                    if (novoValorDesc > 0) {
-                      lastExternalPercentual.current = novoPercentual;
-                      lastDescontoSent.current = `${novoPercentual}-${novoValorDesc}-${novoValorFinal}`;
-                      onDescontoAVistaChange({
-                        percentual: novoPercentual,
-                        valorDesconto: novoValorDesc,
-                        valorFinal: novoValorFinal,
-                      });
-                    } else {
-                      lastExternalPercentual.current = undefined;
-                      lastDescontoSent.current = "none";
-                      onDescontoAVistaChange(undefined);
-                    }
-                  }}
-                />
-                <span>de desconto</span>
-              </div>
+              {camposDesconto}
               {valorDesconto > 0 && (
                 <div className="desconto-resumo">
                   <div className="desconto-detalhe">

@@ -6,7 +6,7 @@ import {
   StyleSheet,
   pdf,
 } from "@react-pdf/renderer";
-import { Orcamento, ConfiguracoesGerais } from "../../types";
+import { Orcamento, ConfiguracoesGerais, DescontoAVistaDados } from "../../types";
 import { configuracoesGeraisService } from "../../services/configuracoesGeraisService";
 import { logger } from "../../utils/logger";
 import { formatOrcamentoNumero } from "../../utils/constants";
@@ -346,6 +346,10 @@ const formatCurrency = (value: number): string => {
     currency: "BRL",
   }).format(value);
 };
+
+// Desconto digitado em R$ aparece em reais; digitado em % aparece o percentual
+const descricaoDesconto = (desconto: DescontoAVistaDados): string =>
+  desconto.tipo === "valor" ? formatCurrency(desconto.valorDesconto) : `${desconto.percentual}%`;
 
 const formatCurrencyShort = (value: number): string => {
   return new Intl.NumberFormat("pt-BR", {
@@ -2040,10 +2044,10 @@ export function OrcamentoCompletoPDFDocument({
                 <>
                   {/* Desconto no parcelamento (se houver) */}
                   {orcamento.descontoAVista &&
-                    orcamento.descontoAVista.percentual > 0 && (
+                    orcamento.descontoAVista.valorDesconto > 0 && (
                     <View style={{ marginBottom: 8 }}>
                       <Text style={stylesCompleto.precosCondicao}>
-                        Desconto de {orcamento.descontoAVista.percentual}%: de{" "}
+                        Desconto de {descricaoDesconto(orcamento.descontoAVista)}: de{" "}
                         {formatCurrency(orcamento.valorTotal)} por{" "}
                         {formatCurrency(orcamento.descontoAVista.valorFinal)}
                       </Text>
@@ -2130,10 +2134,12 @@ export function OrcamentoCompletoPDFDocument({
             })()
           ) : orcamento.condicaoPagamento === "a_vista" &&
             orcamento.descontoAVista &&
-            orcamento.descontoAVista.percentual > 0 ? (
+            orcamento.descontoAVista.valorDesconto > 0 ? (
             <View>
               <Text style={stylesCompleto.precosCondicao}>
-                À vista com {orcamento.descontoAVista.percentual}% de desconto:
+                {orcamento.descontoAVista.tipo === "valor"
+                  ? `À vista com desconto de ${formatCurrency(orcamento.descontoAVista.valorDesconto)}:`
+                  : `À vista com ${orcamento.descontoAVista.percentual}% de desconto:`}
               </Text>
               <Text style={stylesCompleto.precosValorTotal}>
                 {formatCurrency(orcamento.descontoAVista.valorFinal)}

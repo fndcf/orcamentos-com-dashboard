@@ -299,6 +299,80 @@ describe('CondicaoPagamentoFormSection', () => {
     });
   });
 
+  describe('Desconto em % ou em R$', () => {
+    const propsAVista = { ...defaultProps, condicao: 'a_vista' as const, valorTotal: 3130 };
+    const ultimoDesconto = () => mockOnDescontoAVistaChange.mock.calls[mockOnDescontoAVistaChange.mock.calls.length - 1]?.[0];
+
+    it('deve usar exatamente o valor digitado em R$', () => {
+      render(<CondicaoPagamentoFormSection {...propsAVista} />);
+
+      fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '121' } });
+
+      expect(ultimoDesconto()).toEqual({ percentual: 3.87, valorDesconto: 121, valorFinal: 3009, tipo: 'valor' });
+      expect(screen.getByText('R$ 3.009,00')).toBeInTheDocument();
+    });
+
+    it('deve usar exatamente o percentual digitado', () => {
+      render(<CondicaoPagamentoFormSection {...propsAVista} />);
+
+      fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '5' } });
+
+      expect(ultimoDesconto()).toEqual({ percentual: 5, valorDesconto: 156.5, valorFinal: 2973.5, tipo: 'percentual' });
+    });
+
+    it('deve manter o valor em R$ ao reabrir um orçamento salvo', () => {
+      render(
+        <CondicaoPagamentoFormSection
+          {...propsAVista}
+          descontoAVista={{ percentual: 3.87, valorDesconto: 121, valorFinal: 3009, tipo: 'valor' }}
+        />
+      );
+
+      expect(screen.getByPlaceholderText('0,00')).toHaveValue(121);
+      expect(ultimoDesconto()).toMatchObject({ valorDesconto: 121, valorFinal: 3009 });
+    });
+
+    it('deve reconhecer desconto em R$ de orçamento antigo (sem tipo salvo)', () => {
+      render(
+        <CondicaoPagamentoFormSection
+          {...propsAVista}
+          descontoAVista={{ percentual: 3.87, valorDesconto: 121, valorFinal: 3009 }}
+        />
+      );
+
+      expect(screen.getByPlaceholderText('0,00')).toHaveValue(121);
+      expect(ultimoDesconto()).toEqual({ percentual: 3.87, valorDesconto: 121, valorFinal: 3009, tipo: 'valor' });
+    });
+
+    it('deve manter o desconto em R$ fixo quando o total do orçamento muda', () => {
+      const { rerender } = render(<CondicaoPagamentoFormSection {...propsAVista} />);
+      fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '121' } });
+
+      rerender(<CondicaoPagamentoFormSection {...propsAVista} valorTotal={4000} />);
+
+      expect(ultimoDesconto()).toEqual({ percentual: 3.03, valorDesconto: 121, valorFinal: 3879, tipo: 'valor' });
+    });
+
+    it('deve recalcular o desconto em % quando o total do orçamento muda', () => {
+      const { rerender } = render(<CondicaoPagamentoFormSection {...propsAVista} />);
+      fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '5' } });
+
+      rerender(<CondicaoPagamentoFormSection {...propsAVista} valorTotal={4000} />);
+
+      expect(ultimoDesconto()).toEqual({ percentual: 5, valorDesconto: 200, valorFinal: 3800, tipo: 'percentual' });
+    });
+
+    it('deve aplicar o desconto em R$ como base do parcelamento', () => {
+      render(<CondicaoPagamentoFormSection {...defaultProps} valorTotal={3130} />);
+
+      fireEvent.change(screen.getByPlaceholderText('0,00'), { target: { value: '121' } });
+
+      // Entrada padrão de 20% sobre o valor com desconto (3.009,00)
+      const dados = mockOnParcelamentoDadosChange.mock.calls[mockOnParcelamentoDadosChange.mock.calls.length - 1]?.[0];
+      expect(dados.valorEntrada).toBeCloseTo(601.8, 2);
+    });
+  });
+
   describe('Juros', () => {
     it('deve mostrar indicação de juros para parcelas a partir do limite configurado', () => {
       render(<CondicaoPagamentoFormSection {...defaultProps} />);

@@ -90,6 +90,7 @@ const descontoAVistaSchema = z.object({
   percentual: numero,
   valorDesconto: numero,
   valorFinal: numero,
+  tipo: z.enum(["percentual", "valor"]).optional(),
 });
 
 const orcamentoCamposComunsSchema = z.object({

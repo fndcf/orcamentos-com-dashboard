@@ -603,7 +603,7 @@ export function OrcamentoModal({
     // Se condicao é a_vista e tem desconto, envia o objeto
     // Se não é a_vista ou não tem desconto, envia null (não undefined)
     // Isso garante que o backend receba a propriedade e possa atualizar corretamente
-    const descontoParaEnviar = (condicaoPagamento === "a_vista" || condicaoPagamento === "parcelado") && descontoAVista?.percentual && descontoAVista.percentual > 0
+    const descontoParaEnviar = (condicaoPagamento === "a_vista" || condicaoPagamento === "parcelado") && descontoAVista && descontoAVista.valorDesconto > 0
       ? descontoAVista
       : null;
 
