@@ -21,6 +21,7 @@ import { formatCurrency, formatOrcamentoNumero } from "../utils/constants";
 import { Orcamento, OrcamentoStatus } from "../types";
 import { OrcamentoViewModal } from "../components/orcamentos/OrcamentoViewModal";
 import Footer from "@/components/layout/Footer";
+import { valorFinalOrcamento } from "../utils/valorOrcamento";
 
 const Container = styled.div`
   padding: 24px;
@@ -384,14 +385,6 @@ export function Dashboard() {
                   border: "1px solid var(--border)",
                   borderRadius: "8px",
                 }}
-                formatter={(value: number, name: string) => {
-                  if (name === "valor")
-                    return [
-                      `R$ ${(value * 1000).toLocaleString("pt-BR")}`,
-                      "Valor",
-                    ];
-                  return [value, name === "total" ? "Total" : "Aceitos"];
-                }}
               />
               <Legend />
               <Bar
@@ -511,7 +504,7 @@ export function Dashboard() {
                   <span className="cliente">{orcamento.clienteNome}</span>
                 </div>
                 <span className="valor">
-                  {formatCurrency(orcamento.valorTotal)}
+                  {formatCurrency(valorFinalOrcamento(orcamento))}
                 </span>
               </RecentItem>
             ))}

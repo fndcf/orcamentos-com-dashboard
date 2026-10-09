@@ -11,6 +11,7 @@ import {
   formatOrcamentoNumero,
 } from "../../utils/constants";
 import { gerarPDFOrcamento, gerarPDFExecucao } from "./OrcamentoPDF";
+import { descontoOrcamento, valorFinalOrcamento } from "../../utils/valorOrcamento";
 
 const Header = styled.div`
   display: flex;
@@ -663,9 +664,31 @@ export function OrcamentoViewModal({
             <span className="value">
               {orcamento.condicaoPagamento === "parcelado"
                 ? orcamento.parcelamentoTexto || "Parcelado"
-                : "A combinar"}
+                : orcamento.condicaoPagamento === "a_vista"
+                  ? "À vista"
+                  : "A combinar"}
             </span>
           </div>
+          {descontoOrcamento(orcamento) > 0 && (
+            <>
+              <div className="info-row">
+                <span className="label">Desconto</span>
+                <span className="value">
+                  {formatCurrency(descontoOrcamento(orcamento))} (
+                  {(orcamento.descontoAVista?.percentual ?? 0).toLocaleString("pt-BR", {
+                    maximumFractionDigits: 2,
+                  })}
+                  %)
+                </span>
+              </div>
+              <div className="info-row">
+                <span className="label">Valor com Desconto</span>
+                <span className="value">
+                  {formatCurrency(valorFinalOrcamento(orcamento))}
+                </span>
+              </div>
+            </>
+          )}
         </InfoSection>
       </Section>
 

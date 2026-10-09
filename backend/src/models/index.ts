@@ -107,6 +107,7 @@ export interface Orcamento {
   parcelamentoDados?: ParcelamentoDados | null; // Dados estruturados do parcelamento para o PDF
   descontoAVista?: DescontoAVistaDados | null; // Dados de desconto para pagamento à vista
   mostrarValoresDetalhados?: boolean; // Se true, mostra tabela de MdO/Material no PDF; se false, só valor total
+  mostrarDocumento?: boolean; // Se true, mostra o CPF/CNPJ do cliente na proposta
   // Totais
   valorTotal: number;
   valorTotalMaoDeObra?: number;

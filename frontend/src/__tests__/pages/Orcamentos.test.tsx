@@ -177,6 +177,26 @@ describe('Orcamentos', () => {
     expect(screen.getByText('Crie seu primeiro orçamento clicando no botão acima')).toBeInTheDocument();
   });
 
+  it('deve mostrar o valor final (com desconto) na coluna de valor', () => {
+    vi.mocked(useOrcamentosPaginados).mockReturnValue({
+      data: {
+        items: [{
+          ...mockOrcamentos[0],
+          valorTotal: 3130,
+          condicaoPagamento: 'a_vista',
+          descontoAVista: { percentual: 3.87, valorDesconto: 121, valorFinal: 3009, tipo: 'valor' },
+        }],
+        total: 1,
+      },
+      isLoading: false,
+    } as any);
+
+    render(<Orcamentos />, { wrapper: createWrapper() });
+
+    expect(screen.getAllByText(/R\$\s*3\.009,00/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/R\$\s*3\.130,00/)).not.toBeInTheDocument();
+  });
+
   it('deve renderizar lista de orçamentos', () => {
     vi.mocked(useOrcamentosPaginados).mockReturnValue({
       data: { items: mockOrcamentos, total: mockOrcamentos.length },

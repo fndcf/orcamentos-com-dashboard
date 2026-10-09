@@ -16,6 +16,8 @@ import {
 import { ValidationError, NotFoundError } from "../utils/errors";
 import { eventBus, OrcamentoEvents } from "../events";
 import { FieldValue } from "../config/firebase";
+import { valorFinalOrcamento } from "../utils/valorOrcamento";
+import { inicioDoDia, fimDoDia, mesAnoBrasilia } from "../utils/datas";
 
 // Helper para detectar tipo de pessoa baseado no documento (CPF ou CNPJ)
 function detectarTipoPessoa(documento: string): TipoPessoa {
@@ -75,6 +77,7 @@ interface CriarOrcamentoDTO {
   parcelamentoDados?: ParcelamentoDados | null;
   descontoAVista?: DescontoAVistaDados | null;
   mostrarValoresDetalhados?: boolean;
+  mostrarDocumento?: boolean;
   // Campos comuns
   observacoes?: string;
   diasValidade?: number;
@@ -98,6 +101,7 @@ interface AtualizarOrcamentoDTO {
   parcelamentoDados?: ParcelamentoDados | null;
   descontoAVista?: DescontoAVistaDados | null;
   mostrarValoresDetalhados?: boolean;
+  mostrarDocumento?: boolean;
   // Campos comuns
   observacoes?: string;
   dataValidade?: Date;
@@ -149,15 +153,13 @@ export const orcamentoService = {
   },
 
   async buscarPorPeriodo(dataInicio: string, dataFim: string): Promise<Orcamento[]> {
-    const inicio = new Date(dataInicio);
-    const fim = new Date(dataFim);
+    // Dias inteiros no horário de Brasília (o servidor roda em UTC)
+    const inicio = inicioDoDia(dataInicio);
+    const fim = fimDoDia(dataFim);
 
     if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) {
       throw new ValidationError('Datas inválidas');
     }
-
-    // Ajustar fim para o final do dia
-    fim.setHours(23, 59, 59, 999);
 
     return orcamentoRepository.findByPeriodo(inicio, fim);
   },
@@ -286,6 +288,8 @@ export const orcamentoService = {
     if (data.descontoAVista) orcamento.descontoAVista = data.descontoAVista;
     if (data.mostrarValoresDetalhados !== undefined)
       orcamento.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
+    if (data.mostrarDocumento !== undefined)
+      orcamento.mostrarDocumento = data.mostrarDocumento;
 
     return orcamentoRepository.create(orcamento);
   },
@@ -438,6 +442,12 @@ export const orcamentoService = {
       data.mostrarValoresDetalhados !== orcamento.mostrarValoresDetalhados
     ) {
       updateData.mostrarValoresDetalhados = data.mostrarValoresDetalhados;
+    }
+    if (
+      data.mostrarDocumento !== undefined &&
+      data.mostrarDocumento !== orcamento.mostrarDocumento
+    ) {
+      updateData.mostrarDocumento = data.mostrarDocumento;
     }
 
     // Observações - só atualiza se mudou
@@ -654,6 +664,8 @@ export const orcamentoService = {
     if (orcamentoOriginal.mostrarValoresDetalhados !== undefined)
       novoOrcamento.mostrarValoresDetalhados =
         orcamentoOriginal.mostrarValoresDetalhados;
+    if (orcamentoOriginal.mostrarDocumento !== undefined)
+      novoOrcamento.mostrarDocumento = orcamentoOriginal.mostrarDocumento;
     if (orcamentoOriginal.valorTotalMaoDeObra)
       novoOrcamento.valorTotalMaoDeObra = orcamentoOriginal.valorTotalMaoDeObra;
     if (orcamentoOriginal.valorTotalMaterial)
@@ -699,7 +711,7 @@ export const orcamentoService = {
     let valorAceitos = 0;
 
     for (const orc of orcamentos) {
-      valorTotal += orc.valorTotal || 0;
+      valorTotal += valorFinalOrcamento(orc);
 
       switch (orc.status) {
         case "aberto":
@@ -707,7 +719,7 @@ export const orcamentoService = {
           break;
         case "aceito":
           aceitos++;
-          valorAceitos += orc.valorTotal || 0;
+          valorAceitos += valorFinalOrcamento(orc);
           break;
         case "recusado":
           recusados++;
@@ -719,27 +731,29 @@ export const orcamentoService = {
     }
 
     // Calcular dados dos últimos 6 meses
-    const now = new Date();
+    // Meses no horário de Brasília (o servidor roda em UTC)
+    const agora = mesAnoBrasilia(new Date());
     const last6Months: { mes: string; ano: number; mesIndex: number }[] = [];
 
     for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const date = new Date(Date.UTC(agora.ano, agora.mes - i, 1));
       last6Months.push({
-        mes: MONTH_NAMES[date.getMonth()],
-        ano: date.getFullYear(),
-        mesIndex: date.getMonth(),
+        mes: MONTH_NAMES[date.getUTCMonth()],
+        ano: date.getUTCFullYear(),
+        mesIndex: date.getUTCMonth(),
       });
     }
 
     const porMes: DashboardMesStats[] = last6Months.map(({ mes, ano, mesIndex }) => {
       const monthOrcamentos = orcamentos.filter((o) => {
         const date = o.dataEmissao instanceof Date ? o.dataEmissao : new Date(o.dataEmissao);
-        return date.getMonth() === mesIndex && date.getFullYear() === ano;
+        const emissao = mesAnoBrasilia(date);
+        return emissao.mes === mesIndex && emissao.ano === ano;
       });
 
       const total = monthOrcamentos.length;
       const aceitosNoMes = monthOrcamentos.filter((o) => o.status === "aceito").length;
-      const valor = monthOrcamentos.reduce((acc, o) => acc + (o.valorTotal || 0), 0);
+      const valor = monthOrcamentos.reduce((acc, o) => acc + valorFinalOrcamento(o), 0);
 
       return {
         mes: `${mes}/${ano.toString().slice(-2)}`,

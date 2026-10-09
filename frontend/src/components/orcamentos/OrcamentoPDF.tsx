@@ -9,7 +9,7 @@ import {
 import { Orcamento, ConfiguracoesGerais, DescontoAVistaDados } from "../../types";
 import { configuracoesGeraisService } from "../../services/configuracoesGeraisService";
 import { logger } from "../../utils/logger";
-import { formatOrcamentoNumero } from "../../utils/constants";
+import { formatOrcamentoNumero, formatCPF, formatCNPJ } from "../../utils/constants";
 
 // Cores do tema
 const COLORS = {
@@ -346,6 +346,12 @@ const formatCurrency = (value: number): string => {
     currency: "BRL",
   }).format(value);
 };
+
+// CPF tem até 11 dígitos; acima disso é CNPJ (mesma regra do backend)
+const documentoCliente = (documento: string): { rotulo: string; valor: string } =>
+  documento.replace(/\D/g, "").length <= 11
+    ? { rotulo: "CPF", valor: formatCPF(documento) }
+    : { rotulo: "CNPJ", valor: formatCNPJ(documento) };
 
 // Desconto digitado em R$ aparece em reais; digitado em % aparece o percentual
 const descricaoDesconto = (desconto: DescontoAVistaDados): string =>
@@ -951,6 +957,16 @@ export function OrcamentoCompletoPDFDocument({
               {orcamento.clienteNome}
             </Text>
           </View>
+          {orcamento.mostrarDocumento && orcamento.clienteCnpj?.trim() && (
+            <View style={{ marginBottom: 4 }}>
+              <Text style={styles.clienteValue}>
+                <Text style={{ fontWeight: "bold" }}>
+                  {`${documentoCliente(orcamento.clienteCnpj).rotulo}: `}
+                </Text>
+                {documentoCliente(orcamento.clienteCnpj).valor}
+              </Text>
+            </View>
+          )}
           {enderecoCompleto && enderecoCompleto.trim() !== "" && (
             <View style={{ marginBottom: 4 }}>
               <Text style={styles.clienteValue}>

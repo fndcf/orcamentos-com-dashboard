@@ -1,6 +1,7 @@
 import { historicoValoresRepository } from '../repositories/historicoValoresRepository';
 import { HistoricoValorItem, HistoricoConfiguracao } from '../models';
 import { ValidationError } from '../utils/errors';
+import { inicioDoDia, fimDoDia } from '../utils/datas';
 
 export const historicoValoresService = {
   async buscarHistoricoItensPorPeriodo(
@@ -11,15 +12,13 @@ export const historicoValoresService = {
       throw new ValidationError('Data início e data fim são obrigatórias');
     }
 
-    const inicio = new Date(dataInicio);
-    const fim = new Date(dataFim);
+    // Dias inteiros no horário de Brasília (o servidor roda em UTC)
+    const inicio = inicioDoDia(dataInicio);
+    const fim = fimDoDia(dataFim);
 
     if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) {
       throw new ValidationError('Datas inválidas');
     }
-
-    // Ajustar fim para o final do dia
-    fim.setHours(23, 59, 59, 999);
 
     return historicoValoresRepository.buscarHistoricoItensPorPeriodo(inicio, fim);
   },
@@ -32,15 +31,13 @@ export const historicoValoresService = {
       throw new ValidationError('Data início e data fim são obrigatórias');
     }
 
-    const inicio = new Date(dataInicio);
-    const fim = new Date(dataFim);
+    // Dias inteiros no horário de Brasília (o servidor roda em UTC)
+    const inicio = inicioDoDia(dataInicio);
+    const fim = fimDoDia(dataFim);
 
     if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) {
       throw new ValidationError('Datas inválidas');
     }
-
-    // Ajustar fim para o final do dia
-    fim.setHours(23, 59, 59, 999);
 
     return historicoValoresRepository.buscarHistoricoConfiguracoesPorPeriodo(inicio, fim);
   },

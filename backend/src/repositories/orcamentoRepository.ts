@@ -2,6 +2,7 @@ import { db } from '../config/firebase';
 import { Orcamento, OrcamentoStatus, PaginatedResponse } from '../models';
 import { COLLECTIONS, CONTADORES } from '../utils/constants';
 import { NotFoundError } from '../utils/errors';
+import { valorFinalOrcamento } from '../utils/valorOrcamento';
 
 const collection = db.collection(COLLECTIONS.ORCAMENTOS);
 
@@ -286,12 +287,12 @@ export const orcamentoRepository = {
     // O Firestore suporta sum aggregation a partir da versão mais recente
     const aceitosSnapshot = await collection
       .where('status', '==', 'aceito')
-      .select('valorTotal')
+      .select('valorTotal', 'condicaoPagamento', 'descontoAVista')
       .get();
 
     let valorTotalAceitos = 0;
     aceitosSnapshot.docs.forEach(doc => {
-      valorTotalAceitos += doc.data().valorTotal || 0;
+      valorTotalAceitos += valorFinalOrcamento(doc.data() as Orcamento);
     });
 
     return {
@@ -417,7 +418,7 @@ export const orcamentoRepository = {
       collection
         .where('clienteId', '==', clienteId)
         .where('status', '==', 'aceito')
-        .select('valorTotal')
+        .select('valorTotal', 'condicaoPagamento', 'descontoAVista')
         .get(),
     ]);
 
@@ -425,7 +426,7 @@ export const orcamentoRepository = {
 
     let valorTotalAceitos = 0;
     aceitosSnapshot.docs.forEach(doc => {
-      valorTotalAceitos += doc.data().valorTotal || 0;
+      valorTotalAceitos += valorFinalOrcamento(doc.data() as Orcamento);
     });
 
     return {

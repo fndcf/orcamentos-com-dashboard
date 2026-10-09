@@ -112,6 +112,10 @@ export function OrcamentoModal({
   >(undefined);
   const [mostrarValoresDetalhados, setMostrarValoresDetalhados] =
     useState(true);
+  const [mostrarDocumento, setMostrarDocumento] = useState(false);
+  // CPF/CNPJ que vai para a proposta: ao editar, o salvo no orçamento; em novo/duplicado,
+  // o do cliente selecionado (o backend copia o documento do cadastro ao criar)
+  const documentoProposta = (orcamento ? orcamento.clienteCnpj : clienteSelecionado?.cnpj)?.trim() || "";
 
   // Estados comuns
   const [observacoes, setObservacoes] = useState("");
@@ -248,6 +252,7 @@ export function OrcamentoModal({
         setMostrarValoresDetalhados(
           orcamento.mostrarValoresDetalhados !== false
         );
+        setMostrarDocumento(orcamento.mostrarDocumento === true);
 
         // Cliente será carregado pelo useCliente hook
         setMostrarNovoCliente(false);
@@ -285,6 +290,7 @@ export function OrcamentoModal({
         setMostrarValoresDetalhados(
           duplicarDe.mostrarValoresDetalhados !== false
         );
+        setMostrarDocumento(duplicarDe.mostrarDocumento === true);
 
         // Cliente será carregado pelo useCliente hook
         setMostrarNovoCliente(false);
@@ -304,6 +310,7 @@ export function OrcamentoModal({
         setParcelamentoDados(undefined);
         setDescontoAVista(undefined);
         setMostrarValoresDetalhados(true);
+        setMostrarDocumento(false);
         setObservacoes("");
         setConsultor("");
         setContato("");
@@ -319,6 +326,11 @@ export function OrcamentoModal({
       // Quando o modal fecha, resetar a flag para a próxima abertura
       isInitializedRef.current = false;
       clienteExistenteAplicadoRef.current = false;
+      // O modal fica montado entre aberturas: sem limpar aqui, o cliente do orçamento anterior
+      // continuaria selecionado e o cliente do próximo orçamento editado/duplicado nunca seria carregado
+      setClienteSelecionado(null);
+      setClienteSearchText("");
+      setDebouncedSearch("");
     }
   }, [isOpen, orcamento, duplicarDe, limitacoesAtivas]);
 
@@ -627,6 +639,8 @@ export function OrcamentoModal({
       // Envia null explicitamente para garantir que o backend processe
       descontoAVista: descontoParaEnviar,
       mostrarValoresDetalhados,
+      // Sem CPF/CNPJ cadastrado não há o que mostrar
+      mostrarDocumento: mostrarDocumento && !!documentoProposta,
       observacoes: observacoes.trim() || undefined,
       // Envia string vazia para permitir limpar os campos ao editar
       consultor: consultor.trim(),
@@ -761,6 +775,21 @@ export function OrcamentoModal({
               </>
             )}
           </ClienteInfo>
+        )}
+
+        {clienteSelecionado && !mostrarNovoCliente && (
+          <CheckboxOption>
+            <input
+              type="checkbox"
+              checked={mostrarDocumento && !!documentoProposta}
+              disabled={!documentoProposta}
+              onChange={(e) => setMostrarDocumento(e.target.checked)}
+            />
+            <span>
+              Mostrar CPF/CNPJ do cliente na proposta
+              {!documentoProposta && " (cliente sem CPF/CNPJ cadastrado)"}
+            </span>
+          </CheckboxOption>
         )}
 
         {/* Formulário de Novo Cliente Inline */}

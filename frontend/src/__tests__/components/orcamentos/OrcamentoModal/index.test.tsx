@@ -502,6 +502,126 @@ describe('OrcamentoModal', () => {
     });
   });
 
+  describe('Cliente ao reabrir o modal', () => {
+    const orcamentoDoOutroCliente = {
+      id: 'orc465', numero: 465, versao: 0, tipo: 'completo' as const,
+      clienteId: 'cliente2', clienteNome: 'Outro Cliente', clienteCnpj: '98765432000110',
+      servicoId: 'serv1', itensCompleto: [], status: 'aberto' as const,
+      dataEmissao: new Date(), dataValidade: new Date(), createdAt: new Date(), valorTotal: 0,
+    };
+
+    beforeEach(() => {
+      vi.mocked(useCliente).mockImplementation(
+        (id: string) => ({ data: mockClientes.find((c) => c.id === id), isLoading: false }) as any
+      );
+    });
+
+    it('deve mostrar o cliente do orçamento duplicado, e não o do último orçamento criado', async () => {
+      const { rerender } = render(
+        <OrcamentoModal isOpen={true} onClose={mockOnClose} onSave={mockOnSave} />,
+        { wrapper: createWrapper() }
+      );
+      await selectCliente('Cliente Teste LTDA');
+
+      // Fecha (salvou o novo orçamento) e abre para duplicar outro orçamento
+      rerender(<OrcamentoModal isOpen={false} onClose={mockOnClose} onSave={mockOnSave} />);
+      rerender(
+        <OrcamentoModal isOpen={true} onClose={mockOnClose} onSave={mockOnSave} duplicarDe={orcamentoDoOutroCliente as any} />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('Digite para buscar um cliente...')).toHaveValue('Outro Cliente');
+      });
+    });
+
+    it('deve mostrar o cliente ao duplicar duas vezes seguidas o mesmo orçamento (cliente em cache)', async () => {
+      const { rerender } = render(
+        <OrcamentoModal isOpen={true} onClose={mockOnClose} onSave={mockOnSave} duplicarDe={orcamentoDoOutroCliente as any} />,
+        { wrapper: createWrapper() }
+      );
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('Digite para buscar um cliente...')).toHaveValue('Outro Cliente');
+      });
+
+      rerender(<OrcamentoModal isOpen={false} onClose={mockOnClose} onSave={mockOnSave} />);
+      rerender(
+        <OrcamentoModal isOpen={true} onClose={mockOnClose} onSave={mockOnSave} duplicarDe={orcamentoDoOutroCliente as any} />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('Digite para buscar um cliente...')).toHaveValue('Outro Cliente');
+      });
+    });
+
+    it('deve mostrar o cliente do orçamento editado, e não o do anterior', async () => {
+      const { rerender } = render(
+        <OrcamentoModal isOpen={true} onClose={mockOnClose} onSave={mockOnSave} />,
+        { wrapper: createWrapper() }
+      );
+      await selectCliente('Cliente Teste LTDA');
+
+      rerender(<OrcamentoModal isOpen={false} onClose={mockOnClose} onSave={mockOnSave} />);
+      rerender(
+        <OrcamentoModal isOpen={true} onClose={mockOnClose} onSave={mockOnSave} orcamento={orcamentoDoOutroCliente as any} />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('Digite para buscar um cliente...')).toHaveValue('Outro Cliente');
+      });
+    });
+  });
+
+  describe('CPF/CNPJ na proposta', () => {
+    const rotuloCheckbox = /Mostrar CPF\/CNPJ do cliente na proposta/;
+
+    it('deve oferecer a opção desmarcada ao selecionar cliente com documento', async () => {
+      render(<OrcamentoModal isOpen={true} onClose={mockOnClose} onSave={mockOnSave} />, { wrapper: createWrapper() });
+
+      await selectCliente('Cliente Teste LTDA');
+
+      const checkbox = screen.getByRole('checkbox', { name: rotuloCheckbox });
+      expect(checkbox).not.toBeChecked();
+      expect(checkbox).toBeEnabled();
+      fireEvent.click(checkbox);
+      expect(checkbox).toBeChecked();
+    });
+
+    it('deve desabilitar a opção para cliente sem CPF/CNPJ', async () => {
+      vi.mocked(useClientesInfiniteScroll).mockReturnValue({
+        data: { pages: [{ items: [{ id: 'cliente3', razaoSocial: 'Cliente Sem Documento', cnpj: '' }], total: 1, hasMore: false }], pageParams: [1] },
+        isLoading: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+      } as any);
+      render(<OrcamentoModal isOpen={true} onClose={mockOnClose} onSave={mockOnSave} />, { wrapper: createWrapper() });
+
+      await selectCliente('Cliente Sem Documento');
+
+      expect(screen.getByRole('checkbox', { name: rotuloCheckbox })).toBeDisabled();
+      expect(screen.getByText(/cliente sem CPF\/CNPJ cadastrado/)).toBeInTheDocument();
+    });
+
+    it('deve vir marcada ao editar orçamento salvo com a opção', async () => {
+      vi.mocked(useCliente).mockReturnValue({ data: mockClientes[0], isLoading: false } as any);
+      const orcamentoSalvo = {
+        id: 'orc3', numero: 789, versao: 0, tipo: 'completo' as const,
+        clienteId: 'cliente1', clienteNome: 'Cliente Teste LTDA', clienteCnpj: '12345678000190',
+        mostrarDocumento: true, servicoId: 'serv1', itensCompleto: [], status: 'aberto' as const,
+        dataEmissao: new Date(), dataValidade: new Date(), createdAt: new Date(), valorTotal: 0,
+      };
+
+      render(
+        <OrcamentoModal isOpen={true} onClose={mockOnClose} onSave={mockOnSave} orcamento={orcamentoSalvo as any} />,
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('checkbox', { name: rotuloCheckbox })).toBeChecked();
+      });
+    });
+  });
+
   describe('Busca de cliente', () => {
     it('deve conseguir selecionar cliente via campo de busca', async () => {
       render(

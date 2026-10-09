@@ -511,6 +511,36 @@ describe('OrcamentoViewModal', () => {
       expect(screen.getByText('A combinar')).toBeInTheDocument();
     });
 
+    it('deve renderizar condição à vista com o desconto e o valor final', () => {
+      const orcAVista = {
+        ...mockOrcamentoCompleto,
+        valorTotal: 3130,
+        condicaoPagamento: 'a_vista' as const,
+        parcelamentoTexto: undefined,
+        descontoAVista: { percentual: 3.87, valorDesconto: 121, valorFinal: 3009, tipo: 'valor' as const },
+      };
+
+      render(
+        <OrcamentoViewModal isOpen={true} onClose={mockOnClose} orcamento={orcAVista} />,
+        { wrapper: Wrapper }
+      );
+
+      expect(screen.getByText('À vista')).toBeInTheDocument();
+      expect(screen.getByText('Desconto')).toBeInTheDocument();
+      expect(screen.getByText(/R\$\s*121,00 \(3,87%\)/)).toBeInTheDocument();
+      expect(screen.getByText('Valor com Desconto')).toBeInTheDocument();
+      expect(screen.getByText(/R\$\s*3\.009,00/)).toBeInTheDocument();
+    });
+
+    it('não deve mostrar desconto quando não há', () => {
+      render(
+        <OrcamentoViewModal isOpen={true} onClose={mockOnClose} orcamento={mockOrcamentoCompleto} />,
+        { wrapper: Wrapper }
+      );
+
+      expect(screen.queryByText('Valor com Desconto')).not.toBeInTheDocument();
+    });
+
     it('não deve mostrar limitações quando não existem', () => {
       const orcSemLimitacoes = {
         ...mockOrcamentoCompleto,

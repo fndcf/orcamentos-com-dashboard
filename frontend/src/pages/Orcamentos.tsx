@@ -48,6 +48,7 @@ import {
   formatOrcamentoNumero,
 } from "../utils/constants";
 import Footer from "@/components/layout/Footer";
+import { valorFinalOrcamento } from "../utils/valorOrcamento";
 
 const Container = styled.div`
   padding: 24px;
@@ -322,6 +323,7 @@ export function Orcamentos() {
           parcelamentoDados: data.parcelamentoDados,
           descontoAVista: data.descontoAVista,
           mostrarValoresDetalhados: data.mostrarValoresDetalhados,
+          mostrarDocumento: data.mostrarDocumento,
           // Campos comuns
           observacoes: data.observacoes,
           consultor: data.consultor,
@@ -468,7 +470,7 @@ export function Orcamentos() {
                       </td>
                       <td>{formatDate(orcamento.dataEmissao)}</td>
                       <td>{formatDate(orcamento.dataValidade)}</td>
-                      <td>{formatCurrency(orcamento.valorTotal)}</td>
+                      <td>{formatCurrency(valorFinalOrcamento(orcamento))}</td>
                       <td>
                         <StatusBadge $status={orcamento.status}>
                           {statusLabels[orcamento.status]}
@@ -577,7 +579,7 @@ export function Orcamentos() {
                         className="value"
                         style={{ fontSize: "1.1rem", color: "var(--primary)" }}
                       >
-                        {formatCurrency(orcamento.valorTotal)}
+                        {formatCurrency(valorFinalOrcamento(orcamento))}
                       </span>
                     </MobileCardField>
                   </MobileCardBody>

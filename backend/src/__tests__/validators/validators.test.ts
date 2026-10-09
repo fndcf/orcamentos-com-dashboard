@@ -131,6 +131,10 @@ describe('validators', () => {
       expect(validar(orcamentoAtualizarSchema, { descontoAVista })).toEqual({ descontoAVista });
     });
 
+    it('deve aceitar a opção de mostrar CPF/CNPJ', () => {
+      expect(validar(orcamentoAtualizarSchema, { mostrarDocumento: true })).toEqual({ mostrarDocumento: true });
+    });
+
     it('deve rejeitar tipo de desconto desconhecido', () => {
       esperarErro(
         () => validar(orcamentoAtualizarSchema, { descontoAVista: { percentual: 1, valorDesconto: 1, valorFinal: 1, tipo: 'outro' } }),

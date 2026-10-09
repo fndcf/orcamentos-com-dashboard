@@ -36,6 +36,8 @@ import {
   ItemServico,
 } from "../types";
 import Footer from "@/components/layout/Footer";
+import { descontoOrcamento, valorFinalOrcamento } from "../utils/valorOrcamento";
+import { dataLocalISO, diaMes } from "../utils/datas";
 
 const Container = styled.div`
   padding: 24px;
@@ -730,6 +732,12 @@ const ModalStatCard = styled.div<{ $color?: string }>`
     font-weight: 600;
     color: var(--text-primary);
   }
+
+  .subvalue {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
 `;
 
 const COLORS = {
@@ -753,6 +761,7 @@ interface OrcamentoAnalise {
   dataAceite: string;
   dataEmissao: string;
   versao: number;
+  desconto: number; // Desconto em R$ (as vendas abaixo já estão com ele aplicado)
   vendaMaterial: number;
   vendaMaoDeObra: number;
   custoMaterial: number;
@@ -880,10 +889,8 @@ export function Relatorios() {
   const hoje = new Date();
   const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 
-  const [dataInicio, setDataInicio] = useState(
-    primeiroDiaMes.toISOString().split("T")[0]
-  );
-  const [dataFim, setDataFim] = useState(hoje.toISOString().split("T")[0]);
+  const [dataInicio, setDataInicio] = useState(dataLocalISO(primeiroDiaMes));
+  const [dataFim, setDataFim] = useState(dataLocalISO(hoje));
 
   // Buscar orçamentos filtrados por período diretamente do backend (otimizado)
   const { data: orcamentosFiltrados = [], isLoading: loadingOrcamentos } = useOrcamentosPorPeriodo(dataInicio, dataFim);
@@ -928,10 +935,10 @@ export function Relatorios() {
     );
 
     const valorTotal = orcamentosFiltrados.reduce(
-      (sum, o) => sum + o.valorTotal,
+      (sum, o) => sum + valorFinalOrcamento(o),
       0
     );
-    const valorAceitos = aceitos.reduce((sum, o) => sum + o.valorTotal, 0);
+    const valorAceitos = aceitos.reduce((sum, o) => sum + valorFinalOrcamento(o), 0);
 
     const taxaConversao = total > 0 ? (aceitos.length / total) * 100 : 0;
     const ticketMedio = aceitos.length > 0 ? valorAceitos / aceitos.length : 0;
@@ -980,7 +987,7 @@ export function Relatorios() {
     };
 
     orcamentosFiltrados.forEach((orc) => {
-      valores[orc.status] += orc.valorTotal;
+      valores[orc.status] += valorFinalOrcamento(orc);
     });
 
     return Object.entries(valores)
@@ -997,23 +1004,21 @@ export function Relatorios() {
     const dailyData: Record<string, { total: number; aceitos: number }> = {};
 
     orcamentosFiltrados.forEach((orc) => {
-      const data = new Date(orc.dataEmissao).toISOString().split("T")[0];
+      // Agrupa pelo dia local da emissão (não pelo dia em UTC)
+      const data = dataLocalISO(new Date(orc.dataEmissao));
       if (!dailyData[data]) {
         dailyData[data] = { total: 0, aceitos: 0 };
       }
-      dailyData[data].total += orc.valorTotal;
+      dailyData[data].total += valorFinalOrcamento(orc);
       if (orc.status === "aceito") {
-        dailyData[data].aceitos += orc.valorTotal;
+        dailyData[data].aceitos += valorFinalOrcamento(orc);
       }
     });
 
     return Object.entries(dailyData)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([data, valores]) => ({
-        data: new Date(data).toLocaleDateString("pt-BR", {
-          day: "2-digit",
-          month: "2-digit",
-        }),
+        data: diaMes(data),
         total: valores.total / 1000,
         aceitos: valores.aceitos / 1000,
       }));
@@ -1036,7 +1041,7 @@ export function Relatorios() {
             quantidade: 0,
           };
         }
-        clienteStats[orc.clienteId].valor += orc.valorTotal;
+        clienteStats[orc.clienteId].valor += valorFinalOrcamento(orc);
         clienteStats[orc.clienteId].quantidade++;
       });
 
@@ -1220,6 +1225,13 @@ export function Relatorios() {
       }
 
       if (todosItensTemCusto) {
+        // Desconto reduz a venda de material e mão de obra na mesma proporção; o custo não muda
+        const vendaBruta = vendaMaterial + vendaMaoDeObra;
+        const desconto = Math.min(descontoOrcamento(orc), vendaBruta);
+        const fatorDesconto = vendaBruta > 0 ? (vendaBruta - desconto) / vendaBruta : 1;
+        vendaMaterial *= fatorDesconto;
+        vendaMaoDeObra *= fatorDesconto;
+
         // Calcular impostos sobre as vendas usando configuração vigente na data de emissão
         const impostoMaterial =
           vendaMaterial * (impostoMaterialPercentOrc / 100);
@@ -1242,6 +1254,7 @@ export function Relatorios() {
             : new Date(orc.dataEmissao).toLocaleDateString("pt-BR"),
           dataEmissao: orc.dataEmissao as string,
           versao: orc.versao || 0,
+          desconto,
           vendaMaterial,
           vendaMaoDeObra,
           custoMaterial,
@@ -1259,6 +1272,10 @@ export function Relatorios() {
     });
 
     // Calcular totais
+    const totalDescontos = orcamentosComCustoCompleto.reduce(
+      (sum, o) => sum + o.desconto,
+      0
+    );
     const totalVendaMaterial = orcamentosComCustoCompleto.reduce(
       (sum, o) => sum + o.vendaMaterial,
       0
@@ -1302,6 +1319,7 @@ export function Relatorios() {
     orcamentosComCustoCompleto.sort((a, b) => b.numero - a.numero);
 
     return {
+      totalDescontos,
       totalVendaMaterial,
       totalVendaMaoDeObra,
       totalCustoMaterial,
@@ -1476,7 +1494,7 @@ export function Relatorios() {
     // Valor total de orçamentos aceitos no período
     const valorTotalAceitos = orcamentosFiltrados
       .filter((o) => o.status === "aceito")
-      .reduce((sum, o) => sum + o.valorTotal, 0);
+      .reduce((sum, o) => sum + valorFinalOrcamento(o), 0);
 
     // Lucro bruto (se tiver análise de lucro com custos de itens - já inclui impostos)
     const lucroBruto = analiseLucro?.lucroTotal || 0;
@@ -1573,6 +1591,8 @@ export function Relatorios() {
       "Data Emissão",
       "Data Validade",
       "Valor Total",
+      "Desconto",
+      "Valor Final",
       "Venda Material",
       "Venda Mão de Obra",
       "Custo Material",
@@ -1613,6 +1633,13 @@ export function Relatorios() {
         }
       }
 
+      // Mesma regra da análise de lucro: desconto reduz as vendas na proporção, custo não muda
+      const vendaBruta = vendaMaterial + vendaMaoDeObra;
+      const desconto = Math.min(descontoOrcamento(orc), vendaBruta);
+      const fatorDesconto = vendaBruta > 0 ? (vendaBruta - desconto) / vendaBruta : 1;
+      vendaMaterial *= fatorDesconto;
+      vendaMaoDeObra *= fatorDesconto;
+
       const custoTotal = custoMaterial + custoMaoDeObra;
       const impostoMaterialValor = vendaMaterial * (impostoMaterialPercent / 100);
       const impostoServicoValor = vendaMaoDeObra * (impostoServicoPercent / 100);
@@ -1628,6 +1655,8 @@ export function Relatorios() {
         new Date(orc.dataEmissao).toLocaleDateString("pt-BR"),
         new Date(orc.dataValidade).toLocaleDateString("pt-BR"),
         orc.valorTotal.toFixed(2).replace(".", ","),
+        descontoOrcamento(orc).toFixed(2).replace(".", ","),
+        valorFinalOrcamento(orc).toFixed(2).replace(".", ","),
         vendaMaterial.toFixed(2).replace(".", ","),
         vendaMaoDeObra.toFixed(2).replace(".", ","),
         custoMaterial.toFixed(2).replace(".", ","),
@@ -2177,6 +2206,9 @@ export function Relatorios() {
                       analiseLucro.totalVendaMaoDeObra
                   )}
                 </div>
+                <div className="subvalue">
+                  Descontos: {formatCurrency(analiseLucro.totalDescontos)}
+                </div>
               </StatCard>
               <StatCard $color="#e74c3c">
                 <div className="label">Custo</div>
@@ -2255,6 +2287,7 @@ export function Relatorios() {
                               <th className="value">Custo Mat.</th>
                               <th className="value">Venda M.O.</th>
                               <th className="value">Custo M.O.</th>
+                              <th className="value">Desconto</th>
                               <th className="value">Lucro</th>
                               <th className="value">Margem</th>
                             </tr>
@@ -2284,6 +2317,9 @@ export function Relatorios() {
                                 </td>
                                 <td className="value">
                                   {formatCurrency(orc.custoMaoDeObra)}
+                                </td>
+                                <td className="value">
+                                  {orc.desconto > 0 ? formatCurrency(orc.desconto) : "—"}
                                 </td>
                                 <td className="value">
                                   {orc.lucroTotal >= 0 ? (
@@ -2354,6 +2390,14 @@ export function Relatorios() {
                                 {formatCurrency(orc.custoMaoDeObra)}
                               </span>
                             </div>
+                            {orc.desconto > 0 && (
+                              <div className="value-row">
+                                <span className="label">Desconto</span>
+                                <span className="value">
+                                  {formatCurrency(orc.desconto)}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div className="lucro-row">
                             <span className="lucro-label">Lucro Total</span>
@@ -2659,6 +2703,9 @@ export function Relatorios() {
                       orcamentoSelecionado.vendaMaterial +
                         orcamentoSelecionado.vendaMaoDeObra
                     )}
+                  </div>
+                  <div className="subvalue">
+                    Desconto: {formatCurrency(orcamentoSelecionado.desconto)}
                   </div>
                 </ModalStatCard>
                 <ModalStatCard $color="#e74c3c">

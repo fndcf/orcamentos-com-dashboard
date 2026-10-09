@@ -621,6 +621,56 @@ describe('Relatorios', () => {
     expect(screen.getByText('Evolução de Valores no Período (em milhares R$)')).toBeInTheDocument();
   });
 
+  it('deve mostrar "Descontos: R$ 0,00" quando não há desconto no período', () => {
+    vi.mocked(useOrcamentosPorPeriodo).mockReturnValue({
+      data: [...mockOrcamentos, mockOrcamentoCompleto],
+      isLoading: false,
+    } as any);
+    vi.mocked(useItensServico).mockReturnValue({
+      data: mockItensServico,
+      isLoading: false,
+    } as any);
+
+    render(<Relatorios />, { wrapper: createWrapper() });
+
+    expect(screen.getByText('Descontos: R$ 0,00')).toBeInTheDocument();
+  });
+
+  it('deve aplicar o desconto na venda, nos impostos e no lucro', () => {
+    // Venda R$ 250 (material 80 + mão de obra 170), custo R$ 70, impostos 6% material e 3% serviço,
+    // desconto de R$ 25 (10%) → venda 225, impostos 4,32 + 4,59, lucro 146,09
+    vi.mocked(useConfiguracoesGerais).mockReturnValue({
+      data: { ...mockConfiguracoesGerais, impostoMaterial: 6, impostoServico: 3 },
+      isLoading: false,
+    } as any);
+    vi.mocked(useItensServico).mockReturnValue({
+      data: [{ id: 'iDesc', descricao: 'Item com desconto', unidade: 'un', valorUnitario: 80, valorMaoDeObraUnitario: 170, valorCusto: 45, valorMaoDeObraCusto: 25, categoriaId: 'cat1', ativo: true }],
+      isLoading: false,
+    } as any);
+    vi.mocked(useOrcamentosPorPeriodo).mockReturnValue({
+      data: [{
+        id: 'oDesc', numero: 471, versao: 0, tipo: 'completo', clienteId: 'cD', clienteNome: 'Cliente Desconto',
+        clienteCnpj: '', status: 'aceito', valorTotal: 250, dataEmissao: dataEmissaoTest, dataValidade: dataValidadeTest,
+        dataAceite: dataEmissaoTest, condicaoPagamento: 'a_vista',
+        descontoAVista: { percentual: 10, valorDesconto: 25, valorFinal: 225, tipo: 'percentual' },
+        itens: [],
+        itensCompleto: [{
+          descricao: 'Item com desconto', quantidade: 1, unidade: 'un', etapa: 'comercial', categoriaId: 'cat1', categoriaNome: 'Cat',
+          valorUnitarioMaoDeObra: 170, valorUnitarioMaterial: 80, valorTotalMaoDeObra: 170, valorTotalMaterial: 80, valorTotal: 250,
+        }],
+      }],
+      isLoading: false,
+    } as any);
+
+    render(<Relatorios />, { wrapper: createWrapper() });
+
+    expect(screen.getByText('Descontos: R$ 25,00')).toBeInTheDocument();
+    expect(screen.getAllByText('R$ 146,09').length).toBeGreaterThan(0); // lucro com desconto
+    expect(screen.getAllByText('R$ 8,91').length).toBeGreaterThan(0); // impostos sobre a venda com desconto
+    expect(screen.getAllByText('R$ 225,00').length).toBeGreaterThan(0); // venda/receita com desconto
+    expect(screen.queryByText('R$ 170,10')).not.toBeInTheDocument(); // lucro sem desconto não aparece
+  });
+
   it('deve renderizar status expirado corretamente', () => {
     const orcamentoExpirado = {
       ...mockOrcamentos[0],

@@ -17,6 +17,7 @@ interface CriarOrcamentoDTO {
   parcelamentoDados?: ParcelamentoDados;
   descontoAVista?: DescontoAVistaDados | null;
   mostrarValoresDetalhados?: boolean;
+  mostrarDocumento?: boolean;
   // Campos comuns
   observacoes?: string;
   diasValidade?: number;
@@ -40,6 +41,7 @@ interface AtualizarOrcamentoDTO {
   parcelamentoDados?: ParcelamentoDados;
   descontoAVista?: DescontoAVistaDados | null;
   mostrarValoresDetalhados?: boolean;
+  mostrarDocumento?: boolean;
   // Campos comuns
   observacoes?: string;
   dataValidade?: Date;

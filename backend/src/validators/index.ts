@@ -105,6 +105,7 @@ const orcamentoCamposComunsSchema = z.object({
   parcelamentoDados: parcelamentoDadosSchema.nullable().optional(),
   descontoAVista: descontoAVistaSchema.nullable().optional(),
   mostrarValoresDetalhados: z.boolean().optional(),
+  mostrarDocumento: z.boolean().optional(),
   observacoes: texto.optional(),
   consultor: texto.optional(),
   contato: texto.optional(),

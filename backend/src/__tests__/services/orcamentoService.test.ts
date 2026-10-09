@@ -19,6 +19,7 @@ jest.mock('../../repositories/orcamentoRepository', () => ({
     findById: jest.fn(),
     findByClienteId: jest.fn(),
     findByStatus: jest.fn(),
+    findByPeriodo: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     updateStatus: jest.fn(),
@@ -178,6 +179,25 @@ describe('orcamentoService', () => {
       expect(clienteRepository.findById).toHaveBeenCalledWith('c1');
       expect(orcamentoRepository.create).toHaveBeenCalled();
       expect(result).toEqual(mockOrcamentoCompleto);
+    });
+
+    it('deve gravar a opção de mostrar CPF/CNPJ na proposta', async () => {
+      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
+      (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(1);
+      (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o1' }));
+
+      await orcamentoService.criar({
+        tipo: 'completo',
+        clienteId: 'c1',
+        servicoId: 's1',
+        mostrarDocumento: true,
+        itensCompleto: [{
+          etapa: 'comercial', categoriaId: 'cat1', categoriaNome: 'Extintor', descricao: 'Extintor ABC 6kg', unidade: 'UN',
+          quantidade: 1, valorUnitarioMaoDeObra: 10, valorUnitarioMaterial: 20, valorTotalMaoDeObra: 10, valorTotalMaterial: 20, valorTotal: 30,
+        }],
+      });
+
+      expect(orcamentoRepository.create).toHaveBeenCalledWith(expect.objectContaining({ mostrarDocumento: true }));
     });
 
     it('deve lançar erro se cliente não existir', async () => {
@@ -741,6 +761,17 @@ describe('orcamentoService', () => {
       }));
     });
 
+    it('deve atualizar mostrarDocumento', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue(mockOrcamentoCompleto);
+      (orcamentoRepository.update as jest.Mock).mockImplementation((id, data) => ({ ...mockOrcamentoCompleto, ...data }));
+
+      await orcamentoService.atualizar('o1', { mostrarDocumento: true });
+
+      expect(orcamentoRepository.update).toHaveBeenCalledWith('o1', expect.objectContaining({
+        mostrarDocumento: true,
+      }));
+    });
+
     it('não deve atualizar se nenhum campo mudou', async () => {
       const orcamentoExistente = {
         ...mockOrcamentoCompleto,
@@ -839,6 +870,17 @@ describe('orcamentoService', () => {
       expect(result).toHaveProperty('numero', 2);
       expect(result).toHaveProperty('status', 'aberto');
       expect(result).toHaveProperty('versao', 0);
+    });
+
+    it('deve manter a opção de mostrar CPF/CNPJ ao duplicar', async () => {
+      (orcamentoRepository.findById as jest.Mock).mockResolvedValue({ ...mockOrcamentoCompleto, mostrarDocumento: true });
+      (clienteRepository.findById as jest.Mock).mockResolvedValue(mockCliente);
+      (orcamentoRepository.getNextNumero as jest.Mock).mockResolvedValue(2);
+      (orcamentoRepository.create as jest.Mock).mockImplementation((orc) => ({ ...orc, id: 'o2' }));
+
+      await orcamentoService.duplicar('o1');
+
+      expect(orcamentoRepository.create).toHaveBeenCalledWith(expect.objectContaining({ mostrarDocumento: true }));
     });
 
     it('deve lançar erro se cliente não existir mais', async () => {
@@ -988,6 +1030,22 @@ describe('orcamentoService', () => {
     });
   });
 
+  describe('buscarPorPeriodo', () => {
+    it('deve buscar os dias inteiros no horário de Brasília', async () => {
+      (orcamentoRepository.findByPeriodo as jest.Mock).mockResolvedValue([]);
+
+      await orcamentoService.buscarPorPeriodo('2026-10-01', '2026-10-09');
+
+      const [inicio, fim] = (orcamentoRepository.findByPeriodo as jest.Mock).mock.calls[0];
+      expect(inicio.toISOString()).toBe('2026-10-01T03:00:00.000Z');
+      expect(fim.toISOString()).toBe('2026-10-10T02:59:59.999Z');
+    });
+
+    it('deve rejeitar datas inválidas', async () => {
+      await expect(orcamentoService.buscarPorPeriodo('xx', '2026-10-09')).rejects.toThrow(ValidationError);
+    });
+  });
+
   describe('getDashboardStats', () => {
     const mockClientes = [
       { id: 'c1', razaoSocial: 'Cliente 1' },
@@ -996,6 +1054,22 @@ describe('orcamentoService', () => {
 
     beforeEach(() => {
       (clienteRepository.findAll as jest.Mock).mockResolvedValue(mockClientes);
+    });
+
+    it('deve usar o valor com desconto nos totais do dashboard', async () => {
+      const now = new Date();
+      (orcamentoRepository.findAll as jest.Mock).mockResolvedValue([
+        {
+          id: 'o1', status: 'aceito', valorTotal: 3130, dataEmissao: now, condicaoPagamento: 'a_vista',
+          descontoAVista: { percentual: 3.87, valorDesconto: 121, valorFinal: 3009 },
+        },
+        { id: 'o2', status: 'aberto', valorTotal: 1000, dataEmissao: now },
+      ]);
+
+      const stats = await orcamentoService.getDashboardStats();
+
+      expect(stats.valorTotal).toBe(4009);
+      expect(stats.valorAceitos).toBe(3009);
     });
 
     it('deve retornar estatísticas corretas do dashboard', async () => {

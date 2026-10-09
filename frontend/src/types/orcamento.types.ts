@@ -51,6 +51,7 @@ export interface OrcamentoCompletoInput extends OrcamentoBase {
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
   mostrarValoresDetalhados?: boolean;
+  mostrarDocumento?: boolean;
 }
 
 /** União discriminada para dados de salvamento */
@@ -80,6 +81,7 @@ export interface OrcamentoCompleto extends OrcamentoBase, OrcamentoClienteInfo {
   parcelamentoTexto?: string;
   parcelamentoDados?: ParcelamentoDados;
   mostrarValoresDetalhados?: boolean;
+  mostrarDocumento?: boolean;
   valorTotal: number;
   valorTotalMaoDeObra?: number;
   valorTotalMaterial?: number;
